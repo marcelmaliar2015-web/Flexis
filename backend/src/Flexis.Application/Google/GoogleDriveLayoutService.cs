@@ -1,4 +1,5 @@
 using Flexis.Application.Common;
+using Flexis.Application.JobApplication;
 using Flexis.Domain.Google;
 using Flexis.Domain.JobApplication;
 
@@ -54,7 +55,7 @@ public sealed class GoogleDriveLayoutService
         CancellationToken cancellationToken)
     {
         var folderId = kind == JobCatalogKind.Profile ? folders.ProfilesFolderId : folders.SourcesFolderId;
-        return _drive.MoveFileToFolderAsync(accessToken, spreadsheetId, folderId, cancellationToken);
+        return _drive.MoveFileToFolderAsync(accessToken, spreadsheetId, folderId, cancellationToken, required: true);
     }
 
     private async Task<FlexisDriveFolders> BuildFoldersAsync(

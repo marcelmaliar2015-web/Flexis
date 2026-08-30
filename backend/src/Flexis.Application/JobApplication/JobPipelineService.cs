@@ -10,21 +10,33 @@ public sealed class JobPipelineService
     private readonly IJobCatalogRepository _items;
     private readonly GoogleAccessTokenService _tokens;
     private readonly IGoogleSheetsWorkspace _sheets;
+    private readonly GoogleDriveLayoutService _driveLayout;
 
     public JobPipelineService(
         IJobPipelineRepository entries,
         IJobCatalogRepository items,
         GoogleAccessTokenService tokens,
-        IGoogleSheetsWorkspace sheets)
+        IGoogleSheetsWorkspace sheets,
+        GoogleDriveLayoutService driveLayout)
     {
         _entries = entries;
         _items = items;
         _tokens = tokens;
         _sheets = sheets;
+        _driveLayout = driveLayout;
     }
 
     public async Task<JobPipelineBoardDto> GetBoardAsync(Guid userId, CancellationToken cancellationToken)
     {
+        try
+        {
+            var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
+            await _driveLayout.EnsureAsync(userId, accessToken, cancellationToken);
+        }
+        catch (ValidationFailedException)
+        {
+        }
+
         var profiles = await _items.ListAsync(userId, JobCatalogKind.Profile, cancellationToken);
         var sources = await _items.ListAsync(userId, JobCatalogKind.Source, cancellationToken);
         var sourceOptions = new List<JobPipelineSourceOptionDto>(sources.Count);

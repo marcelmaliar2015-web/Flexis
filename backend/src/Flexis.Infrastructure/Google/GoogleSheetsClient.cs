@@ -38,19 +38,58 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         string fileName,
         string firstSheetName,
         JobWorkbookKind kind,
+        string parentFolderId,
         CancellationToken cancellationToken)
     {
-        var columns = ColumnsFor(kind);
-        var body = new
+        if (string.IsNullOrWhiteSpace(parentFolderId))
         {
-            properties = new { title = fileName, locale = "en_US" },
-            sheets = new[]
+            throw new GoogleOAuthException("Google Drive folder is missing.");
+        }
+
+        var columns = ColumnsFor(kind);
+        var createdFile = await SendJson<DriveFileCreated>(
+            accessToken,
+            HttpMethod.Post,
+            "https://www.googleapis.com/drive/v3/files?fields=id&supportsAllDrives=true",
+            new
             {
-                new
+                name = fileName,
+                mimeType = "application/vnd.google-apps.spreadsheet",
+                parents = new[] { parentFolderId }
+            },
+            cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(createdFile.Id))
+        {
+            throw new GoogleOAuthException("Google Drive did not return a spreadsheet.");
+        }
+
+        var spreadsheet = await SendJson<SpreadsheetCreated>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{createdFile.Id}?fields=spreadsheetId,spreadsheetUrl,sheets.properties(sheetId,title)",
+            null,
+            cancellationToken);
+
+        var sheetId = spreadsheet.Sheets?.FirstOrDefault()?.Properties?.SheetId;
+        if (string.IsNullOrWhiteSpace(spreadsheet.SpreadsheetId)
+            || string.IsNullOrWhiteSpace(spreadsheet.SpreadsheetUrl)
+            || sheetId is null)
+        {
+            throw new GoogleOAuthException("Google Sheets did not return a spreadsheet.");
+        }
+
+        var tabId = sheetId.Value;
+
+        var requests = new List<object>
+        {
+            new
+            {
+                updateSheetProperties = new
                 {
                     properties = new
                     {
-                        sheetId = 0,
+                        sheetId = tabId,
                         title = firstSheetName,
                         gridProperties = new
                         {
@@ -59,42 +98,29 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                             columnCount = columns.Length
                         }
                     },
-                    data = new[]
-                    {
-                        new
-                        {
-                            startRow = 0,
-                            startColumn = 0,
-                            rowData = new[]
-                            {
-                                new { values = columns.Select(HeaderCell).ToArray() }
-                            }
-                        }
-                    }
+                    fields = "title,gridProperties.frozenRowCount,gridProperties.rowCount,gridProperties.columnCount"
+                }
+            },
+            new
+            {
+                updateCells = new
+                {
+                    start = new { sheetId = tabId, rowIndex = 0, columnIndex = 0 },
+                    rows = new[] { new { values = columns.Select(HeaderCell).ToArray() } },
+                    fields = "userEnteredValue"
                 }
             }
         };
-
-        var created = await SendJson<SpreadsheetCreated>(
-            accessToken,
-            HttpMethod.Post,
-            "https://sheets.googleapis.com/v4/spreadsheets",
-            body,
-            cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(created.SpreadsheetId) || string.IsNullOrWhiteSpace(created.SpreadsheetUrl))
-        {
-            throw new GoogleOAuthException("Google Sheets did not return a spreadsheet.");
-        }
+        requests.AddRange(FormatRequests(tabId, columns));
 
         await SendJson<object>(
             accessToken,
             HttpMethod.Post,
-            $"https://sheets.googleapis.com/v4/spreadsheets/{created.SpreadsheetId}:batchUpdate",
-            new { requests = FormatRequests(0, columns) },
+            $"https://sheets.googleapis.com/v4/spreadsheets/{createdFile.Id}:batchUpdate",
+            new { requests },
             cancellationToken);
 
-        return new CreatedSpreadsheet(created.SpreadsheetId, created.SpreadsheetUrl);
+        return new CreatedSpreadsheet(spreadsheet.SpreadsheetId, spreadsheet.SpreadsheetUrl);
     }
 
     public Task RenameFileAsync(
@@ -565,6 +591,13 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         public string? SpreadsheetId { get; set; }
 
         public string? SpreadsheetUrl { get; set; }
+
+        public List<SheetEnvelope>? Sheets { get; set; }
+    }
+
+    private sealed class DriveFileCreated
+    {
+        public string? Id { get; set; }
     }
 
     private sealed class SpreadsheetList

@@ -6,14 +6,14 @@ Job Application creates Google Sheets on the connected account. Those files must
 
 ## Decision
 
-On Gmail connect, and again when a profile or source is created, Flexis ensures this tree in that user's Drive:
+Opening Job Application or creating a profile or source ensures this tree in that user's Drive:
 
 - `Flexis` — workspace root
 - `Job Application` — Job Application files
 - `Profiles` — one Sheet per profile
 - `Sources` — one Sheet per source; location tabs stay in the workbook
 
-Folder names and descriptions live in `Flexis.Application.Google.FlexisDriveLayout`. Folder IDs are stored on `google_connections`. If the Google account subject changes, stored IDs are cleared and the tree is resolved again. When IDs are missing, Flexis looks up app-created folders by name under the parent before creating a new folder. Existing catalog spreadsheets Flexis created are moved into the matching folder. Disconnect does not delete the Drive tree or the sheets.
+New workbooks are created inside `Profiles` or `Sources`. Folder names and descriptions live in `Flexis.Application.Google.FlexisDriveLayout`. Folder IDs are stored on `google_connections`. If the Google account subject changes, stored IDs are cleared and the tree is resolved again. When IDs are missing, Flexis looks up app-created folders by name under the parent before creating a new folder. Existing catalog spreadsheets Flexis created are moved into the matching folder and removed from My Drive root. Disconnect does not delete the Drive tree or the sheets.
 
 ## Consequences
 

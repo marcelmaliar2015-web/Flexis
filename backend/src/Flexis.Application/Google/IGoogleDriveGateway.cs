@@ -46,5 +46,6 @@ public interface IGoogleDriveGateway
         string accessToken,
         string fileId,
         string folderId,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        bool required = false);
 }

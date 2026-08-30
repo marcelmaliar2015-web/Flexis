@@ -86,11 +86,20 @@ internal sealed class GoogleDriveClient : IGoogleDriveGateway
         string accessToken,
         string fileId,
         string folderId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool required = false)
     {
         var file = await GetFileAsync(accessToken, fileId, "id,parents,trashed", cancellationToken);
         if (file is null || file.Trashed == true)
         {
+            if (required)
+            {
+                throw new GoogleOAuthException(
+                    file?.Trashed == true
+                        ? "That Google Drive file is in the trash."
+                        : "Google Drive could not find that file.");
+            }
+
             return;
         }
 
@@ -100,18 +109,19 @@ internal sealed class GoogleDriveClient : IGoogleDriveGateway
             return;
         }
 
-        var remove = string.Join(',', parents.Where(parent => !string.Equals(parent, folderId, StringComparison.Ordinal)));
-        var query = $"addParents={Uri.EscapeDataString(folderId)}&fields=id";
-        if (remove.Length > 0)
-        {
-            query += $"&removeParents={Uri.EscapeDataString(remove)}";
-        }
+        var remove = parents
+            .Where(parent => !string.Equals(parent, folderId, StringComparison.Ordinal))
+            .Append("root")
+            .Distinct(StringComparer.Ordinal)
+            .Select(Uri.EscapeDataString);
+        var query =
+            $"addParents={Uri.EscapeDataString(folderId)}&removeParents={string.Join(',', remove)}&fields=id,parents&supportsAllDrives=true";
 
         await SendJson<DriveFile>(
             accessToken,
             HttpMethod.Patch,
-            $"https://www.googleapis.com/drive/v3/files/{fileId}?{query}",
-            new Dictionary<string, string>(),
+            $"https://www.googleapis.com/drive/v3/files/{Uri.EscapeDataString(fileId)}?{query}",
+            new { },
             cancellationToken);
     }
 
@@ -123,7 +133,7 @@ internal sealed class GoogleDriveClient : IGoogleDriveGateway
     {
         using var request = new HttpRequestMessage(
             HttpMethod.Get,
-            $"https://www.googleapis.com/drive/v3/files/{fileId}?fields={Uri.EscapeDataString(fields)}");
+            $"https://www.googleapis.com/drive/v3/files/{Uri.EscapeDataString(fileId)}?fields={fields}&supportsAllDrives=true");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         using var response = await _http.SendAsync(request, cancellationToken);
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -200,6 +210,7 @@ internal sealed class GoogleDriveClient : IGoogleDriveGateway
 
         public bool? Trashed { get; set; }
 
+        [JsonPropertyName("parents")]
         public List<string>? Parents { get; set; }
     }
 

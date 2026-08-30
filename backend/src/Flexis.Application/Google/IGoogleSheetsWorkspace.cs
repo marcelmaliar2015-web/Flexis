@@ -26,6 +26,7 @@ public interface IGoogleSheetsWorkspace
         string fileName,
         string firstSheetName,
         JobWorkbookKind kind,
+        string parentFolderId,
         CancellationToken cancellationToken);
 
     Task RenameFileAsync(

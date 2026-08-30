@@ -31,6 +31,7 @@ public sealed class JobCatalogService
         JobCatalogKind kind,
         CancellationToken cancellationToken)
     {
+        await TryPlaceCatalogAsync(userId, cancellationToken);
         var items = await _items.ListAsync(userId, kind, cancellationToken);
         return items.Select(ToDto).ToArray();
     }
@@ -53,11 +54,13 @@ public sealed class JobCatalogService
             ? JobCatalogRules.SheetTabName(title)
             : JobCatalogRules.DefaultSourceLocation;
         var workbookKind = kind == JobCatalogKind.Profile ? JobWorkbookKind.Profile : JobWorkbookKind.Source;
+        var folderId = kind == JobCatalogKind.Profile ? folders.ProfilesFolderId : folders.SourcesFolderId;
         var spreadsheet = await _sheets.CreateWorkbookAsync(
             accessToken,
             title,
             firstSheet,
             workbookKind,
+            folderId,
             cancellationToken);
 
         try
@@ -202,6 +205,18 @@ public sealed class JobCatalogService
         }
 
         await _sheets.DeleteSheetAsync(accessToken, item.SpreadsheetId, sheetId, cancellationToken);
+    }
+
+    private async Task TryPlaceCatalogAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
+            await _driveLayout.EnsureAsync(userId, accessToken, cancellationToken);
+        }
+        catch (ValidationFailedException)
+        {
+        }
     }
 
     private async Task<JobCatalogItem> RequireItem(Guid userId, Guid id, CancellationToken cancellationToken)
