@@ -1,5 +1,6 @@
 using Flexis.Application.Auth;
 using Flexis.Application.Google;
+using Flexis.Application.JobApplication;
 using Flexis.Application.Users;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<AuthService>();
         services.AddScoped<UserManagementService>();
         services.AddScoped<GoogleConnectionService>();
+        services.AddScoped<JobCatalogService>();
         return services;
     }
 }

@@ -1,10 +1,12 @@
 using Flexis.Application.Auth;
 using Flexis.Application.Google;
+using Flexis.Application.JobApplication;
 using Flexis.Application.Users;
 using Flexis.Infrastructure.Google;
 using Flexis.Infrastructure.Persistence.Mongo;
 using Flexis.Infrastructure.Persistence.Postgres;
 using Flexis.Infrastructure.Persistence.Postgres.Google;
+using Flexis.Infrastructure.Persistence.Postgres.JobApplication;
 using Flexis.Infrastructure.Persistence.Postgres.Users;
 using Flexis.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -62,6 +64,7 @@ public static class DependencyInjection
         services.AddSingleton<IGoogleOAuthStateStore, MemoryGoogleOAuthStateStore>();
         services.AddSingleton<IFrontendOrigins, ConfigurationFrontendOrigins>();
         services.AddScoped<IGoogleConnectionRepository, GoogleConnectionRepository>();
+        services.AddScoped<IJobCatalogRepository, JobCatalogRepository>();
 
         services.AddSingleton<IMongoClient>(serviceProvider =>
         {

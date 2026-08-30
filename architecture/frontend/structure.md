@@ -32,7 +32,7 @@ Path alias `@/` maps to `frontend/src/`.
 | `features/auth` | Sign-in screen |
 | `features/users` | Admin user management screen |
 | `features/dashboard` | Empty Dashboard screen |
-| `features/jobApplication` | Job Application screen and Gmail connect |
+| `features/jobApplication` | Job Application tabs, Settings (Gmail, profiles, sources) |
 | `features/settings` | Empty Settings screen |
 | `shared/api` | `fetch` wrapper and endpoint functions |
 | `shared/auth` | Session provider and token storage |

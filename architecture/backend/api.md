@@ -18,14 +18,24 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | POST | `/api/google/connections/start` | Authenticated | `200` + `GoogleConnectStartDto` |
 | GET | `/api/google/connections/callback` | Anonymous | `302` to the Job Application return URL |
 | DELETE | `/api/google/connections` | Authenticated | `204` |
+| GET | `/api/job-application/profiles` | Authenticated | `200` + `JobCatalogItemDto[]` |
+| POST | `/api/job-application/profiles` | Authenticated | `201` + `JobCatalogItemDto` |
+| PUT | `/api/job-application/profiles/{id}` | Authenticated | `200` + `JobCatalogItemDto` |
+| DELETE | `/api/job-application/profiles/{id}` | Authenticated | `204` |
+| GET | `/api/job-application/sources` | Authenticated | `200` + `JobCatalogItemDto[]` |
+| POST | `/api/job-application/sources` | Authenticated | `201` + `JobCatalogItemDto` |
+| PUT | `/api/job-application/sources/{id}` | Authenticated | `200` + `JobCatalogItemDto` |
+| DELETE | `/api/job-application/sources/{id}` | Authenticated | `204` |
 
 `UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`.
 
 `GoogleConnectionStatusDto`: `configured`, `connected`, `googleEmail`, `connectedAt`, `capabilities`. `GoogleConnectStartDto`: `authorizationUrl`. Start body: `returnUrl` (origin must be in `Frontend:Origins`, path `/job-application`).
 
+`JobCatalogItemDto`: `id`, `title`, `createdAt`, `url`. Write body: `title`, `url`. Items belong to the signed-in user. Duplicate title per kind for that user: `409`. Missing item: `404`.
+
 ## Contracts and errors
 
-Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. Last active admin cannot be demoted or deactivated: `409`. Google start with a missing client or a bad return URL: `400`. Health does not throw to the client; failed checks become unhealthy entries.
+Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. Last active admin cannot be demoted or deactivated: `409`. Google start with a missing client or a bad return URL: `400`. Invalid catalog title or URL: `400`. Health does not throw to the client; failed checks become unhealthy entries.
 
 ## Related
 

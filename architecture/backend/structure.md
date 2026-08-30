@@ -13,13 +13,16 @@ backend/src/
     Health/
     Users/
     Google/
+    JobApplication/
   Flexis.Domain/
     Users/
     Google/
+    JobApplication/
   Flexis.Infrastructure/
     Persistence/Postgres/
     Persistence/Postgres/Users/
     Persistence/Postgres/Google/
+    Persistence/Postgres/JobApplication/
     Persistence/Mongo/
     Security/
     Google/

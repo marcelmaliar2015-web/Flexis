@@ -33,7 +33,7 @@ Local database credentials match `docker-compose.yml` (`flexis` / `flexis`). Do 
 
 ## Shared types and constants
 
-Health contract is `HealthStatusDto` / `HealthCheckDto` in `Flexis.Application.Health`, mirrored in `frontend/src/shared/types/health.ts`. User contract is `UserDto` in `Flexis.Application.Users`, mirrored in `frontend/src/shared/types/user.ts`. Google connection status is `GoogleConnectionStatusDto` in `Flexis.Application.Google`, mirrored in `frontend/src/shared/types/google.ts`.
+Health contract is `HealthStatusDto` / `HealthCheckDto` in `Flexis.Application.Health`, mirrored in `frontend/src/shared/types/health.ts`. User contract is `UserDto` in `Flexis.Application.Users`, mirrored in `frontend/src/shared/types/user.ts`. Google connection status is `GoogleConnectionStatusDto` in `Flexis.Application.Google`, mirrored in `frontend/src/shared/types/google.ts`. Job catalog items are `JobCatalogItemDto` in `Flexis.Application.JobApplication`, mirrored in `frontend/src/shared/types/jobCatalog.ts`.
 
 ## Related
 
