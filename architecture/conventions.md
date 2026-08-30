@@ -11,8 +11,8 @@ Cross-cutting rules. Layer-specific detail lives under `frontend/` or `backend/`
 
 ## Errors
 
-- API controllers return HTTP status codes with JSON bodies. Unhealthy health checks return `503`.
-- Frontend API helper `getJson` throws on non-OK responses except `503` (parsed as a health payload).
+- API controllers return HTTP status codes with JSON bodies. Unhealthy health checks return `503`. Application exceptions map to Problem Details.
+- Frontend API helper `getJson` throws on non-OK responses except `503` (parsed as a health payload). Other failures throw `ApiError`.
 - Do not swallow exceptions. Health checks convert connection failures into an unhealthy result.
 
 ## Environment and config
@@ -23,6 +23,8 @@ Cross-cutting rules. Layer-specific detail lives under `frontend/` or `backend/`
 | `Mongo:ConnectionString` | same | MongoDB URI |
 | `Mongo:Database` | same | MongoDB database name (`flexis`) |
 | `Frontend:Origins` | same | CORS allowed browser origins |
+| `Jwt:Issuer` `Jwt:Audience` `Jwt:SigningKey` `Jwt:AccessTokenMinutes` | same | JWT access tokens |
+| `Auth:Seed:*` | `appsettings.Development.json` | Development seed users |
 | `VITE_API_BASE_URL` | `frontend/.env.development` | API base URL; empty in Development so Vite proxies `/api` |
 | `ASPNETCORE_ENVIRONMENT` | launchSettings | `Development` locally |
 
@@ -30,7 +32,7 @@ Local database credentials match `docker-compose.yml` (`flexis` / `flexis`). Do 
 
 ## Shared types and constants
 
-Health contract is `HealthStatusDto` / `HealthCheckDto` in `Flexis.Application.Health`, mirrored in `frontend/src/shared/types/health.ts`.
+Health contract is `HealthStatusDto` / `HealthCheckDto` in `Flexis.Application.Health`, mirrored in `frontend/src/shared/types/health.ts`. User contract is `UserDto` in `Flexis.Application.Users`, mirrored in `frontend/src/shared/types/user.ts`.
 
 ## Related
 

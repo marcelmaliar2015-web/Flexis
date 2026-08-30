@@ -6,6 +6,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { Link as RouterLink, Outlet } from "react-router-dom";
+import { useAuth } from "@/shared/auth/AuthProvider";
 
 const ShellRoot = styled(Box)({
   minHeight: "100dvh",
@@ -36,6 +37,8 @@ const ShellMain = styled("main")({
 });
 
 export function AppLayout() {
+  const auth = useAuth();
+
   return (
     <ShellRoot>
       <ShellBar position="sticky">
@@ -58,15 +61,38 @@ export function AppLayout() {
               Flexis
             </Typography>
           </Box>
-          <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+          <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0, alignItems: "center" }}>
             <Box sx={{ display: { xs: "none", sm: "block" } }}>
               <Button color="inherit" component={RouterLink} to="/" variant="text">
                 Home
               </Button>
             </Box>
-            <Button color="inherit" component={RouterLink} to="/health" variant="text">
-              Health
-            </Button>
+            {auth.user ? (
+              <Button color="inherit" component={RouterLink} to="/health" variant="text">
+                Health
+              </Button>
+            ) : null}
+            {auth.user?.role === "Admin" ? (
+              <Button color="inherit" component={RouterLink} to="/users" variant="text">
+                Users
+              </Button>
+            ) : null}
+            {auth.user ? (
+              <>
+                <Box sx={{ display: { xs: "none", md: "block" }, px: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {auth.user.displayName}
+                  </Typography>
+                </Box>
+                <Button color="inherit" variant="text" onClick={auth.signOut}>
+                  Sign out
+                </Button>
+              </>
+            ) : (
+              <Button color="inherit" component={RouterLink} to="/sign-in" variant="text">
+                Sign in
+              </Button>
+            )}
           </Stack>
         </Toolbar>
       </ShellBar>

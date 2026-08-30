@@ -2,18 +2,20 @@
 
 ## Router
 
-React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. Layout route renders `AppLayout` and an `Outlet`.
+React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. Layout route renders `AppLayout` and an `Outlet`. Guards: `RequireAuth`, `RequireAdmin` in `routeGuards.tsx`.
 
 ## Routes
 
-| Path | Screen |
-| --- | --- |
-| `/` | `HomePage` |
-| `/health` | `HealthPage` |
+| Path | Screen | Access |
+| --- | --- | --- |
+| `/` | `HomePage` | Public |
+| `/sign-in` | `SignInPage` | Public |
+| `/health` | `HealthPage` | Authenticated |
+| `/users` | `UsersPage` | Admin |
 
 ## Guards and access
 
-None yet.
+Unauthenticated visits to `/health` or `/users` redirect to `/sign-in` with `state.from`. Non-admins hitting `/users` redirect to `/health`.
 
 ## Related
 

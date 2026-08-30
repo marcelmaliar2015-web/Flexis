@@ -1,5 +1,9 @@
+using Flexis.Application.Auth;
+using Flexis.Application.Users;
 using Flexis.Infrastructure.Persistence.Mongo;
 using Flexis.Infrastructure.Persistence.Postgres;
+using Flexis.Infrastructure.Persistence.Postgres.Users;
+using Flexis.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +30,17 @@ public static class DependencyInjection
             .Validate(settings => !string.IsNullOrWhiteSpace(settings.Database), "Mongo:Database is required.")
             .ValidateOnStart();
 
+        services.AddOptions<JwtSettings>()
+            .Bind(configuration.GetSection(JwtSettings.SectionName))
+            .Validate(settings => !string.IsNullOrWhiteSpace(settings.Issuer), "Jwt:Issuer is required.")
+            .Validate(settings => !string.IsNullOrWhiteSpace(settings.Audience), "Jwt:Audience is required.")
+            .Validate(settings => !string.IsNullOrWhiteSpace(settings.SigningKey) && settings.SigningKey.Length >= 32, "Jwt:SigningKey must be at least 32 characters.")
+            .Validate(settings => settings.AccessTokenMinutes > 0, "Jwt:AccessTokenMinutes must be positive.")
+            .ValidateOnStart();
+
+        services.AddOptions<AuthSeedSettings>()
+            .Bind(configuration.GetSection(AuthSeedSettings.SectionName));
+
         services.AddSingleton<IMongoClient>(serviceProvider =>
         {
             var settings = serviceProvider.GetRequiredService<IOptions<MongoSettings>>().Value;
@@ -41,6 +56,10 @@ public static class DependencyInjection
             var client = serviceProvider.GetRequiredService<IMongoClient>();
             return client.GetDatabase(settings.Database);
         });
+
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddSingleton<IUserPasswordHasher, AspNetUserPasswordHasher>();
+        services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<FlexisDbContext>("postgres")

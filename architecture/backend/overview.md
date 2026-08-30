@@ -6,18 +6,18 @@ HTTP API for Flexis. Owns business use cases, PostgreSQL, and MongoDB. Serves JS
 
 ## Tech stack
 
-ASP.NET Core 10 (`net10.0`), EF Core with Npgsql, MongoDB.Driver. Solution: `backend/Flexis.sln`.
+ASP.NET Core 10 (`net10.0`), EF Core with Npgsql, MongoDB.Driver, JWT Bearer. Solution: `backend/Flexis.sln`.
 
 ## Entry
 
-`backend/src/Flexis.Api/Program.cs`. Listens on `http://localhost:5080` in Development (`Properties/launchSettings.json`).
+`backend/src/Flexis.Api/Program.cs`. Listens on `http://localhost:5080` in Development (`Properties/launchSettings.json`). Development applies EF migrations and seeds users before accepting requests.
 
 ## Boundaries
 
-- `Flexis.Domain` — entities and domain rules. No types yet.
+- `Flexis.Domain` — entities and domain rules, including `User`.
 - `Flexis.Application` — use cases, DTOs, DI entry `AddApplication`.
-- `Flexis.Infrastructure` — EF Core, MongoDB, health checks, DI entry `AddInfrastructure`.
-- `Flexis.Api` — HTTP, CORS, OpenAPI in Development, controllers.
+- `Flexis.Infrastructure` — EF Core, MongoDB, JWT, password hashing, health checks, DI entry `AddInfrastructure`.
+- `Flexis.Api` — HTTP, CORS, JWT bearer, OpenAPI in Development, controllers.
 
 Dependencies flow inward: Api → Application and Infrastructure; Infrastructure → Application and Domain; Application → Domain.
 

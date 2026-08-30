@@ -2,7 +2,7 @@
 
 ## Product
 
-Flexis. A multi-feature web platform. The first screen is an editorial landing at `/`. Product modules are added as features; none are implemented yet besides system health.
+Flexis. A multi-feature web platform. The first screen is an editorial landing at `/`. Sign-in and role-based access are in place. Product modules are added as features; besides health and user management, none are implemented yet.
 
 ## System context
 

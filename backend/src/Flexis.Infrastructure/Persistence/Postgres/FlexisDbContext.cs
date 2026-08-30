@@ -1,3 +1,4 @@
+using Flexis.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace Flexis.Infrastructure.Persistence.Postgres;
@@ -8,6 +9,8 @@ public sealed class FlexisDbContext : DbContext
         : base(options)
     {
     }
+
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
