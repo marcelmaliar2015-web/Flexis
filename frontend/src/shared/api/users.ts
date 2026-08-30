@@ -1,4 +1,4 @@
-import { getJson, postJson, putJson } from "@/shared/api/client";
+import { deleteRequest, getJson, postJson, putJson } from "@/shared/api/client";
 import type { UserDto, UserRole } from "@/shared/types/user";
 
 export const usersQueryKey = ["users"] as const;
@@ -27,4 +27,8 @@ export function createUser(request: CreateUserRequest): Promise<UserDto> {
 
 export function updateUser(id: string, request: UpdateUserRequest): Promise<UserDto> {
   return putJson<UserDto>(`/api/users/${id}`, request);
+}
+
+export function deleteUser(id: string): Promise<void> {
+  return deleteRequest(`/api/users/${id}`);
 }

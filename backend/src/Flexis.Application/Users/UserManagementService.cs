@@ -73,6 +73,22 @@ public sealed class UserManagementService
         return UserMapper.ToDto(user);
     }
 
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var user = await _users.GetByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException("User was not found.");
+
+        if (user.Role == UserRole.Admin
+            && user.IsActive
+            && await _users.CountActiveAdminsAsync(cancellationToken) <= 1)
+        {
+            throw new DomainRuleException("The last active admin cannot be deleted.");
+        }
+
+        _users.Remove(user);
+        await _users.SaveChangesAsync(cancellationToken);
+    }
+
     private static void EnsureDefinedRole(UserRole role)
     {
         if (!Enum.IsDefined(role))

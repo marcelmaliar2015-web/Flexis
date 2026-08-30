@@ -42,6 +42,11 @@ internal sealed class UserRepository : IUserRepository
         await _db.Users.AddAsync(user, cancellationToken);
     }
 
+    public void Remove(User user)
+    {
+        _db.Users.Remove(user);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         return _db.SaveChangesAsync(cancellationToken);

@@ -8,8 +8,8 @@ frontend/src/
   features/      one folder per feature
     home/
     health/
+    help/
     auth/
-    users/
     dashboard/
     jobApplication/
     settings/
@@ -26,14 +26,14 @@ Path alias `@/` maps to `frontend/src/`.
 
 | Module | Responsibility |
 | --- | --- |
-| `app` | Bootstrap, theme, query client, routes, layout, guards |
+| `app` | Bootstrap, theme, query client, routes, layout, guards, account menu |
 | `features/home` | Home screen |
 | `features/health` | Health screen and query hook |
+| `features/help` | In-app Gmail connect guide |
 | `features/auth` | Sign-in screen |
-| `features/users` | Admin user management screen |
 | `features/dashboard` | Empty Dashboard screen |
 | `features/jobApplication` | Job Application tabs, Settings (Gmail, profiles, sources) |
-| `features/settings` | Empty Settings screen |
+| `features/settings` | Settings screen; Admin user management |
 | `shared/api` | `fetch` wrapper and endpoint functions |
 | `shared/auth` | Session provider and token storage |
 | `shared/config` | Env access and `appPaths` |

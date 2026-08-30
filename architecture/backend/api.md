@@ -14,6 +14,7 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | GET | `/api/users` | Admin | `200` + `UserDto[]` |
 | POST | `/api/users` | Admin | `201` + `UserDto` |
 | PUT | `/api/users/{id}` | Admin | `200` + `UserDto` |
+| DELETE | `/api/users/{id}` | Admin | `204` |
 | GET | `/api/google/connections` | Authenticated | `200` + `GoogleConnectionStatusDto` |
 | POST | `/api/google/connections/start` | Authenticated | `200` + `GoogleConnectStartDto` |
 | GET | `/api/google/connections/callback` | Anonymous | `302` to the Job Application return URL |
@@ -35,7 +36,7 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 
 ## Contracts and errors
 
-Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. Last active admin cannot be demoted or deactivated: `409`. Google start with a missing client or a bad return URL: `400`. Invalid catalog title or URL: `400`. Health does not throw to the client; failed checks become unhealthy entries.
+Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. Last active admin cannot be demoted, deactivated, or deleted: `409`. Google start with a missing client or a bad return URL: `400`. Invalid catalog title or URL: `400`. Health does not throw to the client; failed checks become unhealthy entries.
 
 ## Related
 

@@ -2,7 +2,6 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import Container from "@mui/material/Container";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -28,12 +27,14 @@ import { useState, type FormEvent } from "react";
 import { ApiError } from "@/shared/api/client";
 import {
   createUser,
+  deleteUser,
   listUsers,
   updateUser,
   usersQueryKey,
   type CreateUserRequest,
   type UpdateUserRequest,
 } from "@/shared/api/users";
+import { useAuth } from "@/shared/auth/AuthProvider";
 import type { UserDto, UserRole } from "@/shared/types/user";
 
 const roles: UserRole[] = ["Admin", "User", "Viewer"];
@@ -47,13 +48,15 @@ const Panel = styled(Box)(({ theme }) => ({
 
 type EditorState = { mode: "create" } | { mode: "edit"; user: UserDto };
 
-export function UsersPage() {
+export function UsersManagement() {
+  const auth = useAuth();
   const queryClient = useQueryClient();
   const usersQuery = useQuery({
     queryKey: usersQueryKey,
     queryFn: listUsers,
   });
   const [editor, setEditor] = useState<EditorState | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserDto | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const createMutation = useMutation({
@@ -75,93 +78,138 @@ export function UsersPage() {
     onError: (error) => setFormError(errorMessage(error)),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteUser(id),
+    onSuccess: async (_result, id) => {
+      if (id === auth.user?.id) {
+        auth.signOut();
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: usersQueryKey });
+      setUserToDelete(null);
+    },
+    onError: (error) => setFormError(errorMessage(error)),
+  });
+
   return (
-    <Box sx={{ py: { xs: 4, md: 6 } }}>
-      <Container maxWidth="lg">
-        <Stack spacing={3}>
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
-          >
-            <Stack spacing={1}>
-              <Typography variant="overline" color="secondary">
-                Administration
-              </Typography>
-              <Typography variant="h4" component="h1">
-                Users
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Admins can create accounts and assign Admin, User, or Viewer.
+    <Stack spacing={2}>
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+      >
+        <Stack spacing={0.5}>
+          <Typography variant="h6" component="h2">
+            Users
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Create, edit, and delete accounts. Assign Admin, User, or Viewer.
+          </Typography>
+        </Stack>
+        <Button
+          onClick={() => {
+            setFormError(null);
+            setEditor({ mode: "create" });
+          }}
+        >
+          New user
+        </Button>
+      </Stack>
+      {usersQuery.isError ? <Alert severity="error">{errorMessage(usersQuery.error)}</Alert> : null}
+      <Panel>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Role</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(usersQuery.data ?? []).map((user) => (
+                <TableRow key={user.id} hover>
+                  <TableCell>{user.displayName}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      color={user.isActive ? "success" : "default"}
+                      label={user.isActive ? "Active" : "Inactive"}
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Stack direction="row" spacing={0.5} sx={{ justifyContent: "flex-end" }}>
+                      <Button
+                        variant="text"
+                        onClick={() => {
+                          setFormError(null);
+                          setEditor({ mode: "edit", user });
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="text"
+                        onClick={() => {
+                          setFormError(null);
+                          setUserToDelete(user);
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Panel>
+      {editor ? (
+        <UserEditorDialog
+          editor={editor}
+          error={formError}
+          isSaving={createMutation.isPending || updateMutation.isPending}
+          onClose={() => setEditor(null)}
+          onCreate={(request) => createMutation.mutate(request)}
+          onUpdate={(id, request) => updateMutation.mutate({ id, request })}
+        />
+      ) : null}
+      {userToDelete ? (
+        <Dialog open onClose={() => setUserToDelete(null)} fullWidth maxWidth="xs">
+          <DialogTitle>Delete user</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ pt: 0.5 }}>
+              {formError ? <Alert severity="error">{formError}</Alert> : null}
+              <Typography variant="body2">
+                {`Delete ${userToDelete.displayName}? This cannot be undone.`}
               </Typography>
             </Stack>
+          </DialogContent>
+          <DialogActions>
             <Button
-              onClick={() => {
-                setFormError(null);
-                setEditor({ mode: "create" });
-              }}
+              variant="text"
+              onClick={() => setUserToDelete(null)}
+              disabled={deleteMutation.isPending}
             >
-              New user
+              Cancel
             </Button>
-          </Stack>
-          {usersQuery.isError ? (
-            <Alert severity="error">{errorMessage(usersQuery.error)}</Alert>
-          ) : null}
-          <Panel>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {(usersQuery.data ?? []).map((user) => (
-                    <TableRow key={user.id} hover>
-                      <TableCell>{user.displayName}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.role}</TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          color={user.isActive ? "success" : "default"}
-                          label={user.isActive ? "Active" : "Inactive"}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          variant="text"
-                          onClick={() => {
-                            setFormError(null);
-                            setEditor({ mode: "edit", user });
-                          }}
-                        >
-                          Edit
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Panel>
-        </Stack>
-        {editor ? (
-          <UserEditorDialog
-            editor={editor}
-            error={formError}
-            isSaving={createMutation.isPending || updateMutation.isPending}
-            onClose={() => setEditor(null)}
-            onCreate={(request) => createMutation.mutate(request)}
-            onUpdate={(id, request) => updateMutation.mutate({ id, request })}
-          />
-        ) : null}
-      </Container>
-    </Box>
+            <Button
+              disabled={deleteMutation.isPending}
+              loading={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate(userToDelete.id)}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+      ) : null}
+    </Stack>
   );
 }
 

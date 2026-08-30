@@ -20,6 +20,7 @@ A new session should read this index, then `overview.md`, then the frontend or b
 | [backend/api.md](backend/api.md) | Endpoints, contracts, errors |
 | [backend/data.md](backend/data.md) | Persistence, entities, migrations |
 | [backend/security.md](backend/security.md) | Auth, authorization, secrets |
+| [backend/google-oauth-setup.md](backend/google-oauth-setup.md) | Local Google Cloud OAuth steps |
 | [decisions/](decisions/README.md) | Architecture decision records |
 
 ## Update contract

@@ -36,4 +36,14 @@ public sealed class UsersController : ControllerBase
     {
         return users.UpdateAsync(id, request, cancellationToken);
     }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(
+        Guid id,
+        [FromServices] UserManagementService users,
+        CancellationToken cancellationToken)
+    {
+        await users.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
 }

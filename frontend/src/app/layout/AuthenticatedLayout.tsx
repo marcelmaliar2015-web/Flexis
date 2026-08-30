@@ -25,6 +25,7 @@ const appNavItems = [
   { label: "Dashboard", path: appPaths.dashboard },
   { label: "Job Application", path: appPaths.jobApplication },
   { label: "Settings", path: appPaths.settings },
+  { label: "Help", path: appPaths.help },
 ] as const;
 
 function isAppNavActive(pathname: string, path: string) {

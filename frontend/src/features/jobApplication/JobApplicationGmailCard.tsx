@@ -3,6 +3,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
+import Link from "@mui/material/Link";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
@@ -11,7 +12,7 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useSearchParams } from "react-router-dom";
 import {
   disconnectGoogleConnection,
   getGoogleConnection,
@@ -120,7 +121,12 @@ export function JobApplicationGmailCard() {
               )}
             </Stack>
             {status && !status.configured ? (
-              <Alert severity="info">Google connect is not configured on this environment.</Alert>
+              <Alert severity="info">
+                Google connect is not configured on this environment.{" "}
+                <Link component={RouterLink} to={appPaths.help}>
+                  Open Help
+                </Link>
+              </Alert>
             ) : null}
             {status?.connected && status.googleEmail ? (
               <Typography variant="body2">{status.googleEmail}</Typography>

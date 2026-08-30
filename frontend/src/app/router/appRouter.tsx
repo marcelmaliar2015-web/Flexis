@@ -1,14 +1,14 @@
-import { createBrowserRouter } from "react-router-dom";
+import { Navigate, createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "@/app/layout/AppLayout";
 import { AuthenticatedLayout } from "@/app/layout/AuthenticatedLayout";
-import { RequireAdmin, RequireAuth } from "@/app/router/routeGuards";
+import { RequireAuth } from "@/app/router/routeGuards";
 import { SignInPage } from "@/features/auth/SignInPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { HealthPage } from "@/features/health/HealthPage";
+import { HelpPage } from "@/features/help/HelpPage";
 import { HomePage } from "@/features/home/HomePage";
 import { JobApplicationPage } from "@/features/jobApplication/JobApplicationPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
-import { UsersPage } from "@/features/users/UsersPage";
 import { appPaths } from "@/shared/config/paths";
 
 export const appRouter = createBrowserRouter([
@@ -43,17 +43,16 @@ export const appRouter = createBrowserRouter([
                 element: <SettingsPage />,
               },
               {
+                path: "help",
+                element: <HelpPage />,
+              },
+              {
                 path: "health",
                 element: <HealthPage />,
               },
               {
-                element: <RequireAdmin />,
-                children: [
-                  {
-                    path: "users",
-                    element: <UsersPage />,
-                  },
-                ],
+                path: "users",
+                element: <Navigate to={appPaths.settings} replace />,
               },
             ],
           },

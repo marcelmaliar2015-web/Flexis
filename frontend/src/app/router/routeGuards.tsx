@@ -22,13 +22,3 @@ export function RequireAuth() {
 
   return <Outlet />;
 }
-
-export function RequireAdmin() {
-  const auth = useAuth();
-
-  if (auth.user?.role !== "Admin") {
-    return <Navigate to={appPaths.dashboard} replace />;
-  }
-
-  return <Outlet />;
-}
