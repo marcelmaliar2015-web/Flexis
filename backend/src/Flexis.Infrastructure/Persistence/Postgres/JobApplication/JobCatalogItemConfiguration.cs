@@ -14,6 +14,7 @@ internal sealed class JobCatalogItemConfiguration : IEntityTypeConfiguration<Job
         builder.HasKey(item => item.Id);
         builder.Property(item => item.Title).HasMaxLength(200).IsRequired();
         builder.Property(item => item.Url).HasMaxLength(2048).IsRequired();
+        builder.Property(item => item.SpreadsheetId).HasMaxLength(128).IsRequired();
         builder.Property(item => item.Kind).HasConversion<string>().HasMaxLength(32);
         builder.HasIndex(item => new { item.UserId, item.Kind, item.Title }).IsUnique();
         builder.HasOne<User>()

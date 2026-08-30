@@ -19,6 +19,7 @@ import {
   googleConnectionQueryKey,
   startGoogleConnection,
 } from "@/shared/api/google";
+import { useAuth } from "@/shared/auth/AuthProvider";
 import { appPaths } from "@/shared/config/paths";
 
 const Panel = styled(Box)(({ theme }) => ({
@@ -42,6 +43,7 @@ function googleNotice(result: string | null): { severity: "success" | "info" | "
 }
 
 export function JobApplicationGmailCard() {
+  const auth = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -122,10 +124,17 @@ export function JobApplicationGmailCard() {
             </Stack>
             {status && !status.configured ? (
               <Alert severity="info">
-                Google connect is not configured on this environment.{" "}
-                <Link component={RouterLink} to={appPaths.help}>
-                  Open Help
-                </Link>
+                An admin must save the Google Cloud client in Settings first. That is one client
+                for Flexis, not each person's Gmail.{" "}
+                {auth.user?.role === "Admin" ? (
+                  <Link component={RouterLink} to={appPaths.settings}>
+                    Open Settings
+                  </Link>
+                ) : (
+                  <Link component={RouterLink} to={appPaths.help}>
+                    Open Help
+                  </Link>
+                )}
               </Alert>
             ) : null}
             {status?.connected && status.googleEmail ? (

@@ -49,11 +49,36 @@ const apiEnableLinks = [
 ] as const;
 
 const scopes = [
-  "https://www.googleapis.com/auth/gmail.modify",
-  "https://www.googleapis.com/auth/spreadsheets",
-  "https://www.googleapis.com/auth/drive.file",
-  "https://www.googleapis.com/auth/userinfo.email",
-  "openid",
+  {
+    api: "Gmail API",
+    label: "Read, compose, and send emails from your Gmail account",
+    uri: "https://www.googleapis.com/auth/gmail.modify",
+    kind: "Restricted",
+  },
+  {
+    api: "Google Sheets API",
+    label: "See, edit, create, and delete all your Google Sheets spreadsheets",
+    uri: "https://www.googleapis.com/auth/spreadsheets",
+    kind: "Sensitive",
+  },
+  {
+    api: "Google Drive API",
+    label: "See, edit, create, and delete only the specific Google Drive files you use with this app",
+    uri: "https://www.googleapis.com/auth/drive.file",
+    kind: "Sensitive",
+  },
+  {
+    api: "Google OAuth2 API",
+    label: "See your primary Google Account email address",
+    uri: "https://www.googleapis.com/auth/userinfo.email",
+    kind: "Non-sensitive",
+  },
+  {
+    api: "OpenID",
+    label: "openid",
+    uri: "openid",
+    kind: "Non-sensitive",
+  },
 ] as const;
 
 function ExternalLink({ href, children }: { href: string; children: string }) {
@@ -184,15 +209,48 @@ export function HelpPage() {
                 <ExternalLink href="https://console.cloud.google.com/auth/scopes">
                   https://console.cloud.google.com/auth/scopes
                 </ExternalLink>
-                . Add these, then save.
+                . The picker does not list the raw URLs as options. Finish step 2 first. Only
+                enabled APIs show scopes.
               </Typography>
+              <Typography variant="body2">Click Add or remove scopes. Then either:</Typography>
               <List disablePadding>
-                {scopes.map((scope) => (
-                  <ListItem key={scope} disableGutters>
-                    <ListItemText primary={scope} />
-                  </ListItem>
-                ))}
+                <ListItem disableGutters>
+                  <ListItemText primary="Search the table for Gmail API, Google Sheets API, or Google Drive API, and check the Console name below." />
+                </ListItem>
+                <ListItem disableGutters>
+                  <ListItemText primary="Or scroll to Manually add scopes, paste each URI, click Add to table, then Update." />
+                </ListItem>
               </List>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Console name</TableCell>
+                      <TableCell>URI to paste</TableCell>
+                      <TableCell>Kind</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {scopes.map((scope) => (
+                      <TableRow key={scope.uri}>
+                        <TableCell>
+                          {scope.label}
+                          <Typography variant="caption" color="text.secondary" component="div">
+                            {scope.api}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{scope.uri}</TableCell>
+                        <TableCell>{scope.kind}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <Typography variant="body2" color="text.secondary">
+                Gmail modify is restricted. That is expected. Stay on Testing. Do not pick See
+                and download all your Gmail, mail.google.com, or See, edit, create, and delete
+                all of your Google Drive files.
+              </Typography>
             </Stack>
           </Panel>
 
@@ -234,8 +292,10 @@ export function HelpPage() {
                 7. Put credentials in Flexis
               </Typography>
               <Typography variant="body2">
-                Edit backend/src/Flexis.Api/appsettings.Development.json. Set Google ClientId and
-                ClientSecret. Leave RedirectUri as the value above. Do not commit the secret.
+                Sign in as an admin. Open Settings. Under Google Cloud client, paste Client ID and
+                Client secret. Save. That is one client for the Flexis app. Each person still
+                connects their own Gmail on Job Application. Do not put the secret in a committed
+                project file.
               </Typography>
             </Stack>
           </Panel>
@@ -243,10 +303,11 @@ export function HelpPage() {
           <Panel>
             <Stack spacing={1.5}>
               <Typography variant="h6" component="h2">
-                8. Restart the API
+                8. Confirm Flexis is running
               </Typography>
               <Typography variant="body2">
-                Health must be Healthy at{" "}
+                Saving the Google Cloud client in Settings does not need a restart. Health must be
+                Healthy at{" "}
                 <ExternalLink href="http://localhost:5080/api/health">
                   http://localhost:5080/api/health
                 </ExternalLink>
@@ -293,8 +354,14 @@ export function HelpPage() {
                   </TableHead>
                   <TableBody>
                     <TableRow>
+                      <TableCell>gmail.modify or spreadsheets not in the list</TableCell>
+                      <TableCell>
+                        Enable the APIs in step 2, then Manually add scopes and paste the URIs
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
                       <TableCell>Connect Gmail stays disabled</TableCell>
-                      <TableCell>ClientId or ClientSecret empty; restart the API</TableCell>
+                      <TableCell>An admin must save the Google Cloud client in Settings</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>redirect_uri_mismatch</TableCell>

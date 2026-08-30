@@ -68,4 +68,10 @@ public sealed class GoogleConnection
         GrantedScopes = grantedScopes;
         ConnectedAt = DateTimeOffset.UtcNow;
     }
+
+    public void ReplaceAccessToken(string accessTokenProtected, DateTimeOffset accessTokenExpiresAt)
+    {
+        AccessTokenProtected = accessTokenProtected;
+        AccessTokenExpiresAt = accessTokenExpiresAt;
+    }
 }

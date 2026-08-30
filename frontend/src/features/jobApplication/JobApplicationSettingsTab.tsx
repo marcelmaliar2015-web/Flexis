@@ -1,13 +1,35 @@
+import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
+import { useQuery } from "@tanstack/react-query";
 import { CatalogItemsPanel } from "@/features/jobApplication/CatalogItemsPanel";
 import { JobApplicationGmailCard } from "@/features/jobApplication/JobApplicationGmailCard";
+import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
 
 export function JobApplicationSettingsTab() {
+  const connectionQuery = useQuery({
+    queryKey: googleConnectionQueryKey,
+    queryFn: getGoogleConnection,
+  });
+  const connected = connectionQuery.data?.connected === true;
+
   return (
     <Stack spacing={4}>
       <JobApplicationGmailCard />
-      <CatalogItemsPanel kind="profiles" heading="Profiles" itemLabel="profile" />
-      <CatalogItemsPanel kind="sources" heading="Sources" itemLabel="source" />
+      {!connected ? (
+        <Alert severity="info">Connect Gmail to create, edit, or delete profiles and sources.</Alert>
+      ) : null}
+      <CatalogItemsPanel
+        kind="profiles"
+        heading="Profiles"
+        itemLabel="profile"
+        actionsEnabled={connected}
+      />
+      <CatalogItemsPanel
+        kind="sources"
+        heading="Sources"
+        itemLabel="source"
+        actionsEnabled={connected}
+      />
     </Stack>
   );
 }

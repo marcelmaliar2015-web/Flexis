@@ -19,11 +19,12 @@ public sealed class GoogleConnectionsController : ControllerBase
     }
 
     [HttpPost("start")]
-    public GoogleConnectStartDto Start(
+    public async Task<GoogleConnectStartDto> Start(
         [FromBody] GoogleConnectStartRequest request,
-        [FromServices] GoogleConnectionService connections)
+        [FromServices] GoogleConnectionService connections,
+        CancellationToken cancellationToken)
     {
-        return connections.StartConnect(CurrentUserId(), request);
+        return await connections.StartConnectAsync(CurrentUserId(), request, cancellationToken);
     }
 
     [AllowAnonymous]

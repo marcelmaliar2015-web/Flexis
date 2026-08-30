@@ -2,14 +2,16 @@ namespace Flexis.Application.Google;
 
 public interface IGoogleOAuthGateway
 {
-    bool IsConfigured { get; }
+    Task<bool> IsConfiguredAsync(CancellationToken cancellationToken);
 
-    string CreateAuthorizationUrl(string state, string codeChallenge);
+    Task<string> CreateAuthorizationUrlAsync(string state, string codeChallenge, CancellationToken cancellationToken);
 
     Task<GoogleOAuthTokenSet> ExchangeCodeAsync(
         string code,
         string codeVerifier,
         CancellationToken cancellationToken);
+
+    Task<GoogleOAuthTokenSet> RefreshAsync(string refreshToken, CancellationToken cancellationToken);
 
     Task<GoogleUserInfo> GetUserInfoAsync(string accessToken, CancellationToken cancellationToken);
 

@@ -9,3 +9,8 @@ export type GoogleConnectionStatus = {
 export type GoogleConnectStart = {
   authorizationUrl: string;
 };
+
+export type GoogleClientSettings = {
+  clientId: string;
+  hasSecret: boolean;
+};

@@ -60,10 +60,12 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
         services.AddHttpClient<IGoogleOAuthGateway, GoogleOAuthClient>();
+        services.AddHttpClient<IGoogleSheetsWorkspace, GoogleSheetsClient>();
         services.AddSingleton<IGoogleTokenProtector, AesGoogleTokenProtector>();
         services.AddSingleton<IGoogleOAuthStateStore, MemoryGoogleOAuthStateStore>();
         services.AddSingleton<IFrontendOrigins, ConfigurationFrontendOrigins>();
         services.AddScoped<IGoogleConnectionRepository, GoogleConnectionRepository>();
+        services.AddScoped<IGoogleClientCredentialStore, GoogleClientCredentialStore>();
         services.AddScoped<IJobCatalogRepository, JobCatalogRepository>();
 
         services.AddSingleton<IMongoClient>(serviceProvider =>

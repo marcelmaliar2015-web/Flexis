@@ -35,25 +35,28 @@ public sealed class GoogleConnectionService
     {
         var connection = await _connections.GetByUserIdAsync(userId, cancellationToken);
         return new GoogleConnectionStatusDto(
-            _oauth.IsConfigured,
+            await _oauth.IsConfiguredAsync(cancellationToken),
             connection is not null,
             connection?.GoogleEmail,
             connection?.ConnectedAt,
             GoogleWorkspaceScopes.Capabilities);
     }
 
-    public GoogleConnectStartDto StartConnect(Guid userId, GoogleConnectStartRequest request)
+    public async Task<GoogleConnectStartDto> StartConnectAsync(
+        Guid userId,
+        GoogleConnectStartRequest request,
+        CancellationToken cancellationToken)
     {
-        if (!_oauth.IsConfigured)
+        if (!await _oauth.IsConfiguredAsync(cancellationToken))
         {
-            throw new ValidationFailedException("Google connect is not configured on this environment.");
+            throw new ValidationFailedException("An admin must save the Google Cloud client in Settings.");
         }
 
         var returnUrl = NormalizeReturnUrl(request.ReturnUrl);
         var state = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
         var (verifier, challenge) = CreatePkce();
         _states.Save(state, new GoogleOAuthPending(userId, verifier, returnUrl), OAuthStateLifetime);
-        return new GoogleConnectStartDto(_oauth.CreateAuthorizationUrl(state, challenge));
+        return new GoogleConnectStartDto(await _oauth.CreateAuthorizationUrlAsync(state, challenge, cancellationToken));
     }
 
     public async Task<string> CompleteCallbackAsync(

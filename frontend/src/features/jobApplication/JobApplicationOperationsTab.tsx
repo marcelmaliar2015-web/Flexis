@@ -1,0 +1,361 @@
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import Stack from "@mui/material/Stack";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import { styled } from "@mui/material/styles";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, type FormEvent } from "react";
+import { ApiError } from "@/shared/api/client";
+import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
+import {
+  createSourceLocation,
+  deleteSourceLocation,
+  jobCatalogQueryKey,
+  listJobCatalogItems,
+  listSourceLocations,
+  sourceLocationsQueryKey,
+  updateSourceLocation,
+} from "@/shared/api/jobCatalog";
+import type { JobCatalogItem, SourceLocation } from "@/shared/types/jobCatalog";
+
+const Panel = styled(Box)(({ theme }) => ({
+  border: `1px solid ${theme.palette.divider}`,
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.shape.borderRadius,
+  overflow: "hidden",
+}));
+
+const Card = styled(Box)(({ theme }) => ({
+  border: `1px solid ${theme.palette.divider}`,
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.shape.borderRadius,
+  padding: theme.spacing(2.5),
+}));
+
+function errorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Request failed.";
+}
+
+export function JobApplicationOperationsTab() {
+  const connectionQuery = useQuery({
+    queryKey: googleConnectionQueryKey,
+    queryFn: getGoogleConnection,
+  });
+  const profilesQuery = useQuery({
+    queryKey: jobCatalogQueryKey("profiles"),
+    queryFn: () => listJobCatalogItems("profiles"),
+  });
+  const sourcesQuery = useQuery({
+    queryKey: jobCatalogQueryKey("sources"),
+    queryFn: () => listJobCatalogItems("sources"),
+  });
+
+  const connected = connectionQuery.data?.connected === true;
+
+  return (
+    <Stack spacing={4}>
+      {!connected ? (
+        <Alert severity="info">Connect Gmail on the Settings tab before using Operations.</Alert>
+      ) : null}
+      {profilesQuery.isError ? <Alert severity="error">{errorMessage(profilesQuery.error)}</Alert> : null}
+      {sourcesQuery.isError ? <Alert severity="error">{errorMessage(sourcesQuery.error)}</Alert> : null}
+      <Stack spacing={2}>
+        <Typography variant="h6" component="h2">
+          Profiles
+        </Typography>
+        {(profilesQuery.data ?? []).length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            Create a profile in Settings. Flexis adds a Google Sheet whose tab is named after the profile.
+          </Typography>
+        ) : (
+          <Stack spacing={1.5}>
+            {(profilesQuery.data ?? []).map((item) => (
+              <WorkbookCard key={item.id} item={item} kindLabel="Profile" actionsEnabled={connected} />
+            ))}
+          </Stack>
+        )}
+      </Stack>
+      <Stack spacing={2}>
+        <Typography variant="h6" component="h2">
+          Sources
+        </Typography>
+        {(sourcesQuery.data ?? []).length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            Create a source in Settings. The workbook starts with a US location tab. Add more locations here.
+          </Typography>
+        ) : (
+          <Stack spacing={2}>
+            {(sourcesQuery.data ?? []).map((item) => (
+              <SourceWorkbookCard key={item.id} item={item} actionsEnabled={connected} />
+            ))}
+          </Stack>
+        )}
+      </Stack>
+    </Stack>
+  );
+}
+
+function WorkbookCard({
+  item,
+  kindLabel,
+  actionsEnabled,
+}: {
+  item: JobCatalogItem;
+  kindLabel: string;
+  actionsEnabled: boolean;
+}) {
+  return (
+    <Card>
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{ alignItems: "center", justifyContent: "space-between" }}
+      >
+        <Stack spacing={0.5}>
+          <Typography variant="subtitle1">{item.title}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {kindLabel}
+          </Typography>
+        </Stack>
+        {item.url && actionsEnabled ? (
+          <Button component="a" href={item.url} target="_blank" rel="noopener noreferrer">
+            Open sheet
+          </Button>
+        ) : (
+          <Button disabled>Open sheet</Button>
+        )}
+      </Stack>
+    </Card>
+  );
+}
+
+function SourceWorkbookCard({
+  item,
+  actionsEnabled,
+}: {
+  item: JobCatalogItem;
+  actionsEnabled: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const locationsQuery = useQuery({
+    queryKey: sourceLocationsQueryKey(item.id),
+    queryFn: () => listSourceLocations(item.id),
+    enabled: actionsEnabled && item.spreadsheetId.length > 0,
+  });
+  const [editor, setEditor] = useState<{ mode: "create" } | { mode: "edit"; location: SourceLocation } | null>(
+    null,
+  );
+  const [toDelete, setToDelete] = useState<SourceLocation | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const createMutation = useMutation({
+    mutationFn: (name: string) => createSourceLocation(item.id, name),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: sourceLocationsQueryKey(item.id) });
+      setEditor(null);
+    },
+    onError: (error) => setFormError(errorMessage(error)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ sheetId, name }: { sheetId: number; name: string }) =>
+      updateSourceLocation(item.id, sheetId, name),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: sourceLocationsQueryKey(item.id) });
+      setEditor(null);
+    },
+    onError: (error) => setFormError(errorMessage(error)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (sheetId: number) => deleteSourceLocation(item.id, sheetId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: sourceLocationsQueryKey(item.id) });
+      setToDelete(null);
+    },
+  });
+
+  return (
+    <Card>
+      <Stack spacing={2}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+        >
+          <Stack spacing={0.5}>
+            <Typography variant="subtitle1">{item.title}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Locations
+            </Typography>
+          </Stack>
+          <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+            {item.url ? (
+              <Button
+                variant="outlined"
+                disabled={!actionsEnabled}
+                component={actionsEnabled ? "a" : "button"}
+                href={actionsEnabled ? item.url : undefined}
+                target={actionsEnabled ? "_blank" : undefined}
+                rel={actionsEnabled ? "noopener noreferrer" : undefined}
+              >
+                Open sheet
+              </Button>
+            ) : null}
+            {item.spreadsheetId.length > 0 ? (
+              <Button
+                disabled={!actionsEnabled}
+                onClick={() => {
+                  setFormError(null);
+                  setEditor({ mode: "create" });
+                }}
+              >
+                New location
+              </Button>
+            ) : null}
+          </Stack>
+        </Stack>
+        {locationsQuery.isError ? <Alert severity="error">{errorMessage(locationsQuery.error)}</Alert> : null}
+        {deleteMutation.isError ? <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert> : null}
+        {item.spreadsheetId.length > 0 && !actionsEnabled ? (
+          <Typography variant="body2" color="text.secondary">
+            Connect Gmail to load locations.
+          </Typography>
+        ) : item.spreadsheetId.length > 0 ? (
+          <Panel>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Location</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(locationsQuery.data ?? []).map((location) => (
+                    <TableRow key={location.sheetId} hover>
+                      <TableCell>{location.name}</TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={0.5} sx={{ justifyContent: "flex-end" }}>
+                          <Button
+                            variant="text"
+                            disabled={!actionsEnabled}
+                            onClick={() => {
+                              setFormError(null);
+                              setEditor({ mode: "edit", location });
+                            }}
+                          >
+                            Rename
+                          </Button>
+                          <Button
+                            variant="text"
+                            disabled={!actionsEnabled}
+                            onClick={() => setToDelete(location)}
+                          >
+                            Delete
+                          </Button>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Panel>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            No Google Sheet
+          </Typography>
+        )}
+      </Stack>
+      {editor ? (
+        <Dialog open onClose={() => setEditor(null)} fullWidth maxWidth="xs">
+          <Box
+            component="form"
+            onSubmit={(event: FormEvent<HTMLFormElement>) => {
+              event.preventDefault();
+              const data = new FormData(event.currentTarget);
+              const name = String(data.get("name") ?? "");
+              if (editor.mode === "create") {
+                createMutation.mutate(name);
+                return;
+              }
+              updateMutation.mutate({ sheetId: editor.location.sheetId, name });
+            }}
+          >
+            <DialogTitle>{editor.mode === "create" ? "New location" : "Rename location"}</DialogTitle>
+            <DialogContent>
+              <Stack spacing={2} sx={{ pt: 1 }}>
+                {formError ? <Alert severity="error">{formError}</Alert> : null}
+                <TextField
+                  name="name"
+                  label="Location"
+                  defaultValue={editor.mode === "edit" ? editor.location.name : ""}
+                  required
+                  fullWidth
+                  autoFocus
+                />
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button
+                variant="text"
+                onClick={() => setEditor(null)}
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createMutation.isPending || updateMutation.isPending}
+                loading={createMutation.isPending || updateMutation.isPending}
+              >
+                Save
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
+      ) : null}
+      {toDelete ? (
+        <Dialog open onClose={() => setToDelete(null)} fullWidth maxWidth="xs">
+          <DialogTitle>Delete location</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2">
+              {`Delete ${toDelete.name}? This cannot be undone.`}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button variant="text" onClick={() => setToDelete(null)} disabled={deleteMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              disabled={deleteMutation.isPending}
+              loading={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate(toDelete.sheetId)}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+      ) : null}
+    </Card>
+  );
+}

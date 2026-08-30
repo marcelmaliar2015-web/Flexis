@@ -4,6 +4,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useAuth } from "@/shared/auth/AuthProvider";
+import { GoogleClientSettings } from "./GoogleClientSettings";
 import { UsersManagement } from "./UsersManagement";
 
 const AccentRule = styled("span")(({ theme }) => ({
@@ -33,11 +34,16 @@ export function SettingsPage() {
             {!isAdmin ? (
               <Typography variant="body2" color="text.secondary">
                 Job Application settings, including Gmail, profiles, and sources, live under Job
-                Application. User management is available to admins.
+                Application. An admin configures the Google Cloud client and users here.
               </Typography>
             ) : null}
           </Stack>
-          {isAdmin ? <UsersManagement /> : null}
+          {isAdmin ? (
+            <Stack spacing={4}>
+              <GoogleClientSettings />
+              <UsersManagement />
+            </Stack>
+          ) : null}
         </Stack>
       </Container>
     </Box>

@@ -41,6 +41,7 @@ type CatalogItemsPanelProps = {
   kind: JobCatalogKind;
   heading: string;
   itemLabel: string;
+  actionsEnabled: boolean;
 };
 
 function formatCreatedAt(value: string): string {
@@ -57,7 +58,12 @@ function errorMessage(error: unknown): string {
   return "Request failed.";
 }
 
-export function CatalogItemsPanel({ kind, heading, itemLabel }: CatalogItemsPanelProps) {
+export function CatalogItemsPanel({
+  kind,
+  heading,
+  itemLabel,
+  actionsEnabled,
+}: CatalogItemsPanelProps) {
   const queryClient = useQueryClient();
   const queryKey = jobCatalogQueryKey(kind);
   const itemsQuery = useQuery({
@@ -69,7 +75,7 @@ export function CatalogItemsPanel({ kind, heading, itemLabel }: CatalogItemsPane
   const [formError, setFormError] = useState<string | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: (request: { title: string; url: string }) => createJobCatalogItem(kind, request),
+    mutationFn: (request: { title: string }) => createJobCatalogItem(kind, request),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey });
       setEditor(null);
@@ -78,7 +84,7 @@ export function CatalogItemsPanel({ kind, heading, itemLabel }: CatalogItemsPane
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, request }: { id: string; request: { title: string; url: string } }) =>
+    mutationFn: ({ id, request }: { id: string; request: { title: string } }) =>
       updateJobCatalogItem(kind, id, request),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey });
@@ -106,6 +112,7 @@ export function CatalogItemsPanel({ kind, heading, itemLabel }: CatalogItemsPane
           {heading}
         </Typography>
         <Button
+          disabled={!actionsEnabled}
           onClick={() => {
             setFormError(null);
             setEditor({ mode: "create" });
@@ -125,7 +132,7 @@ export function CatalogItemsPanel({ kind, heading, itemLabel }: CatalogItemsPane
               <TableRow>
                 <TableCell>Title</TableCell>
                 <TableCell>Created</TableCell>
-                <TableCell>URL</TableCell>
+                <TableCell>Sheet</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -135,14 +142,21 @@ export function CatalogItemsPanel({ kind, heading, itemLabel }: CatalogItemsPane
                   <TableCell>{item.title}</TableCell>
                   <TableCell>{formatCreatedAt(item.createdAt)}</TableCell>
                   <TableCell>
-                    <Link href={item.url} target="_blank" rel="noopener noreferrer">
-                      {item.url}
-                    </Link>
+                    {item.url && actionsEnabled ? (
+                      <Link href={item.url} target="_blank" rel="noopener noreferrer">
+                        Open sheet
+                      </Link>
+                    ) : item.url ? (
+                      "Open sheet"
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={0.5} sx={{ justifyContent: "flex-end" }}>
                       <Button
                         variant="text"
+                        disabled={!actionsEnabled}
                         onClick={() => {
                           setFormError(null);
                           setEditor({ mode: "edit", item });
@@ -150,7 +164,11 @@ export function CatalogItemsPanel({ kind, heading, itemLabel }: CatalogItemsPane
                       >
                         Edit
                       </Button>
-                      <Button variant="text" onClick={() => setItemToDelete(item)}>
+                      <Button
+                        variant="text"
+                        disabled={!actionsEnabled}
+                        onClick={() => setItemToDelete(item)}
+                      >
                         Delete
                       </Button>
                     </Stack>
@@ -204,8 +222,8 @@ type CatalogEditorDialogProps = {
   error: string | null;
   isSaving: boolean;
   onClose: () => void;
-  onCreate: (request: { title: string; url: string }) => void;
-  onUpdate: (id: string, request: { title: string; url: string }) => void;
+  onCreate: (request: { title: string }) => void;
+  onUpdate: (id: string, request: { title: string }) => void;
 };
 
 function CatalogEditorDialog({
@@ -219,16 +237,15 @@ function CatalogEditorDialog({
 }: CatalogEditorDialogProps) {
   const isEdit = editor.mode === "edit";
   const [title, setTitle] = useState(isEdit ? editor.item.title : "");
-  const [url, setUrl] = useState(isEdit ? editor.item.url : "");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (editor.mode === "create") {
-      onCreate({ title, url });
+      onCreate({ title });
       return;
     }
 
-    onUpdate(editor.item.id, { title, url });
+    onUpdate(editor.item.id, { title });
   }
 
   return (
@@ -245,14 +262,20 @@ function CatalogEditorDialog({
               required
               fullWidth
             />
-            <TextField
-              label="URL"
-              type="url"
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              required
-              fullWidth
-            />
+            <Typography variant="body2" color="text.secondary">
+              {isEdit
+                ? "Saving a new title also renames the Google Sheet."
+                : `Creates a Google Sheet. Connect Gmail first. ${
+                    itemLabel === "profile"
+                      ? "The tab is named after this title."
+                      : "The first location tab is US."
+                  }`}
+            </Typography>
+            {isEdit && editor.item.url ? (
+              <Link href={editor.item.url} target="_blank" rel="noopener noreferrer">
+                Open sheet
+              </Link>
+            ) : null}
             {isEdit ? (
               <Typography variant="body2" color="text.secondary">
                 {`Created ${formatCreatedAt(editor.item.createdAt)}`}

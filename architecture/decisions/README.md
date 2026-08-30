@@ -27,3 +27,5 @@ One file per significant architecture choice. Record a decision when you introdu
 | [005](005-signed-in-left-nav.md) | Signed-in left navigation |
 | [006](006-google-oauth-job-application.md) | Google OAuth for Job Application |
 | [007](007-account-menu.md) | Account menu in the app bar |
+| [008](008-job-catalog-google-sheets.md) | Job catalog Google Sheets |
+| [009](009-google-client-in-settings.md) | Google Cloud client in Settings |

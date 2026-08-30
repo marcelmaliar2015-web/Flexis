@@ -3,11 +3,16 @@ export type JobCatalogItem = {
   title: string;
   createdAt: string;
   url: string;
+  spreadsheetId: string;
 };
 
 export type JobCatalogWriteRequest = {
   title: string;
-  url: string;
 };
 
 export type JobCatalogKind = "profiles" | "sources";
+
+export type SourceLocation = {
+  sheetId: number;
+  name: string;
+};

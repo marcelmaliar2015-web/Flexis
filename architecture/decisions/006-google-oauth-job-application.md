@@ -14,4 +14,4 @@ Connect and disconnect live on Job Application. The Google callback is anonymous
 
 ## Consequences
 
-Later Sheets and Drive calls reuse the stored refresh token. Do not add a Google client secret to the frontend. Do not request `drive` or `mail.google.com`. Production needs a Google Cloud OAuth web client, those APIs enabled, and Google verification for Gmail.
+Later Sheets and Drive calls reuse the stored refresh token. Profile and source create uses Sheets to make the workbook. Do not add a Google client secret to the frontend. Do not request `drive` or `mail.google.com`. The Flexis Google Cloud web client is stored by an admin in Settings; each user still connects their own Gmail. See [009-google-client-in-settings.md](009-google-client-in-settings.md). Production needs those APIs enabled and Google verification for Gmail.

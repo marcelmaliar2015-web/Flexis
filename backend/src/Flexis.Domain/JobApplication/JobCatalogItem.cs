@@ -6,6 +6,7 @@ public sealed class JobCatalogItem
     {
         Title = string.Empty;
         Url = string.Empty;
+        SpreadsheetId = string.Empty;
     }
 
     public Guid Id { get; private set; }
@@ -18,13 +19,16 @@ public sealed class JobCatalogItem
 
     public string Url { get; private set; }
 
+    public string SpreadsheetId { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public static JobCatalogItem Create(
         Guid userId,
         JobCatalogKind kind,
         string title,
-        string url)
+        string url,
+        string spreadsheetId)
     {
         return new JobCatalogItem
         {
@@ -33,13 +37,13 @@ public sealed class JobCatalogItem
             Kind = kind,
             Title = title,
             Url = url,
+            SpreadsheetId = spreadsheetId,
             CreatedAt = DateTimeOffset.UtcNow
         };
     }
 
-    public void SetDetails(string title, string url)
+    public void SetTitle(string title)
     {
         Title = title;
-        Url = url;
     }
 }

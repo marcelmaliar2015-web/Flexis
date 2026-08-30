@@ -16,6 +16,8 @@ public sealed class FlexisDbContext : DbContext
 
     public DbSet<GoogleConnection> GoogleConnections => Set<GoogleConnection>();
 
+    public DbSet<GoogleClientCredentials> GoogleClientCredentials => Set<GoogleClientCredentials>();
+
     public DbSet<JobCatalogItem> JobCatalogItems => Set<JobCatalogItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

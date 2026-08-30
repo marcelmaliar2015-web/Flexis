@@ -16,21 +16,38 @@ internal sealed class GoogleOAuthClient : IGoogleOAuthGateway
 
     private readonly HttpClient _http;
     private readonly GoogleOAuthSettings _settings;
+    private readonly IGoogleClientCredentialStore _clients;
 
-    public GoogleOAuthClient(HttpClient http, IOptions<GoogleOAuthSettings> options)
+    public GoogleOAuthClient(
+        HttpClient http,
+        IOptions<GoogleOAuthSettings> options,
+        IGoogleClientCredentialStore clients)
     {
         _http = http;
         _settings = options.Value;
+        _clients = clients;
         _http.Timeout = TimeSpan.FromSeconds(15);
     }
 
-    public bool IsConfigured => _settings.IsConfigured;
-
-    public string CreateAuthorizationUrl(string state, string codeChallenge)
+    public async Task<bool> IsConfiguredAsync(CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(_settings.RedirectUri))
+        {
+            return false;
+        }
+
+        return await _clients.GetAsync(cancellationToken) is not null;
+    }
+
+    public async Task<string> CreateAuthorizationUrlAsync(
+        string state,
+        string codeChallenge,
+        CancellationToken cancellationToken)
+    {
+        var client = await RequireClientAsync(cancellationToken);
         var query = new Dictionary<string, string>
         {
-            ["client_id"] = _settings.ClientId,
+            ["client_id"] = client.ClientId,
             ["redirect_uri"] = _settings.RedirectUri,
             ["response_type"] = "code",
             ["scope"] = GoogleWorkspaceScopes.Request,
@@ -52,13 +69,14 @@ internal sealed class GoogleOAuthClient : IGoogleOAuthGateway
         string codeVerifier,
         CancellationToken cancellationToken)
     {
+        var client = await RequireClientAsync(cancellationToken);
         using var response = await _http.PostAsync(
             "https://oauth2.googleapis.com/token",
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["code"] = code,
-                ["client_id"] = _settings.ClientId,
-                ["client_secret"] = _settings.ClientSecret,
+                ["client_id"] = client.ClientId,
+                ["client_secret"] = client.ClientSecret,
                 ["redirect_uri"] = _settings.RedirectUri,
                 ["grant_type"] = "authorization_code",
                 ["code_verifier"] = codeVerifier
@@ -76,6 +94,41 @@ internal sealed class GoogleOAuthClient : IGoogleOAuthGateway
         if (string.IsNullOrWhiteSpace(token.AccessToken))
         {
             throw new GoogleOAuthException("Google token exchange did not return an access token.");
+        }
+
+        var expiresAt = DateTimeOffset.UtcNow.AddSeconds(token.ExpiresIn > 0 ? token.ExpiresIn : 3500);
+        return new GoogleOAuthTokenSet(
+            token.AccessToken,
+            token.RefreshToken ?? string.Empty,
+            expiresAt,
+            token.Scope ?? GoogleWorkspaceScopes.Request);
+    }
+
+    public async Task<GoogleOAuthTokenSet> RefreshAsync(string refreshToken, CancellationToken cancellationToken)
+    {
+        var client = await RequireClientAsync(cancellationToken);
+        using var response = await _http.PostAsync(
+            "https://oauth2.googleapis.com/token",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["refresh_token"] = refreshToken,
+                ["client_id"] = client.ClientId,
+                ["client_secret"] = client.ClientSecret,
+                ["grant_type"] = "refresh_token"
+            }),
+            cancellationToken);
+
+        var payload = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new GoogleOAuthException(ReadGoogleError(payload, "Google token refresh failed."));
+        }
+
+        var token = JsonSerializer.Deserialize<GoogleTokenResponse>(payload, JsonOptions)
+            ?? throw new GoogleOAuthException("Google token refresh returned an empty payload.");
+        if (string.IsNullOrWhiteSpace(token.AccessToken))
+        {
+            throw new GoogleOAuthException("Google token refresh did not return an access token.");
         }
 
         var expiresAt = DateTimeOffset.UtcNow.AddSeconds(token.ExpiresIn > 0 ? token.ExpiresIn : 3500);
@@ -117,6 +170,12 @@ internal sealed class GoogleOAuthClient : IGoogleOAuthGateway
             }),
             cancellationToken);
         _ = response;
+    }
+
+    private async Task<GoogleClientPair> RequireClientAsync(CancellationToken cancellationToken)
+    {
+        return await _clients.GetAsync(cancellationToken)
+            ?? throw new ValidationFailedException("An admin must save the Google Cloud client in Settings.");
     }
 
     private static string ReadGoogleError(string payload, string fallback)

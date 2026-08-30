@@ -6,6 +6,7 @@ import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useState } from "react";
+import { JobApplicationOperationsTab } from "@/features/jobApplication/JobApplicationOperationsTab";
 import { JobApplicationSettingsTab } from "@/features/jobApplication/JobApplicationSettingsTab";
 
 const AccentRule = styled("span")(({ theme }) => ({
@@ -16,10 +17,10 @@ const AccentRule = styled("span")(({ theme }) => ({
   backgroundColor: theme.palette.secondary.main,
 }));
 
-type JobApplicationTab = "settings";
+type JobApplicationTab = "operations" | "settings";
 
 export function JobApplicationPage() {
-  const [tab, setTab] = useState<JobApplicationTab>("settings");
+  const [tab, setTab] = useState<JobApplicationTab>("operations");
 
   return (
     <Box sx={{ py: { xs: 4, md: 6 } }}>
@@ -38,8 +39,10 @@ export function JobApplicationPage() {
             value={tab}
             onChange={(_event, value: JobApplicationTab) => setTab(value)}
           >
+            <Tab label="Operations" value="operations" />
             <Tab label="Settings" value="settings" />
           </Tabs>
+          {tab === "operations" ? <JobApplicationOperationsTab /> : null}
           {tab === "settings" ? <JobApplicationSettingsTab /> : null}
         </Stack>
       </Container>

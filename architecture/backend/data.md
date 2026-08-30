@@ -6,7 +6,7 @@ Two stores, registered in `Flexis.Infrastructure.DependencyInjection`.
 
 | Store | Use | Access |
 | --- | --- | --- |
-| PostgreSQL | Relational data, users, Google connections, job catalog items | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
+| PostgreSQL | Relational data, users, Google connections, Google Cloud client, job catalog items | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
 | MongoDB | Document data | `IMongoClient` singleton, `IMongoDatabase` named `Mongo:Database` |
 
 Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, database `flexis`).
@@ -17,7 +17,9 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 
 `GoogleConnection` in `Flexis.Domain.Google`. Table `google_connections`, unique `UserId`, cascade from `users`. EF configuration: `Persistence/Postgres/Google/GoogleConnectionConfiguration.cs`. Refresh and access tokens are stored protected, not as plaintext.
 
-`JobCatalogItem` in `Flexis.Domain.JobApplication`. Table `job_catalog_items`. Kind is `Profile` or `Source`. Unique (`UserId`, `Kind`, `Title`), cascade from `users`. EF configuration: `Persistence/Postgres/JobApplication/JobCatalogItemConfiguration.cs`. `createdAt` is set on create and is not editable.
+`GoogleClientCredentials` in `Flexis.Domain.Google`. Table `google_client_credentials`. One Flexis Google Cloud web client. The secret is stored protected. EF configuration: `Persistence/Postgres/Google/GoogleClientCredentialsConfiguration.cs`.
+
+`JobCatalogItem` in `Flexis.Domain.JobApplication`. Table `job_catalog_items`. Kind is `Profile` or `Source`. Unique (`UserId`, `Kind`, `Title`), cascade from `users`. `SpreadsheetId` and `Url` store the Google Sheet Flexis created. EF configuration: `Persistence/Postgres/JobApplication/JobCatalogItemConfiguration.cs`. `createdAt` is set on create and is not editable. Source locations live as tabs in that spreadsheet, not as rows.
 
 ## Migrations
 

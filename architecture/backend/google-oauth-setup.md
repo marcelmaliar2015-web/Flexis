@@ -46,15 +46,22 @@ Google blocks other accounts while the app is in Testing.
 
 Open [https://console.cloud.google.com/auth/scopes](https://console.cloud.google.com/auth/scopes).
 
-Add these (search, check, update):
+The picker does **not** list the raw URLs as options. Finish step 2 first. Only enabled APIs show scopes.
 
-- `https://www.googleapis.com/auth/gmail.modify`
-- `https://www.googleapis.com/auth/spreadsheets`
-- `https://www.googleapis.com/auth/drive.file`
-- `https://www.googleapis.com/auth/userinfo.email`
-- `openid`
+Click **Add or remove scopes**. Then either:
 
-Save. Google may warn that Gmail is restricted. That is expected for local Testing.
+- Search the table for **Gmail API**, **Google Sheets API**, or **Google Drive API**, and check the console name below.
+- Or scroll to **Manually add scopes**, paste each URI, click **Add to table**, then **Update**.
+
+| Console name | URI to paste | Kind |
+| --- | --- | --- |
+| Read, compose, and send emails from your Gmail account | `https://www.googleapis.com/auth/gmail.modify` | Restricted |
+| See, edit, create, and delete all your Google Sheets spreadsheets | `https://www.googleapis.com/auth/spreadsheets` | Sensitive |
+| See, edit, create, and delete only the specific Google Drive files you use with this app | `https://www.googleapis.com/auth/drive.file` | Sensitive |
+| See your primary Google Account email address | `https://www.googleapis.com/auth/userinfo.email` | Non-sensitive |
+| openid | `openid` | Non-sensitive |
+
+Gmail modify is restricted. That is expected for local Testing. Do not pick See and download all your Gmail (`mail.google.com`) or See, edit, create, and delete all of your Google Drive files (`drive`).
 
 ## 6. Web client
 
@@ -77,22 +84,15 @@ Do not use Desktop, Android, or iOS. Do not use `127.0.0.1:5080` for the redirec
 
 ## 7. Put credentials in Flexis
 
-Edit `backend/src/Flexis.Api/appsettings.Development.json`. Set `Google:ClientId` and `Google:ClientSecret`. Leave `RedirectUri` as `http://localhost:5080/api/google/connections/callback`.
+Sign in as an admin. Open Settings. Under **Google Cloud client**, paste Client ID and Client secret. Save.
 
-Do not commit the secret. PowerShell alternative (no file edit):
+That is one client for the Flexis app. Each person still connects their own Gmail on Job Application. Do not put the secret in a committed project file.
 
-```powershell
-$env:Google__ClientId = "PASTE_CLIENT_ID"
-$env:Google__ClientSecret = "PASTE_CLIENT_SECRET"
-```
+Redirect URI stays `http://localhost:5080/api/google/connections/callback` in `appsettings.Development.json`.
 
-Then start the API in that same terminal.
+## 8. Confirm Flexis is running
 
-## 8. Restart the API
-
-API must be running at [http://localhost:5080/api/health](http://localhost:5080/api/health) (`Healthy`). Frontend at [http://127.0.0.1:5173/](http://127.0.0.1:5173/).
-
-If you only edited JSON, stop and start `dotnet run --project backend/src/Flexis.Api --launch-profile http`.
+API must be running at [http://localhost:5080/api/health](http://localhost:5080/api/health) (`Healthy`). Frontend at [http://127.0.0.1:5173/](http://127.0.0.1:5173/). Saving the Google Cloud client in Settings does not need a restart.
 
 ## 9. Connect
 
@@ -107,7 +107,8 @@ The chip should read **Connected** and show that Gmail address.
 
 | What you see | Fix |
 | --- | --- |
-| Connect Gmail stays disabled | ClientId or ClientSecret empty; restart API after setting them |
+| `gmail.modify` or `spreadsheets` not in the list | Enable the APIs in step 2, then **Manually add scopes** and paste the URIs |
+| Connect Gmail stays disabled | An admin must save the Google Cloud client in Settings |
 | `redirect_uri_mismatch` | Redirect URI on the client must be exactly `http://localhost:5080/api/google/connections/callback` |
 | Access blocked / app not verified | Add that Gmail under Test users; stay on Testing |
 | 403 API not enabled | Repeat step 2 on the same project as the client |
@@ -117,3 +118,4 @@ The chip should read **Connected** and show that Gmail address.
 
 - [security.md](security.md)
 - [../decisions/006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md)
+- [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)

@@ -12,7 +12,7 @@ Shell: `AppLayout` is a full-viewport column. Sticky paper `AppBar` with brand m
 
 `UserMenu` is an initials avatar. The menu shows display name, email, role, then Settings, Help, and Sign out.
 
-Authenticated product routes use `AuthenticatedLayout`: a left panel with Dashboard, Job Application, Settings, and Help, then the page `Outlet`. Dashboard is empty. Settings shows admin user management when the signed-in role is Admin (create, edit, delete; last active admin cannot be deleted). Help is the in-app Gmail connect Google Cloud guide. Job Application uses MUI Tabs. The Settings tab has Gmail connect and tables to add, edit, and delete profiles and sources (`title`, `createdAt`, `url`). Unconfigured Gmail links to Help.
+Authenticated product routes use `AuthenticatedLayout`: a left panel with Dashboard, Job Application, Settings, and Help, then the page `Outlet`. Dashboard is empty. Settings shows the Google Cloud client form and user management when the signed-in role is Admin (create, edit, delete; last active admin cannot be deleted). Help is the in-app Gmail connect Google Cloud guide. Job Application uses MUI Tabs: Operations then Settings. Operations lists profile and source workbooks and lets you add, rename, or delete source location tabs. Settings has Gmail connect and tables to add, edit, and delete profiles and sources (`title`, `createdAt`, sheet link). Creating a profile or source creates a Google Sheet. Catalog and Operations actions stay disabled until that user has connected Gmail. Connect Gmail and Disconnect stay enabled. Unconfigured Google Cloud client links admins to Settings and others to Help.
 
 ## Home landing
 
@@ -29,3 +29,5 @@ Feature screens are functions in `features/*/`. Shared presentational pieces go 
 - [../decisions/005-signed-in-left-nav.md](../decisions/005-signed-in-left-nav.md)
 - [../decisions/007-account-menu.md](../decisions/007-account-menu.md)
 - [../decisions/006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md)
+- [../decisions/008-job-catalog-google-sheets.md](../decisions/008-job-catalog-google-sheets.md)
+- [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)

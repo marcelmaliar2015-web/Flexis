@@ -94,6 +94,48 @@ public sealed class JobCatalogController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("sources/{id:guid}/locations")]
+    public Task<IReadOnlyList<SourceLocationDto>> ListLocations(
+        Guid id,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        return catalog.ListLocationsAsync(CurrentUserId(), id, cancellationToken);
+    }
+
+    [HttpPost("sources/{id:guid}/locations")]
+    public async Task<ActionResult<SourceLocationDto>> AddLocation(
+        Guid id,
+        [FromBody] SourceLocationWriteRequest request,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        var created = await catalog.AddLocationAsync(CurrentUserId(), id, request, cancellationToken);
+        return Created($"/api/job-application/sources/{id}/locations/{created.SheetId}", created);
+    }
+
+    [HttpPut("sources/{id:guid}/locations/{sheetId:int}")]
+    public Task<SourceLocationDto> RenameLocation(
+        Guid id,
+        int sheetId,
+        [FromBody] SourceLocationWriteRequest request,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        return catalog.RenameLocationAsync(CurrentUserId(), id, sheetId, request, cancellationToken);
+    }
+
+    [HttpDelete("sources/{id:guid}/locations/{sheetId:int}")]
+    public async Task<IActionResult> DeleteLocation(
+        Guid id,
+        int sheetId,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        await catalog.DeleteLocationAsync(CurrentUserId(), id, sheetId, cancellationToken);
+        return NoContent();
+    }
+
     private Guid CurrentUserId()
     {
         var subject = User.FindFirstValue(ClaimTypes.NameIdentifier)

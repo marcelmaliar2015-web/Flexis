@@ -15,11 +15,11 @@ React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. L
 | `/health` | `HealthPage` | Authenticated |
 | `/users` | Redirect to `/settings` | Authenticated |
 
-Sign-in and already-signed-in visits to `/sign-in` go to `/dashboard`. Unauthenticated visits to protected routes redirect to `/sign-in` with `state.from`. Admin user management is on `/settings`, not a separate screen. `/health` has no nav link.
+Sign-in and already-signed-in visits to `/sign-in` go to `/dashboard`. Unauthenticated visits to protected routes redirect to `/sign-in` with `state.from`. Admin Google Cloud client and user management are on `/settings`, not a separate screen. `/health` has no nav link.
 
 ## Guards and access
 
-`RequireAuth` wraps `AuthenticatedLayout`. Settings shows the users table only when `role` is `Admin`.
+`RequireAuth` wraps `AuthenticatedLayout`. Settings shows the Google Cloud client and the users table only when `role` is `Admin`.
 
 ## Related
 
@@ -28,3 +28,4 @@ Sign-in and already-signed-in visits to `/sign-in` go to `/dashboard`. Unauthent
 - [../decisions/005-signed-in-left-nav.md](../decisions/005-signed-in-left-nav.md)
 - [../decisions/007-account-menu.md](../decisions/007-account-menu.md)
 - [../decisions/006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md)
+- [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)

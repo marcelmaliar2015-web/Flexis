@@ -4,6 +4,8 @@ namespace Flexis.Application.JobApplication;
 
 internal static class JobCatalogRules
 {
+    public const string DefaultSourceLocation = "US";
+
     public static string NormalizeTitle(string? title)
     {
         var trimmed = title?.Trim() ?? string.Empty;
@@ -12,23 +14,32 @@ internal static class JobCatalogRules
             throw new ValidationFailedException("Title is required and must be at most 200 characters.");
         }
 
+        EnsureSheetSafeName(trimmed, "Title");
         return trimmed;
     }
 
-    public static string NormalizeUrl(string? url)
+    public static string NormalizeLocationName(string? name)
     {
-        var trimmed = url?.Trim() ?? string.Empty;
-        if (trimmed.Length is 0 or > 2048)
+        var trimmed = name?.Trim() ?? string.Empty;
+        if (trimmed.Length is 0 or > 100)
         {
-            throw new ValidationFailedException("URL is required and must be at most 2048 characters.");
+            throw new ValidationFailedException("Location is required and must be at most 100 characters.");
         }
 
-        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
-            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-        {
-            throw new ValidationFailedException("URL must be an http or https address.");
-        }
-
+        EnsureSheetSafeName(trimmed, "Location");
         return trimmed;
+    }
+
+    public static string SheetTabName(string title)
+    {
+        return title.Length <= 100 ? title : title[..100].TrimEnd();
+    }
+
+    private static void EnsureSheetSafeName(string value, string field)
+    {
+        if (value.IndexOfAny([':', '\\', '/', '?', '*', '[', ']']) >= 0)
+        {
+            throw new ValidationFailedException($"{field} cannot contain : \\ / ? * [ ].");
+        }
     }
 }

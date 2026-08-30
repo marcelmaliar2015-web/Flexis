@@ -2,7 +2,7 @@
 
 ## Product
 
-Flexis. A multi-feature web platform. The first screen is an editorial landing at `/`. Sign-in and role-based access are in place. After sign-in the product shell is Dashboard, Job Application, Settings, and Help. The AppBar uses an account menu. Job Application uses tabs; the Settings tab has Gmail connect plus profile and source management. Admin user management is on Settings. Help is the Gmail connect Google Cloud guide.
+Flexis. A multi-feature web platform. The first screen is an editorial landing at `/`. Sign-in and role-based access are in place. After sign-in the product shell is Dashboard, Job Application, Settings, and Help. The AppBar uses an account menu. Job Application uses tabs; Operations lists Sheets workbooks and source locations; Settings has Gmail connect plus profile and source management. Creating a profile or source creates a Google Sheet. Those Job Application actions stay disabled until the signed-in user connects Gmail. Admin Settings holds the Flexis Google Cloud client and user management. Help is the Gmail connect Google Cloud guide.
 
 ## System context
 

@@ -68,6 +68,29 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("google_connections", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.Google.GoogleClientCredentials", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ClientSecretProtected")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("google_client_credentials", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobCatalogItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -81,6 +104,11 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
+
+                    b.Property<string>("SpreadsheetId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("Title")
                         .IsRequired()

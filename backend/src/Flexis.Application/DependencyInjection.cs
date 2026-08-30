@@ -13,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<AuthService>();
         services.AddScoped<UserManagementService>();
         services.AddScoped<GoogleConnectionService>();
+        services.AddScoped<GoogleAccessTokenService>();
         services.AddScoped<JobCatalogService>();
         return services;
     }

@@ -32,8 +32,8 @@ Path alias `@/` maps to `frontend/src/`.
 | `features/help` | In-app Gmail connect guide |
 | `features/auth` | Sign-in screen |
 | `features/dashboard` | Empty Dashboard screen |
-| `features/jobApplication` | Job Application tabs, Settings (Gmail, profiles, sources) |
-| `features/settings` | Settings screen; Admin user management |
+| `features/jobApplication` | Job Application tabs, Operations, Settings (Gmail, profiles, sources) |
+| `features/settings` | Settings screen; Admin Google Cloud client and user management |
 | `shared/api` | `fetch` wrapper and endpoint functions |
 | `shared/auth` | Session provider and token storage |
 | `shared/config` | Env access and `appPaths` |

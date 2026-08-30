@@ -15,6 +15,8 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | POST | `/api/users` | Admin | `201` + `UserDto` |
 | PUT | `/api/users/{id}` | Admin | `200` + `UserDto` |
 | DELETE | `/api/users/{id}` | Admin | `204` |
+| GET | `/api/google/client` | Admin | `200` + `GoogleClientSettingsDto` |
+| PUT | `/api/google/client` | Admin | `200` + `GoogleClientSettingsDto` |
 | GET | `/api/google/connections` | Authenticated | `200` + `GoogleConnectionStatusDto` |
 | POST | `/api/google/connections/start` | Authenticated | `200` + `GoogleConnectStartDto` |
 | GET | `/api/google/connections/callback` | Anonymous | `302` to the Job Application return URL |
@@ -27,16 +29,24 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | POST | `/api/job-application/sources` | Authenticated | `201` + `JobCatalogItemDto` |
 | PUT | `/api/job-application/sources/{id}` | Authenticated | `200` + `JobCatalogItemDto` |
 | DELETE | `/api/job-application/sources/{id}` | Authenticated | `204` |
+| GET | `/api/job-application/sources/{id}/locations` | Authenticated | `200` + `SourceLocationDto[]` |
+| POST | `/api/job-application/sources/{id}/locations` | Authenticated | `201` + `SourceLocationDto` |
+| PUT | `/api/job-application/sources/{id}/locations/{sheetId}` | Authenticated | `200` + `SourceLocationDto` |
+| DELETE | `/api/job-application/sources/{id}/locations/{sheetId}` | Authenticated | `204` |
 
 `UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`.
 
-`GoogleConnectionStatusDto`: `configured`, `connected`, `googleEmail`, `connectedAt`, `capabilities`. `GoogleConnectStartDto`: `authorizationUrl`. Start body: `returnUrl` (origin must be in `Frontend:Origins`, path `/job-application`).
+`GoogleClientSettingsDto`: `clientId`, `hasSecret`. PUT body: `clientId`, `clientSecret` (omit or blank to keep the stored secret). The secret is never returned.
 
-`JobCatalogItemDto`: `id`, `title`, `createdAt`, `url`. Write body: `title`, `url`. Items belong to the signed-in user. Duplicate title per kind for that user: `409`. Missing item: `404`.
+`GoogleConnectionStatusDto`: `configured`, `connected`, `googleEmail`, `connectedAt`, `capabilities`. `configured` is true when an admin has saved the Google Cloud client (or config fallback is set) and `Google:RedirectUri` is set. `GoogleConnectStartDto`: `authorizationUrl`. Start body: `returnUrl` (origin must be in `Frontend:Origins`, path `/job-application`).
+
+`JobCatalogItemDto`: `id`, `title`, `createdAt`, `url`, `spreadsheetId`. Write body: `title`. Create makes a Google Sheet; `url` is that spreadsheet. Duplicate title per kind for that user: `409`. Missing item: `404`. Gmail must be connected to create, rename a sheet, delete a sheet, or manage locations. Profile tab name is the title. Source first tab is `US`.
+
+`SourceLocationDto`: `sheetId`, `name`. Write body: `name`. Locations are source spreadsheet tabs. Duplicate name: `409`. Last location cannot be deleted: `409`.
 
 ## Contracts and errors
 
-Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. Last active admin cannot be demoted, deactivated, or deleted: `409`. Google start with a missing client or a bad return URL: `400`. Invalid catalog title or URL: `400`. Health does not throw to the client; failed checks become unhealthy entries.
+Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. Last active admin cannot be demoted, deactivated, or deleted: `409`. Google start with a missing client or a bad return URL: `400`. Invalid catalog title or location: `400`. Sheets calls without a connected Gmail: `400`. Google Sheets errors: `400`. Health does not throw to the client; failed checks become unhealthy entries.
 
 ## Related
 
@@ -44,3 +54,5 @@ Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. L
 - [security.md](security.md)
 - [../frontend/state.md](../frontend/state.md)
 - [../decisions/006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md)
+- [../decisions/008-job-catalog-google-sheets.md](../decisions/008-job-catalog-google-sheets.md)
+- [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)

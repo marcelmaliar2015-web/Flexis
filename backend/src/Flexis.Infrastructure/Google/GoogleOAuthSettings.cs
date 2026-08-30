@@ -11,9 +11,4 @@ public sealed class GoogleOAuthSettings
     public string RedirectUri { get; set; } = string.Empty;
 
     public string TokenProtectionKey { get; set; } = string.Empty;
-
-    public bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(ClientId)
-        && !string.IsNullOrWhiteSpace(ClientSecret)
-        && !string.IsNullOrWhiteSpace(RedirectUri);
 }
