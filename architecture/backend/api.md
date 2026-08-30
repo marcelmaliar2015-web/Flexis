@@ -45,7 +45,7 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 
 `GoogleConnectionStatusDto`: `configured`, `connected`, `googleEmail`, `connectedAt`, `capabilities`. `configured` is true when an admin has saved the Google Cloud client (or config fallback is set) and `Google:RedirectUri` is set. `GoogleConnectStartDto`: `authorizationUrl`. Start body: `returnUrl` (origin must be in `Frontend:Origins`, path `/job-application`).
 
-`JobCatalogItemDto`: `id`, `title`, `createdAt`, `url`, `spreadsheetId`. Write body: `title`. Create makes a Google Sheet; `url` is that spreadsheet. Duplicate title per kind for that user: `409`. Missing item: `404`. Gmail must be connected to create, rename a sheet, delete a sheet, or manage locations. Profile tab name is the title. Source first tab is `US`.
+`JobCatalogItemDto`: `id`, `title`, `createdAt`, `url`, `spreadsheetId`. Write body: `title`. Create makes a Google Sheet in `Flexis` / `Job Application` / `Profiles` or `Sources`; `url` is that spreadsheet. Duplicate title per kind for that user: `409`. Missing item: `404`. Gmail must be connected to create, rename a sheet, delete a sheet, or manage locations. Profile tab name is the title. Source first tab is `US`.
 
 `SourceLocationDto`: `sheetId`, `name`. Write body: `name`. Locations are source spreadsheet tabs. Duplicate name: `409`. Last location cannot be deleted: `409`.
 

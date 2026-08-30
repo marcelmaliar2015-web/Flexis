@@ -27,6 +27,14 @@ public sealed class GoogleConnection
 
     public string GrantedScopes { get; private set; }
 
+    public string? DriveRootFolderId { get; private set; }
+
+    public string? DriveWorkspaceFolderId { get; private set; }
+
+    public string? DriveProfilesFolderId { get; private set; }
+
+    public string? DriveSourcesFolderId { get; private set; }
+
     public DateTimeOffset ConnectedAt { get; private set; }
 
     public static GoogleConnection Create(
@@ -60,6 +68,11 @@ public sealed class GoogleConnection
         DateTimeOffset accessTokenExpiresAt,
         string grantedScopes)
     {
+        if (!string.Equals(GoogleSubject, googleSubject, StringComparison.Ordinal))
+        {
+            ClearDriveLayout();
+        }
+
         GoogleSubject = googleSubject;
         GoogleEmail = googleEmail;
         RefreshTokenProtected = refreshTokenProtected;
@@ -68,6 +81,32 @@ public sealed class GoogleConnection
         GrantedScopes = grantedScopes;
         ConnectedAt = DateTimeOffset.UtcNow;
     }
+
+    public void SetDriveLayout(
+        string rootFolderId,
+        string workspaceFolderId,
+        string profilesFolderId,
+        string sourcesFolderId)
+    {
+        DriveRootFolderId = rootFolderId;
+        DriveWorkspaceFolderId = workspaceFolderId;
+        DriveProfilesFolderId = profilesFolderId;
+        DriveSourcesFolderId = sourcesFolderId;
+    }
+
+    public void ClearDriveLayout()
+    {
+        DriveRootFolderId = null;
+        DriveWorkspaceFolderId = null;
+        DriveProfilesFolderId = null;
+        DriveSourcesFolderId = null;
+    }
+
+    public bool HasDriveLayout =>
+        !string.IsNullOrWhiteSpace(DriveRootFolderId)
+        && !string.IsNullOrWhiteSpace(DriveWorkspaceFolderId)
+        && !string.IsNullOrWhiteSpace(DriveProfilesFolderId)
+        && !string.IsNullOrWhiteSpace(DriveSourcesFolderId);
 
     public void ReplaceAccessToken(string accessTokenProtected, DateTimeOffset accessTokenExpiresAt)
     {

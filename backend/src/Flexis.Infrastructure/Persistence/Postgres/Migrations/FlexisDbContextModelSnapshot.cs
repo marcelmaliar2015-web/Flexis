@@ -38,6 +38,22 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.Property<DateTimeOffset>("ConnectedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("DriveProfilesFolderId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("DriveRootFolderId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("DriveSourcesFolderId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("DriveWorkspaceFolderId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<string>("GoogleEmail")
                         .IsRequired()
                         .HasMaxLength(256)

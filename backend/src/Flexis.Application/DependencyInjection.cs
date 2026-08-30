@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<GoogleAccessTokenService>();
         services.AddScoped<JobCatalogService>();
         services.AddScoped<JobPipelineService>();
+        services.AddScoped<GoogleDriveLayoutService>();
         return services;
     }
 }

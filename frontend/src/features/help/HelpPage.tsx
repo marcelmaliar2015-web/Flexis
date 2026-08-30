@@ -1,4 +1,5 @@
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import Link from "@mui/material/Link";
 import List from "@mui/material/List";
@@ -13,6 +14,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
+import { useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { appPaths } from "@/shared/config/paths";
 
@@ -81,6 +83,55 @@ const scopes = [
   },
 ] as const;
 
+function copyText(value: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(value);
+  }
+
+  return new Promise((resolve, reject) => {
+    const field = document.createElement("textarea");
+    field.value = value;
+    field.setAttribute("readonly", "");
+    document.body.appendChild(field);
+    field.select();
+    const copied = document.execCommand("copy");
+    field.remove();
+    if (copied) {
+      resolve();
+      return;
+    }
+
+    reject(new Error("Copy failed."));
+  });
+}
+
+function RedirectUriBlock() {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <Stack spacing={1}>
+      <Typography variant="body2" component="code">
+        {redirectUri}
+      </Typography>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            void copyText(redirectUri).then(() => setCopied(true));
+          }}
+        >
+          Copy URL
+        </Button>
+        {copied ? (
+          <Typography variant="body2" color="text.secondary">
+            Copied
+          </Typography>
+        ) : null}
+      </Stack>
+    </Stack>
+  );
+}
+
 function ExternalLink({ href, children }: { href: string; children: string }) {
   return (
     <Link href={href} target="_blank" rel="noopener noreferrer">
@@ -111,14 +162,50 @@ export function HelpPage() {
           <Panel>
             <Stack spacing={1.5}>
               <Typography variant="h6" component="h2">
+                Where Flexis stores files
+              </Typography>
+              <Typography variant="body2">
+                After Gmail is connected, Flexis creates this folder tree in that Google Drive and
+                puts every profile and source spreadsheet in it. Location tabs stay inside each
+                source workbook.
+              </Typography>
+              <List disablePadding>
+                <ListItem disableGutters>
+                  <ListItemText primary="Flexis" secondary="Workspace root for this app" />
+                </ListItem>
+              </List>
+              <Box sx={{ pl: 3 }}>
+                <List disablePadding>
+                  <ListItem disableGutters>
+                    <ListItemText
+                      primary="Job Application"
+                      secondary="Spreadsheets Flexis creates for this feature"
+                    />
+                  </ListItem>
+                </List>
+                <Box sx={{ pl: 3 }}>
+                  <List disablePadding>
+                    <ListItem disableGutters>
+                      <ListItemText primary="Profiles" secondary="One Google Sheet per profile" />
+                    </ListItem>
+                    <ListItem disableGutters>
+                      <ListItemText primary="Sources" secondary="One Google Sheet per source" />
+                    </ListItem>
+                  </List>
+                </Box>
+              </Box>
+            </Stack>
+          </Panel>
+
+          <Panel>
+            <Stack spacing={1.5}>
+              <Typography variant="h6" component="h2">
                 Redirect URI
               </Typography>
               <Typography variant="body2">
                 Paste this exactly on the web client. No trailing slash.
               </Typography>
-              <Typography variant="body2" component="code">
-                {redirectUri}
-              </Typography>
+              <RedirectUriBlock />
             </Stack>
           </Panel>
 
@@ -276,9 +363,7 @@ export function HelpPage() {
                 </ListItem>
               </List>
               <Typography variant="body2">Authorized redirect URI (exact):</Typography>
-              <Typography variant="body2" component="code">
-                {redirectUri}
-              </Typography>
+              <RedirectUriBlock />
               <Typography variant="body2">
                 Create. Copy Client ID and Client secret. Do not use Desktop, Android, or iOS. Do
                 not use 127.0.0.1:5080 for the redirect.
@@ -365,7 +450,10 @@ export function HelpPage() {
                     </TableRow>
                     <TableRow>
                       <TableCell>redirect_uri_mismatch</TableCell>
-                      <TableCell>Redirect URI must match the value in step 6</TableCell>
+                      <TableCell>
+                        Paste http://localhost:5080/api/google/connections/callback on the web
+                        client. Not 127.0.0.1 and no trailing slash.
+                      </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Access blocked</TableCell>

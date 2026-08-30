@@ -61,6 +61,7 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddHttpClient<IGoogleOAuthGateway, GoogleOAuthClient>();
         services.AddHttpClient<IGoogleSheetsWorkspace, GoogleSheetsClient>();
+        services.AddHttpClient<IGoogleDriveGateway, GoogleDriveClient>();
         services.AddSingleton<IGoogleTokenProtector, AesGoogleTokenProtector>();
         services.AddSingleton<IGoogleOAuthStateStore, MemoryGoogleOAuthStateStore>();
         services.AddSingleton<IFrontendOrigins, ConfigurationFrontendOrigins>();

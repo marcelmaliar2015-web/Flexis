@@ -103,6 +103,8 @@ API must be running at [http://localhost:5080/api/health](http://localhost:5080/
 
 The chip should read **Connected** and show that Gmail address.
 
+Flexis then creates `Flexis` / `Job Application` / `Profiles` and `Sources` in that Google Drive and keeps Job Application spreadsheets there. See [011-google-drive-folder-layout.md](../decisions/011-google-drive-folder-layout.md).
+
 ## If Connect fails
 
 | What you see | Fix |
@@ -119,3 +121,4 @@ The chip should read **Connected** and show that Gmail address.
 - [security.md](security.md)
 - [../decisions/006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md)
 - [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)
+- [../decisions/011-google-drive-folder-layout.md](../decisions/011-google-drive-folder-layout.md)

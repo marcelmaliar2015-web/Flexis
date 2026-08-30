@@ -146,8 +146,9 @@ export function JobApplicationGmailCard() {
                   Gmail
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  The same Google consent covers Sheets and Drive files this app creates or you open
-                  with Flexis. Drive is limited to those files, not the rest of your Drive.
+                  The same Google consent covers Sheets and Drive. Flexis keeps its files under
+                  Flexis / Job Application / Profiles and Sources. Drive access stays limited to
+                  files this app creates or you open with Flexis.
                 </Typography>
               </Stack>
               {status?.connected ? (

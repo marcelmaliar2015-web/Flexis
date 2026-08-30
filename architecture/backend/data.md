@@ -15,7 +15,7 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 
 `User` in `Flexis.Domain.Users`. Table `users`, unique email. EF configuration: `Persistence/Postgres/Users/UserConfiguration.cs`.
 
-`GoogleConnection` in `Flexis.Domain.Google`. Table `google_connections`, unique `UserId`, cascade from `users`. EF configuration: `Persistence/Postgres/Google/GoogleConnectionConfiguration.cs`. Refresh and access tokens are stored protected, not as plaintext.
+`GoogleConnection` in `Flexis.Domain.Google`. Table `google_connections`, unique `UserId`, cascade from `users`. EF configuration: `Persistence/Postgres/Google/GoogleConnectionConfiguration.cs`. Refresh and access tokens are stored protected, not as plaintext. Drive folder IDs for `Flexis`, `Job Application`, `Profiles`, and `Sources` are stored on the same row.
 
 `GoogleClientCredentials` in `Flexis.Domain.Google`. Table `google_client_credentials`. One Flexis Google Cloud web client. The secret is stored protected. EF configuration: `Persistence/Postgres/Google/GoogleClientCredentialsConfiguration.cs`.
 

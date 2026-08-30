@@ -20,6 +20,6 @@ public static class GoogleWorkspaceScopes
     [
         "Gmail: read, send, and organize job correspondence.",
         "Google Sheets: create, edit, and delete spreadsheets.",
-        "Google Drive: upload, download, and delete files Flexis creates or you open with Flexis."
+        "Google Drive: Flexis / Job Application folders for files this app creates, not the rest of Drive."
     ];
 }

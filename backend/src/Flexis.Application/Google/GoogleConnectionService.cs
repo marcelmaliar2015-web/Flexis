@@ -14,19 +14,22 @@ public sealed class GoogleConnectionService
     private readonly IGoogleTokenProtector _protector;
     private readonly IGoogleConnectionRepository _connections;
     private readonly IFrontendOrigins _frontendOrigins;
+    private readonly GoogleDriveLayoutService _driveLayout;
 
     public GoogleConnectionService(
         IGoogleOAuthGateway oauth,
         IGoogleOAuthStateStore states,
         IGoogleTokenProtector protector,
         IGoogleConnectionRepository connections,
-        IFrontendOrigins frontendOrigins)
+        IFrontendOrigins frontendOrigins,
+        GoogleDriveLayoutService driveLayout)
     {
         _oauth = oauth;
         _states = states;
         _protector = protector;
         _connections = connections;
         _frontendOrigins = frontendOrigins;
+        _driveLayout = driveLayout;
     }
 
     public async Task<GoogleConnectionStatusDto> GetStatusAsync(
@@ -119,6 +122,7 @@ public sealed class GoogleConnectionService
             }
 
             await _connections.SaveChangesAsync(cancellationToken);
+            await TryEnsureDriveLayoutAsync(pending.UserId, tokens.AccessToken, cancellationToken);
             return AppendResult(pending.ReturnUrl, "connected");
         }
         catch (GoogleOAuthException)
@@ -139,6 +143,26 @@ public sealed class GoogleConnectionService
         await _oauth.RevokeAsync(refreshToken, cancellationToken);
         _connections.Remove(connection);
         await _connections.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task TryEnsureDriveLayoutAsync(
+        Guid userId,
+        string accessToken,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _driveLayout.EnsureAsync(userId, accessToken, cancellationToken);
+        }
+        catch (GoogleOAuthException)
+        {
+        }
+        catch (ValidationFailedException)
+        {
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+        }
     }
 
     private string NormalizeReturnUrl(string returnUrl)

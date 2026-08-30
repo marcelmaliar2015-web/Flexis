@@ -30,3 +30,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [008](008-job-catalog-google-sheets.md) | Job catalog Google Sheets |
 | [009](009-google-client-in-settings.md) | Google Cloud client in Settings |
 | [010](010-job-application-pipeline.md) | Job application pipeline |
+| [011](011-google-drive-folder-layout.md) | Google Drive folder layout |

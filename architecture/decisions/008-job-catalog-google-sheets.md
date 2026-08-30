@@ -10,4 +10,4 @@ Creating a profile or source calls the Google Sheets API with the stored refresh
 
 ## Consequences
 
-Gmail must be connected before create. Title-only writes; the API sets the sheet URL and the UI shows that URL after create. Deleting a catalog item deletes the Drive file Flexis created and its pipeline entries. Do not ask for broader Drive scope.
+Gmail must be connected before create. Title-only writes; the API sets the sheet URL and the UI shows that URL after create. New sheets are moved into `Flexis` / `Job Application` / `Profiles` or `Sources`. Deleting a catalog item deletes the Drive file Flexis created and its pipeline entries. Do not ask for broader Drive scope. See [011-google-drive-folder-layout.md](011-google-drive-folder-layout.md).

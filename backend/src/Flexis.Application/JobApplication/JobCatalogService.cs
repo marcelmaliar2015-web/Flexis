@@ -10,17 +10,20 @@ public sealed class JobCatalogService
     private readonly IJobPipelineRepository _pipeline;
     private readonly GoogleAccessTokenService _tokens;
     private readonly IGoogleSheetsWorkspace _sheets;
+    private readonly GoogleDriveLayoutService _driveLayout;
 
     public JobCatalogService(
         IJobCatalogRepository items,
         IJobPipelineRepository pipeline,
         GoogleAccessTokenService tokens,
-        IGoogleSheetsWorkspace sheets)
+        IGoogleSheetsWorkspace sheets,
+        GoogleDriveLayoutService driveLayout)
     {
         _items = items;
         _pipeline = pipeline;
         _tokens = tokens;
         _sheets = sheets;
+        _driveLayout = driveLayout;
     }
 
     public async Task<IReadOnlyList<JobCatalogItemDto>> ListAsync(
@@ -45,6 +48,7 @@ public sealed class JobCatalogService
         }
 
         var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
+        var folders = await _driveLayout.EnsureAsync(userId, accessToken, cancellationToken);
         var firstSheet = kind == JobCatalogKind.Profile
             ? JobCatalogRules.SheetTabName(title)
             : JobCatalogRules.DefaultSourceLocation;
@@ -58,6 +62,7 @@ public sealed class JobCatalogService
 
         try
         {
+            await _driveLayout.PlaceWorkbookAsync(accessToken, spreadsheet.SpreadsheetId, kind, folders, cancellationToken);
             var item = JobCatalogItem.Create(userId, kind, title, spreadsheet.SpreadsheetUrl, spreadsheet.SpreadsheetId);
             await _items.AddAsync(item, cancellationToken);
             await _items.SaveChangesAsync(cancellationToken);

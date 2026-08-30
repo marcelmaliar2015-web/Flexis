@@ -16,6 +16,10 @@ internal sealed class GoogleConnectionConfiguration : IEntityTypeConfiguration<G
         builder.Property(connection => connection.RefreshTokenProtected).IsRequired();
         builder.Property(connection => connection.AccessTokenProtected).IsRequired();
         builder.Property(connection => connection.GrantedScopes).HasMaxLength(1000).IsRequired();
+        builder.Property(connection => connection.DriveRootFolderId).HasMaxLength(128);
+        builder.Property(connection => connection.DriveWorkspaceFolderId).HasMaxLength(128);
+        builder.Property(connection => connection.DriveProfilesFolderId).HasMaxLength(128);
+        builder.Property(connection => connection.DriveSourcesFolderId).HasMaxLength(128);
         builder.HasIndex(connection => connection.UserId).IsUnique();
         builder.HasOne<User>()
             .WithMany()
