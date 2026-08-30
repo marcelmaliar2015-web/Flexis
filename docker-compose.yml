@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: flexis-postgres
+    environment:
+      POSTGRES_USER: flexis
+      POSTGRES_PASSWORD: flexis
+      POSTGRES_DB: flexis
+    ports:
+      - "5432:5432"
+    volumes:
+      - flexis_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flexis -d flexis"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    container_name: flexis-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: flexis
+      MONGO_INITDB_ROOT_PASSWORD: flexis
+      MONGO_INITDB_DATABASE: flexis
+    ports:
+      - "27017:27017"
+    volumes:
+      - flexis_mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "-u", "flexis", "-p", "flexis", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  flexis_postgres:
+  flexis_mongo:

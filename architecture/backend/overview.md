@@ -2,19 +2,24 @@
 
 ## Role
 
-None yet.
+HTTP API for Flexis. Owns business use cases, PostgreSQL, and MongoDB. Serves JSON to the frontend.
 
 ## Tech stack
 
-None yet.
+ASP.NET Core 10 (`net10.0`), EF Core with Npgsql, MongoDB.Driver. Solution: `backend/Flexis.sln`.
 
 ## Entry
 
-None yet.
+`backend/src/Flexis.Api/Program.cs`. Listens on `http://localhost:5080` in Development (`Properties/launchSettings.json`).
 
 ## Boundaries
 
-None yet.
+- `Flexis.Domain` — entities and domain rules. No types yet.
+- `Flexis.Application` — use cases, DTOs, DI entry `AddApplication`.
+- `Flexis.Infrastructure` — EF Core, MongoDB, health checks, DI entry `AddInfrastructure`.
+- `Flexis.Api` — HTTP, CORS, OpenAPI in Development, controllers.
+
+Dependencies flow inward: Api → Application and Infrastructure; Infrastructure → Application and Domain; Application → Domain.
 
 ## Related
 

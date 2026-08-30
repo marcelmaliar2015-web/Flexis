@@ -2,15 +2,15 @@
 
 ## Client state
 
-None yet.
+None yet. No global client store.
 
 ## Server data
 
-None yet.
+TanStack Query. Query client is created in `frontend/src/app/providers/queryClient.ts`. Feature hooks live next to the screen (`useHealthStatus`).
 
 ## Data flow
 
-None yet.
+Screen hook → `shared/api` function → `GET {VITE_API_BASE_URL}{path}` → JSON DTO. In Development `VITE_API_BASE_URL` is empty, so the browser calls `/api/...` on the Vite host and Vite proxies to `http://127.0.0.1:5080`. If the API is down, `getJson` throws `API is not running. Start backend/src/Flexis.Api.`
 
 ## Related
 

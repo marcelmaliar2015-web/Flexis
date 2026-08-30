@@ -2,24 +2,43 @@
 
 ## Product
 
-None yet.
+Flexis. A multi-feature web platform. Product modules are added as features; none are implemented yet besides system health.
 
 ## System context
 
-None yet.
+The browser loads the React app. The app calls the ASP.NET Core HTTP API. The API uses PostgreSQL for relational data and MongoDB for document data.
 
 ## Tech stack
 
 | Layer | Choice |
 | --- | --- |
-| Frontend | None yet. |
-| Backend | None yet. |
-| Data | None yet. |
-| Infra | None yet. |
+| Frontend | React 19, TypeScript, Vite, MUI, TanStack Query, React Router |
+| Backend | ASP.NET Core 10, C# |
+| Data | PostgreSQL 16 (EF Core), MongoDB 7 (MongoDB.Driver) |
+| Infra | Docker Compose for local databases |
 
 ## Repository layout
 
-None yet.
+```
+architecture/
+backend/
+  Flexis.sln
+  Directory.Build.props
+  src/Flexis.Api
+  src/Flexis.Application
+  src/Flexis.Domain
+  src/Flexis.Infrastructure
+frontend/
+docker-compose.yml
+```
+
+## Local run
+
+Requires .NET 10 SDK, Node.js, and Docker Desktop (or PostgreSQL 16 and MongoDB 7 on the same ports).
+
+1. `docker compose up -d` (PostgreSQL `localhost:5432`, MongoDB `localhost:27017`)
+2. `dotnet run --project backend/src/Flexis.Api` (API `http://localhost:5080`)
+3. `npm run dev` in `frontend/` (app `http://127.0.0.1:5173`)
 
 ## Related
 

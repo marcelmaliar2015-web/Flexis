@@ -2,19 +2,22 @@
 
 ## Role
 
-None yet.
+Browser UI for Flexis. Calls the HTTP API. Does not talk to databases.
 
 ## Tech stack
 
-None yet.
+React 19, TypeScript, Vite, MUI, TanStack Query, React Router.
 
 ## Entry
 
-None yet.
+`frontend/src/main.tsx` mounts `App`. `App` wraps providers and `RouterProvider`.
 
 ## Boundaries
 
-None yet.
+- `app/` owns shell, theme, router, providers.
+- `features/` owns screens and feature hooks.
+- `shared/` owns API client, config, and shared types.
+- Features do not import other features. `shared/` does not import `app/` or `features/`.
 
 ## Related
 

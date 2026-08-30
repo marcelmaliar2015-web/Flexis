@@ -2,11 +2,14 @@
 
 ## Router
 
-None yet.
+React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. Layout route renders `AppLayout` and an `Outlet`.
 
 ## Routes
 
-None yet.
+| Path | Screen |
+| --- | --- |
+| `/` | `HomePage` |
+| `/health` | `HealthPage` |
 
 ## Guards and access
 
