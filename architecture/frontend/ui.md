@@ -6,7 +6,13 @@ MUI. Prefer native MUI props. Use `styled()` when the look cannot be achieved wi
 
 ## Theme and layout
 
-Theme: `frontend/src/app/providers/theme.ts`. `CssBaseline` is applied in `AppProviders`. Shell: `AppLayout` with MUI `AppBar` and main `Outlet`.
+Theme: `frontend/src/app/providers/theme.ts`. Navy primary, copper secondary, warm paper background. Headlines use Fraunces; UI text uses Outfit (loaded in `frontend/index.html`). `CssBaseline` is applied in `AppProviders`.
+
+Shell: `AppLayout` is a full-viewport column. Sticky paper `AppBar` with brand mark (links to `/`), Home, and Health. Home is hidden below the `sm` breakpoint. Pages own their padding.
+
+## Home landing
+
+`HomePage` is the first screen at `/`. Hero band, live platform preview (shared health query), and three capability cards. Primary action goes to `/health`.
 
 ## Component patterns
 

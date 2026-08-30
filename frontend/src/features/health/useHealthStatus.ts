@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { getHealthStatus } from "@/shared/api/health";
+import { getHealthStatus, healthQueryKey } from "@/shared/api/health";
 
 export function useHealthStatus() {
   return useQuery({
-    queryKey: ["health"],
+    queryKey: healthQueryKey,
     queryFn: getHealthStatus,
   });
 }
