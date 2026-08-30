@@ -8,7 +8,7 @@ Job Application OAuth needs one Google Cloud web Client ID and secret for the Fl
 
 Admins save Client ID and Client secret on Settings (`GET`/`PUT /api/google/client`). They live in `google_client_credentials`. The secret is AES-GCM protected. GET returns `clientId` and `hasSecret`, never the secret. OAuth reads the database first, then `Google:ClientId`/`Google:ClientSecret` if the table is empty. `Google:RedirectUri` stays in config.
 
-Job Application create, edit, delete, Open sheet, and source location actions stay disabled until that user has connected Gmail. Connect Gmail and Disconnect stay enabled.
+Job Application create, edit, delete, Open sheet, and source location actions stay disabled until that user has connected Gmail. Connect Gmail, Copy URL, and Disconnect stay enabled.
 
 ## Consequences
 

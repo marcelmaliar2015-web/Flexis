@@ -29,3 +29,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [007](007-account-menu.md) | Account menu in the app bar |
 | [008](008-job-catalog-google-sheets.md) | Job catalog Google Sheets |
 | [009](009-google-client-in-settings.md) | Google Cloud client in Settings |
+| [010](010-job-application-pipeline.md) | Job application pipeline |

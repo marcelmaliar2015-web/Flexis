@@ -3,6 +3,7 @@ import Stack from "@mui/material/Stack";
 import { useQuery } from "@tanstack/react-query";
 import { CatalogItemsPanel } from "@/features/jobApplication/CatalogItemsPanel";
 import { JobApplicationGmailCard } from "@/features/jobApplication/JobApplicationGmailCard";
+import { SourceLocationsPanel } from "@/features/jobApplication/SourceLocationsPanel";
 import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
 
 export function JobApplicationSettingsTab() {
@@ -30,6 +31,7 @@ export function JobApplicationSettingsTab() {
         itemLabel="source"
         actionsEnabled={connected}
       />
+      <SourceLocationsPanel actionsEnabled={connected} />
     </Stack>
   );
 }

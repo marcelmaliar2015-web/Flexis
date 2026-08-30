@@ -29,6 +29,28 @@ const Panel = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3.5),
 }));
 
+function copyText(value: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(value);
+  }
+
+  return new Promise((resolve, reject) => {
+    const field = document.createElement("textarea");
+    field.value = value;
+    field.setAttribute("readonly", "");
+    document.body.appendChild(field);
+    field.select();
+    const copied = document.execCommand("copy");
+    field.remove();
+    if (copied) {
+      resolve();
+      return;
+    }
+
+    reject(new Error("Copy failed."));
+  });
+}
+
 function googleNotice(result: string | null): { severity: "success" | "info" | "error"; text: string } | null {
   if (result === "connected") {
     return { severity: "success", text: "Gmail is connected." };
@@ -73,6 +95,16 @@ export function JobApplicationGmailCard() {
     },
   });
 
+  const copyUrlMutation = useMutation({
+    mutationFn: async () => {
+      const result = await startGoogleConnection(`${window.location.origin}${appPaths.jobApplication}`);
+      await copyText(result.authorizationUrl);
+    },
+    onSuccess: () => {
+      setNotice({ severity: "success", text: "Connect URL copied. Paste it in another browser." });
+    },
+  });
+
   const disconnectMutation = useMutation({
     mutationFn: disconnectGoogleConnection,
     onSuccess: async () => {
@@ -85,11 +117,13 @@ export function JobApplicationGmailCard() {
   const actionError =
     connectMutation.error instanceof Error
       ? connectMutation.error.message
-      : disconnectMutation.error instanceof Error
-        ? disconnectMutation.error.message
-        : connectionQuery.error instanceof Error
-          ? connectionQuery.error.message
-          : null;
+      : copyUrlMutation.error instanceof Error
+        ? copyUrlMutation.error.message
+        : disconnectMutation.error instanceof Error
+          ? disconnectMutation.error.message
+          : connectionQuery.error instanceof Error
+            ? connectionQuery.error.message
+            : null;
 
   return (
     <Stack spacing={2}>
@@ -154,6 +188,14 @@ export function JobApplicationGmailCard() {
                 onClick={() => connectMutation.mutate()}
               >
                 Connect Gmail
+              </Button>
+              <Button
+                variant="outlined"
+                disabled={!status?.configured || status.connected || copyUrlMutation.isPending}
+                loading={copyUrlMutation.isPending}
+                onClick={() => copyUrlMutation.mutate()}
+              >
+                Copy URL
               </Button>
               {status?.connected ? (
                 <Button

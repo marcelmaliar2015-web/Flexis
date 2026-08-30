@@ -5,6 +5,10 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -12,7 +16,6 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,28 +23,20 @@ import { useState, type FormEvent } from "react";
 import { ApiError } from "@/shared/api/client";
 import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
 import {
-  createSourceLocation,
-  deleteSourceLocation,
-  jobCatalogQueryKey,
-  listJobCatalogItems,
-  listSourceLocations,
-  sourceLocationsQueryKey,
-  updateSourceLocation,
-} from "@/shared/api/jobCatalog";
-import type { JobCatalogItem, SourceLocation } from "@/shared/types/jobCatalog";
+  applyJobPipelineEntry,
+  createJobPipelineEntry,
+  deleteJobPipelineEntry,
+  getJobPipelineBoard,
+  jobPipelineQueryKey,
+  updateJobPipelineEntry,
+} from "@/shared/api/pipeline";
+import type { JobPipelineEntry, JobPipelineWriteRequest } from "@/shared/types/pipeline";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
   backgroundColor: theme.palette.background.paper,
   borderRadius: theme.shape.borderRadius,
   overflow: "hidden",
-}));
-
-const Card = styled(Box)(({ theme }) => ({
-  border: `1px solid ${theme.palette.divider}`,
-  backgroundColor: theme.palette.background.paper,
-  borderRadius: theme.shape.borderRadius,
-  padding: theme.spacing(2.5),
 }));
 
 function errorMessage(error: unknown): string {
@@ -54,292 +49,235 @@ function errorMessage(error: unknown): string {
   return "Request failed.";
 }
 
+function sourceChoiceValue(sourceId: string, sheetId: number): string {
+  return `${sourceId}:${sheetId}`;
+}
+
+function parseSourceChoice(value: string): { sourceId: string; locationSheetId: number } | null {
+  const separator = value.lastIndexOf(":");
+  if (separator <= 0 || separator === value.length - 1) {
+    return null;
+  }
+
+  const locationSheetId = Number(value.slice(separator + 1));
+  if (!Number.isInteger(locationSheetId)) {
+    return null;
+  }
+
+  return { sourceId: value.slice(0, separator), locationSheetId };
+}
+
 export function JobApplicationOperationsTab() {
+  const queryClient = useQueryClient();
   const connectionQuery = useQuery({
     queryKey: googleConnectionQueryKey,
     queryFn: getGoogleConnection,
   });
-  const profilesQuery = useQuery({
-    queryKey: jobCatalogQueryKey("profiles"),
-    queryFn: () => listJobCatalogItems("profiles"),
-  });
-  const sourcesQuery = useQuery({
-    queryKey: jobCatalogQueryKey("sources"),
-    queryFn: () => listJobCatalogItems("sources"),
-  });
-
   const connected = connectionQuery.data?.connected === true;
-
-  return (
-    <Stack spacing={4}>
-      {!connected ? (
-        <Alert severity="info">Connect Gmail on the Settings tab before using Operations.</Alert>
-      ) : null}
-      {profilesQuery.isError ? <Alert severity="error">{errorMessage(profilesQuery.error)}</Alert> : null}
-      {sourcesQuery.isError ? <Alert severity="error">{errorMessage(sourcesQuery.error)}</Alert> : null}
-      <Stack spacing={2}>
-        <Typography variant="h6" component="h2">
-          Profiles
-        </Typography>
-        {(profilesQuery.data ?? []).length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
-            Create a profile in Settings. Flexis adds a Google Sheet whose tab is named after the profile.
-          </Typography>
-        ) : (
-          <Stack spacing={1.5}>
-            {(profilesQuery.data ?? []).map((item) => (
-              <WorkbookCard key={item.id} item={item} kindLabel="Profile" actionsEnabled={connected} />
-            ))}
-          </Stack>
-        )}
-      </Stack>
-      <Stack spacing={2}>
-        <Typography variant="h6" component="h2">
-          Sources
-        </Typography>
-        {(sourcesQuery.data ?? []).length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
-            Create a source in Settings. The workbook starts with a US location tab. Add more locations here.
-          </Typography>
-        ) : (
-          <Stack spacing={2}>
-            {(sourcesQuery.data ?? []).map((item) => (
-              <SourceWorkbookCard key={item.id} item={item} actionsEnabled={connected} />
-            ))}
-          </Stack>
-        )}
-      </Stack>
-    </Stack>
-  );
-}
-
-function WorkbookCard({
-  item,
-  kindLabel,
-  actionsEnabled,
-}: {
-  item: JobCatalogItem;
-  kindLabel: string;
-  actionsEnabled: boolean;
-}) {
-  return (
-    <Card>
-      <Stack
-        direction="row"
-        spacing={2}
-        sx={{ alignItems: "center", justifyContent: "space-between" }}
-      >
-        <Stack spacing={0.5}>
-          <Typography variant="subtitle1">{item.title}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {kindLabel}
-          </Typography>
-        </Stack>
-        {item.url && actionsEnabled ? (
-          <Button component="a" href={item.url} target="_blank" rel="noopener noreferrer">
-            Open sheet
-          </Button>
-        ) : (
-          <Button disabled>Open sheet</Button>
-        )}
-      </Stack>
-    </Card>
-  );
-}
-
-function SourceWorkbookCard({
-  item,
-  actionsEnabled,
-}: {
-  item: JobCatalogItem;
-  actionsEnabled: boolean;
-}) {
-  const queryClient = useQueryClient();
-  const locationsQuery = useQuery({
-    queryKey: sourceLocationsQueryKey(item.id),
-    queryFn: () => listSourceLocations(item.id),
-    enabled: actionsEnabled && item.spreadsheetId.length > 0,
+  const boardQuery = useQuery({
+    queryKey: jobPipelineQueryKey,
+    queryFn: getJobPipelineBoard,
+    enabled: connected,
   });
-  const [editor, setEditor] = useState<{ mode: "create" } | { mode: "edit"; location: SourceLocation } | null>(
-    null,
-  );
-  const [toDelete, setToDelete] = useState<SourceLocation | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [toDelete, setToDelete] = useState<JobPipelineEntry | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: (name: string) => createSourceLocation(item.id, name),
+    mutationFn: (request: JobPipelineWriteRequest) => createJobPipelineEntry(request),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: sourceLocationsQueryKey(item.id) });
-      setEditor(null);
+      await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+      setCreating(false);
+      setFormError(null);
     },
     onError: (error) => setFormError(errorMessage(error)),
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ sheetId, name }: { sheetId: number; name: string }) =>
-      updateSourceLocation(item.id, sheetId, name),
+  const updateRowMutation = useMutation({
+    mutationFn: ({ id, request }: { id: string; request: JobPipelineWriteRequest }) =>
+      updateJobPipelineEntry(id, request),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: sourceLocationsQueryKey(item.id) });
-      setEditor(null);
+      await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
     },
-    onError: (error) => setFormError(errorMessage(error)),
+  });
+
+  const applyMutation = useMutation({
+    mutationFn: (id: string) => applyJobPipelineEntry(id),
+    onSuccess: (result) => {
+      if (result.added === 0 && result.skipped === 0) {
+        setNotice("No listings to add from that source location.");
+        return;
+      }
+      if (result.added === 0) {
+        setNotice("Those listings are already on this profile.");
+        return;
+      }
+      setNotice(
+        result.skipped > 0
+          ? `Added ${result.added}. Skipped ${result.skipped} already on this profile.`
+          : `Added ${result.added}.`,
+      );
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (sheetId: number) => deleteSourceLocation(item.id, sheetId),
+    mutationFn: (id: string) => deleteJobPipelineEntry(id),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: sourceLocationsQueryKey(item.id) });
+      await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
       setToDelete(null);
     },
   });
 
+  const board = boardQuery.data;
+  const sourceChoices =
+    board?.sources.flatMap((source) =>
+      source.locations.map((location) => ({
+        value: sourceChoiceValue(source.id, location.sheetId),
+        label: `${source.title} · ${location.name}`,
+      })),
+    ) ?? [];
+
   return (
-    <Card>
-      <Stack spacing={2}>
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+    <Stack spacing={2}>
+      {!connected ? (
+        <Alert severity="info">Connect Gmail on the Settings tab before using the pipeline.</Alert>
+      ) : null}
+      {boardQuery.isError ? <Alert severity="error">{errorMessage(boardQuery.error)}</Alert> : null}
+      {updateRowMutation.isError ? (
+        <Alert severity="error">{errorMessage(updateRowMutation.error)}</Alert>
+      ) : null}
+      {applyMutation.isError ? <Alert severity="error">{errorMessage(applyMutation.error)}</Alert> : null}
+      {deleteMutation.isError ? <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert> : null}
+      {notice ? <Alert severity="success">{notice}</Alert> : null}
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+      >
+        <Typography variant="h6" component="h2">
+          Pipeline
+        </Typography>
+        <Button
+          disabled={!connected || sourceChoices.length === 0 || (board?.profiles.length ?? 0) === 0}
+          onClick={() => {
+            setFormError(null);
+            setCreating(true);
+          }}
         >
-          <Stack spacing={0.5}>
-            <Typography variant="subtitle1">{item.title}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Locations
-            </Typography>
-          </Stack>
-          <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
-            {item.url ? (
-              <Button
-                variant="outlined"
-                disabled={!actionsEnabled}
-                component={actionsEnabled ? "a" : "button"}
-                href={actionsEnabled ? item.url : undefined}
-                target={actionsEnabled ? "_blank" : undefined}
-                rel={actionsEnabled ? "noopener noreferrer" : undefined}
-              >
-                Open sheet
-              </Button>
-            ) : null}
-            {item.spreadsheetId.length > 0 ? (
-              <Button
-                disabled={!actionsEnabled}
-                onClick={() => {
-                  setFormError(null);
-                  setEditor({ mode: "create" });
-                }}
-              >
-                New location
-              </Button>
-            ) : null}
-          </Stack>
-        </Stack>
-        {locationsQuery.isError ? <Alert severity="error">{errorMessage(locationsQuery.error)}</Alert> : null}
-        {deleteMutation.isError ? <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert> : null}
-        {item.spreadsheetId.length > 0 && !actionsEnabled ? (
-          <Typography variant="body2" color="text.secondary">
-            Connect Gmail to load locations.
-          </Typography>
-        ) : item.spreadsheetId.length > 0 ? (
-          <Panel>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Location</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {(locationsQuery.data ?? []).map((location) => (
-                    <TableRow key={location.sheetId} hover>
-                      <TableCell>{location.name}</TableCell>
-                      <TableCell align="right">
-                        <Stack direction="row" spacing={0.5} sx={{ justifyContent: "flex-end" }}>
-                          <Button
-                            variant="text"
-                            disabled={!actionsEnabled}
-                            onClick={() => {
-                              setFormError(null);
-                              setEditor({ mode: "edit", location });
-                            }}
-                          >
-                            Rename
-                          </Button>
-                          <Button
-                            variant="text"
-                            disabled={!actionsEnabled}
-                            onClick={() => setToDelete(location)}
-                          >
-                            Delete
-                          </Button>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Panel>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            No Google Sheet
-          </Typography>
-        )}
+          New
+        </Button>
       </Stack>
-      {editor ? (
-        <Dialog open onClose={() => setEditor(null)} fullWidth maxWidth="xs">
-          <Box
-            component="form"
-            onSubmit={(event: FormEvent<HTMLFormElement>) => {
-              event.preventDefault();
-              const data = new FormData(event.currentTarget);
-              const name = String(data.get("name") ?? "");
-              if (editor.mode === "create") {
-                createMutation.mutate(name);
-                return;
-              }
-              updateMutation.mutate({ sheetId: editor.location.sheetId, name });
-            }}
-          >
-            <DialogTitle>{editor.mode === "create" ? "New location" : "Rename location"}</DialogTitle>
-            <DialogContent>
-              <Stack spacing={2} sx={{ pt: 1 }}>
-                {formError ? <Alert severity="error">{formError}</Alert> : null}
-                <TextField
-                  name="name"
-                  label="Location"
-                  defaultValue={editor.mode === "edit" ? editor.location.name : ""}
-                  required
-                  fullWidth
-                  autoFocus
-                />
-              </Stack>
-            </DialogContent>
-            <DialogActions>
-              <Button
-                variant="text"
-                onClick={() => setEditor(null)}
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-                loading={createMutation.isPending || updateMutation.isPending}
-              >
-                Save
-              </Button>
-            </DialogActions>
-          </Box>
-        </Dialog>
+      <Panel>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Profile</TableCell>
+                <TableCell>Source</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(board?.entries ?? []).map((entry) => (
+                <TableRow key={entry.id} hover>
+                  <TableCell>
+                    <FormControl fullWidth size="small">
+                      <InputLabel id={`pipeline-profile-${entry.id}`}>Profile</InputLabel>
+                      <Select
+                        labelId={`pipeline-profile-${entry.id}`}
+                        label="Profile"
+                        value={entry.profileId}
+                        disabled={!connected || updateRowMutation.isPending}
+                        onChange={(event) =>
+                          updateRowMutation.mutate({
+                            id: entry.id,
+                            request: {
+                              profileId: String(event.target.value),
+                              sourceId: entry.sourceId,
+                              locationSheetId: entry.locationSheetId,
+                            },
+                          })
+                        }
+                      >
+                        {(board?.profiles ?? []).map((profile) => (
+                          <MenuItem key={profile.id} value={profile.id}>
+                            {profile.title}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                  <TableCell>
+                    <FormControl fullWidth size="small">
+                      <InputLabel id={`pipeline-source-${entry.id}`}>Source</InputLabel>
+                      <Select
+                        labelId={`pipeline-source-${entry.id}`}
+                        label="Source"
+                        value={sourceChoiceValue(entry.sourceId, entry.locationSheetId)}
+                        disabled={!connected || updateRowMutation.isPending}
+                        onChange={(event) => {
+                          const parsed = parseSourceChoice(String(event.target.value));
+                          if (!parsed) {
+                            return;
+                          }
+                          updateRowMutation.mutate({
+                            id: entry.id,
+                            request: {
+                              profileId: entry.profileId,
+                              sourceId: parsed.sourceId,
+                              locationSheetId: parsed.locationSheetId,
+                            },
+                          });
+                        }}
+                      >
+                        {sourceChoices.map((choice) => (
+                          <MenuItem key={choice.value} value={choice.value}>
+                            {choice.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Stack direction="row" spacing={0.5} sx={{ justifyContent: "flex-end" }}>
+                      <Button
+                        disabled={!connected || applyMutation.isPending}
+                        loading={applyMutation.isPending && applyMutation.variables === entry.id}
+                        onClick={() => {
+                          setNotice(null);
+                          applyMutation.mutate(entry.id);
+                        }}
+                      >
+                        Update
+                      </Button>
+                      <Button variant="text" disabled={deleteMutation.isPending} onClick={() => setToDelete(entry)}>
+                        Delete
+                      </Button>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Panel>
+      {creating && board ? (
+        <CreatePipelineDialog
+          profiles={board.profiles}
+          sourceChoices={sourceChoices}
+          error={formError}
+          isSaving={createMutation.isPending}
+          onClose={() => setCreating(false)}
+          onCreate={(request) => createMutation.mutate(request)}
+        />
       ) : null}
       {toDelete ? (
         <Dialog open onClose={() => setToDelete(null)} fullWidth maxWidth="xs">
-          <DialogTitle>Delete location</DialogTitle>
+          <DialogTitle>Delete pipeline entry</DialogTitle>
           <DialogContent>
             <Typography variant="body2">
-              {`Delete ${toDelete.name}? This cannot be undone.`}
+              Remove this pipeline entry? Listings already on the profile sheet stay.
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -349,13 +287,97 @@ function SourceWorkbookCard({
             <Button
               disabled={deleteMutation.isPending}
               loading={deleteMutation.isPending}
-              onClick={() => deleteMutation.mutate(toDelete.sheetId)}
+              onClick={() => deleteMutation.mutate(toDelete.id)}
             >
               Delete
             </Button>
           </DialogActions>
         </Dialog>
       ) : null}
-    </Card>
+    </Stack>
+  );
+}
+
+function CreatePipelineDialog({
+  profiles,
+  sourceChoices,
+  error,
+  isSaving,
+  onClose,
+  onCreate,
+}: {
+  profiles: { id: string; title: string }[];
+  sourceChoices: { value: string; label: string }[];
+  error: string | null;
+  isSaving: boolean;
+  onClose: () => void;
+  onCreate: (request: JobPipelineWriteRequest) => void;
+}) {
+  const [profileId, setProfileId] = useState(profiles[0]?.id ?? "");
+  const [sourceValue, setSourceValue] = useState(sourceChoices[0]?.value ?? "");
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsed = parseSourceChoice(sourceValue);
+    if (!parsed) {
+      return;
+    }
+
+    onCreate({
+      profileId,
+      sourceId: parsed.sourceId,
+      locationSheetId: parsed.locationSheetId,
+    });
+  }
+
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
+      <Box component="form" onSubmit={handleSubmit}>
+        <DialogTitle>New pipeline entry</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            {error ? <Alert severity="error">{error}</Alert> : null}
+            <FormControl fullWidth>
+              <InputLabel id="pipeline-new-profile">Profile</InputLabel>
+              <Select
+                labelId="pipeline-new-profile"
+                label="Profile"
+                value={profileId}
+                onChange={(event) => setProfileId(String(event.target.value))}
+              >
+                {profiles.map((profile) => (
+                  <MenuItem key={profile.id} value={profile.id}>
+                    {profile.title}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel id="pipeline-new-source">Source</InputLabel>
+              <Select
+                labelId="pipeline-new-source"
+                label="Source"
+                value={sourceValue}
+                onChange={(event) => setSourceValue(String(event.target.value))}
+              >
+                {sourceChoices.map((choice) => (
+                  <MenuItem key={choice.value} value={choice.value}>
+                    {choice.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="text" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSaving || !profileId || !sourceValue} loading={isSaving}>
+            Save
+          </Button>
+        </DialogActions>
+      </Box>
+    </Dialog>
   );
 }

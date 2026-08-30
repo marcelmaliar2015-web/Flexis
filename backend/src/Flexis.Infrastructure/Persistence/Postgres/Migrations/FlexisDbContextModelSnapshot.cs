@@ -131,6 +131,40 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("job_catalog_items", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LocationName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("LocationSheetId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "ProfileId", "SourceId", "LocationSheetId")
+                        .IsUnique();
+
+                    b.ToTable("job_pipeline_entries", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -181,6 +215,15 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                 });
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobCatalogItem", b =>
+                {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineEntry", b =>
                 {
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()

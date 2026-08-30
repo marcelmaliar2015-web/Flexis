@@ -33,6 +33,11 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | POST | `/api/job-application/sources/{id}/locations` | Authenticated | `201` + `SourceLocationDto` |
 | PUT | `/api/job-application/sources/{id}/locations/{sheetId}` | Authenticated | `200` + `SourceLocationDto` |
 | DELETE | `/api/job-application/sources/{id}/locations/{sheetId}` | Authenticated | `204` |
+| GET | `/api/job-application/pipeline` | Authenticated | `200` + `JobPipelineBoardDto` |
+| POST | `/api/job-application/pipeline` | Authenticated | `201` + `JobPipelineEntryDto` |
+| PUT | `/api/job-application/pipeline/{id}` | Authenticated | `200` + `JobPipelineEntryDto` |
+| DELETE | `/api/job-application/pipeline/{id}` | Authenticated | `204` |
+| POST | `/api/job-application/pipeline/{id}/update` | Authenticated | `200` + `JobPipelineUpdateResultDto` |
 
 `UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`.
 
@@ -43,6 +48,8 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 `JobCatalogItemDto`: `id`, `title`, `createdAt`, `url`, `spreadsheetId`. Write body: `title`. Create makes a Google Sheet; `url` is that spreadsheet. Duplicate title per kind for that user: `409`. Missing item: `404`. Gmail must be connected to create, rename a sheet, delete a sheet, or manage locations. Profile tab name is the title. Source first tab is `US`.
 
 `SourceLocationDto`: `sheetId`, `name`. Write body: `name`. Locations are source spreadsheet tabs. Duplicate name: `409`. Last location cannot be deleted: `409`.
+
+`JobPipelineBoardDto`: `entries`, `profiles`, `sources` (each source includes `locations`). `JobPipelineEntryDto`: `id`, `profileId`, `sourceId`, `locationSheetId`, `locationName`, `createdAt`. Write body: `profileId`, `sourceId`, `locationSheetId`. Duplicate profile and source location: `409`. Update copies Company Name, Position, Link, and JD from that source tab onto the profile sheet and skips rows already present (`added`, `skipped`).
 
 ## Contracts and errors
 
@@ -56,3 +63,4 @@ Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. L
 - [../decisions/006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md)
 - [../decisions/008-job-catalog-google-sheets.md](../decisions/008-job-catalog-google-sheets.md)
 - [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)
+- [../decisions/010-job-application-pipeline.md](../decisions/010-job-application-pipeline.md)

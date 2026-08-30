@@ -20,6 +20,8 @@ public sealed class FlexisDbContext : DbContext
 
     public DbSet<JobCatalogItem> JobCatalogItems => Set<JobCatalogItem>();
 
+    public DbSet<JobPipelineEntry> JobPipelineEntries => Set<JobPipelineEntry>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FlexisDbContext).Assembly);

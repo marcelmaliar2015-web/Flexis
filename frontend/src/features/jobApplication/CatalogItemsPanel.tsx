@@ -26,6 +26,7 @@ import {
   listJobCatalogItems,
   updateJobCatalogItem,
 } from "@/shared/api/jobCatalog";
+import { jobPipelineQueryKey } from "@/shared/api/pipeline";
 import type { JobCatalogItem, JobCatalogKind } from "@/shared/types/jobCatalog";
 
 const Panel = styled(Box)(({ theme }) => ({
@@ -35,7 +36,20 @@ const Panel = styled(Box)(({ theme }) => ({
   overflow: "hidden",
 }));
 
-type EditorState = { mode: "create" } | { mode: "edit"; item: JobCatalogItem };
+type EditorState =
+  | { mode: "create" }
+  | { mode: "edit"; item: JobCatalogItem }
+  | { mode: "created"; item: JobCatalogItem };
+
+export function SheetUrl({ url }: { url: string }) {
+  return (
+    <Box sx={{ wordBreak: "break-all", minWidth: 0 }}>
+      <Link href={url} target="_blank" rel="noopener noreferrer">
+        {url}
+      </Link>
+    </Box>
+  );
+}
 
 type CatalogItemsPanelProps = {
   kind: JobCatalogKind;
@@ -76,9 +90,11 @@ export function CatalogItemsPanel({
 
   const createMutation = useMutation({
     mutationFn: (request: { title: string }) => createJobCatalogItem(kind, request),
-    onSuccess: async () => {
+    onSuccess: async (item) => {
       await queryClient.invalidateQueries({ queryKey });
-      setEditor(null);
+      await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+      setFormError(null);
+      setEditor({ mode: "created", item });
     },
     onError: (error) => setFormError(errorMessage(error)),
   });
@@ -88,6 +104,7 @@ export function CatalogItemsPanel({
       updateJobCatalogItem(kind, id, request),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
       setEditor(null);
     },
     onError: (error) => setFormError(errorMessage(error)),
@@ -97,6 +114,7 @@ export function CatalogItemsPanel({
     mutationFn: (id: string) => deleteJobCatalogItem(kind, id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
       setItemToDelete(null);
     },
   });
@@ -132,7 +150,7 @@ export function CatalogItemsPanel({
               <TableRow>
                 <TableCell>Title</TableCell>
                 <TableCell>Created</TableCell>
-                <TableCell>Sheet</TableCell>
+                <TableCell>URL</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -142,15 +160,7 @@ export function CatalogItemsPanel({
                   <TableCell>{item.title}</TableCell>
                   <TableCell>{formatCreatedAt(item.createdAt)}</TableCell>
                   <TableCell>
-                    {item.url && actionsEnabled ? (
-                      <Link href={item.url} target="_blank" rel="noopener noreferrer">
-                        Open sheet
-                      </Link>
-                    ) : item.url ? (
-                      "Open sheet"
-                    ) : (
-                      "—"
-                    )}
+                    {item.url ? <SheetUrl url={item.url} /> : "—"}
                   </TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={0.5} sx={{ justifyContent: "flex-end" }}>
@@ -179,7 +189,13 @@ export function CatalogItemsPanel({
           </Table>
         </TableContainer>
       </Panel>
-      {editor ? (
+      {editor?.mode === "created" ? (
+        <CreatedSheetDialog
+          itemLabel={itemLabel}
+          url={editor.item.url}
+          onClose={() => setEditor(null)}
+        />
+      ) : editor ? (
         <CatalogEditorDialog
           editor={editor}
           itemLabel={itemLabel}
@@ -216,8 +232,33 @@ export function CatalogItemsPanel({
   );
 }
 
+function CreatedSheetDialog({
+  itemLabel,
+  url,
+  onClose,
+}: {
+  itemLabel: string;
+  url: string;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>{`Created ${itemLabel}`}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={1.5} sx={{ pt: 1 }}>
+          <Typography variant="body2">Open the Google Sheet with this URL.</Typography>
+          {url ? <SheetUrl url={url} /> : null}
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 type CatalogEditorDialogProps = {
-  editor: EditorState;
+  editor: Exclude<EditorState, { mode: "created"; item: JobCatalogItem }>;
   itemLabel: string;
   error: string | null;
   isSaving: boolean;
@@ -271,11 +312,7 @@ function CatalogEditorDialog({
                       : "The first location tab is US."
                   }`}
             </Typography>
-            {isEdit && editor.item.url ? (
-              <Link href={editor.item.url} target="_blank" rel="noopener noreferrer">
-                Open sheet
-              </Link>
-            ) : null}
+            {isEdit && editor.item.url ? <SheetUrl url={editor.item.url} /> : null}
             {isEdit ? (
               <Typography variant="body2" color="text.secondary">
                 {`Created ${formatCreatedAt(editor.item.createdAt)}`}

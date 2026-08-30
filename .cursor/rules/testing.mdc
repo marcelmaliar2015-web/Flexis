@@ -1,0 +1,12 @@
+---
+description: Do not test unless the user asks. Implement code only.
+alwaysApply: true
+---
+
+# Testing
+
+Do not test. Write the code and stop.
+
+Do not run unit tests, typechecks, builds, linters, curl, health checks, browser flows, or restarts to verify behavior.
+
+Test only when the user says `test`, `verify`, or `check`.

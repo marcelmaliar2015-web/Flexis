@@ -14,7 +14,7 @@ ASP.NET Core 10 (`net10.0`), EF Core with Npgsql, MongoDB.Driver, JWT Bearer. So
 
 ## Boundaries
 
-- `Flexis.Domain` — entities and domain rules, including `User`, `GoogleConnection`, `GoogleClientCredentials`, and `JobCatalogItem`.
+- `Flexis.Domain` — entities and domain rules, including `User`, `GoogleConnection`, `GoogleClientCredentials`, `JobCatalogItem`, and `JobPipelineEntry`.
 - `Flexis.Application` — use cases, DTOs, DI entry `AddApplication`.
 - `Flexis.Infrastructure` — EF Core, MongoDB, JWT, password hashing, Google OAuth, Google Sheets, health checks, DI entry `AddInfrastructure`.
 - `Flexis.Api` — HTTP, CORS, JWT bearer, OpenAPI in Development, controllers.

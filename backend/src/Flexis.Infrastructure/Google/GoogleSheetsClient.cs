@@ -242,6 +242,47 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         }
     }
 
+    public async Task<IReadOnlyList<JobListingRow>> ReadListingsAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        CancellationToken cancellationToken)
+    {
+        var payload = await SendJson<SheetValues>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(sheetName, "A2:D")}",
+            null,
+            cancellationToken);
+
+        return (payload.Values ?? [])
+            .Select(ToListing)
+            .ToArray();
+    }
+
+    public Task AppendListingsAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        IReadOnlyList<JobListingRow> rows,
+        CancellationToken cancellationToken)
+    {
+        if (rows.Count == 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        return SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(sheetName, "A2:D")}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS",
+            new
+            {
+                values = rows.Select(row => new[] { row.CompanyName, row.Position, row.Link, row.Jd }).ToArray()
+            },
+            cancellationToken);
+    }
+
     private static Column[] ColumnsFor(JobWorkbookKind kind)
     {
         return kind == JobWorkbookKind.Profile
@@ -487,6 +528,34 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         return fallback;
     }
 
+    private static string ValuesRange(string sheetName, string cells)
+    {
+        return Uri.EscapeDataString($"'{sheetName.Replace("'", "''", StringComparison.Ordinal)}'!{cells}");
+    }
+
+    private static JobListingRow ToListing(List<JsonElement> row)
+    {
+        return new JobListingRow(Cell(row, 0), Cell(row, 1), Cell(row, 2), Cell(row, 3));
+    }
+
+    private static string Cell(List<JsonElement> row, int index)
+    {
+        if (index >= row.Count)
+        {
+            return string.Empty;
+        }
+
+        var cell = row[index];
+        return cell.ValueKind switch
+        {
+            JsonValueKind.String => cell.GetString() ?? string.Empty,
+            JsonValueKind.Number => cell.ToString(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            _ => string.Empty
+        };
+    }
+
     private sealed record Column(string Name, int Width);
 
     private sealed record Color(double Red, double Green, double Blue);
@@ -513,6 +582,11 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         public int SheetId { get; set; }
 
         public string? Title { get; set; }
+    }
+
+    private sealed class SheetValues
+    {
+        public List<List<JsonElement>>? Values { get; set; }
     }
 
     private sealed class GoogleErrorEnvelope

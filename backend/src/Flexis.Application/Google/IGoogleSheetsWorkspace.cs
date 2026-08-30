@@ -10,6 +10,15 @@ public sealed record CreatedSpreadsheet(string SpreadsheetId, string Spreadsheet
 
 public sealed record SpreadsheetSheet(int SheetId, string Name);
 
+public sealed record JobListingRow(string CompanyName, string Position, string Link, string Jd)
+{
+    public bool IsEmpty =>
+        string.IsNullOrWhiteSpace(CompanyName)
+        && string.IsNullOrWhiteSpace(Position)
+        && string.IsNullOrWhiteSpace(Link)
+        && string.IsNullOrWhiteSpace(Jd);
+}
+
 public interface IGoogleSheetsWorkspace
 {
     Task<CreatedSpreadsheet> CreateWorkbookAsync(
@@ -50,4 +59,17 @@ public interface IGoogleSheetsWorkspace
         CancellationToken cancellationToken);
 
     Task DeleteFileAsync(string accessToken, string spreadsheetId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<JobListingRow>> ReadListingsAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        CancellationToken cancellationToken);
+
+    Task AppendListingsAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        IReadOnlyList<JobListingRow> rows,
+        CancellationToken cancellationToken);
 }

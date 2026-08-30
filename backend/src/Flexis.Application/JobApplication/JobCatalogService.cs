@@ -7,15 +7,18 @@ namespace Flexis.Application.JobApplication;
 public sealed class JobCatalogService
 {
     private readonly IJobCatalogRepository _items;
+    private readonly IJobPipelineRepository _pipeline;
     private readonly GoogleAccessTokenService _tokens;
     private readonly IGoogleSheetsWorkspace _sheets;
 
     public JobCatalogService(
         IJobCatalogRepository items,
+        IJobPipelineRepository pipeline,
         GoogleAccessTokenService tokens,
         IGoogleSheetsWorkspace sheets)
     {
         _items = items;
+        _pipeline = pipeline;
         _tokens = tokens;
         _sheets = sheets;
     }
@@ -113,6 +116,7 @@ public sealed class JobCatalogService
             await _sheets.DeleteFileAsync(accessToken, item.SpreadsheetId, cancellationToken);
         }
 
+        await _pipeline.RemoveByCatalogItemIdAsync(userId, id, cancellationToken);
         _items.Remove(item);
         await _items.SaveChangesAsync(cancellationToken);
     }
