@@ -24,3 +24,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [002](002-postgres-mongodb.md) | PostgreSQL and MongoDB |
 | [003](003-react-vite-mui.md) | React Vite MUI frontend |
 | [004](004-jwt-role-users.md) | JWT roles and user management |
+| [005](005-signed-in-left-nav.md) | Signed-in left navigation |

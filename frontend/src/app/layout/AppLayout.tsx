@@ -7,6 +7,7 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { Link as RouterLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/shared/auth/AuthProvider";
+import { appPaths } from "@/shared/config/paths";
 
 const ShellRoot = styled(Box)({
   minHeight: "100dvh",
@@ -45,7 +46,7 @@ export function AppLayout() {
         <Toolbar>
           <Box
             component={RouterLink}
-            to="/"
+            to={auth.user ? appPaths.dashboard : appPaths.home}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -63,17 +64,17 @@ export function AppLayout() {
           </Box>
           <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0, alignItems: "center" }}>
             <Box sx={{ display: { xs: "none", sm: "block" } }}>
-              <Button color="inherit" component={RouterLink} to="/" variant="text">
+              <Button color="inherit" component={RouterLink} to={appPaths.home} variant="text">
                 Home
               </Button>
             </Box>
             {auth.user ? (
-              <Button color="inherit" component={RouterLink} to="/health" variant="text">
+              <Button color="inherit" component={RouterLink} to={appPaths.health} variant="text">
                 Health
               </Button>
             ) : null}
             {auth.user?.role === "Admin" ? (
-              <Button color="inherit" component={RouterLink} to="/users" variant="text">
+              <Button color="inherit" component={RouterLink} to={appPaths.users} variant="text">
                 Users
               </Button>
             ) : null}
@@ -89,7 +90,7 @@ export function AppLayout() {
                 </Button>
               </>
             ) : (
-              <Button color="inherit" component={RouterLink} to="/sign-in" variant="text">
+              <Button color="inherit" component={RouterLink} to={appPaths.signIn} variant="text">
                 Sign in
               </Button>
             )}

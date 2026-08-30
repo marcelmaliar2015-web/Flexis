@@ -10,6 +10,9 @@ frontend/src/
     health/
     auth/
     users/
+    dashboard/
+    jobApplication/
+    settings/
   shared/
     api/
     auth/
@@ -28,9 +31,12 @@ Path alias `@/` maps to `frontend/src/`.
 | `features/health` | Health screen and query hook |
 | `features/auth` | Sign-in screen |
 | `features/users` | Admin user management screen |
+| `features/dashboard` | Empty Dashboard screen |
+| `features/jobApplication` | Empty Job Application screen |
+| `features/settings` | Empty Settings screen |
 | `shared/api` | `fetch` wrapper and endpoint functions |
 | `shared/auth` | Session provider and token storage |
-| `shared/config` | Env access |
+| `shared/config` | Env access and `appPaths` |
 | `shared/types` | Shared TypeScript contracts |
 
 ## Import rules

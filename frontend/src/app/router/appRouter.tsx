@@ -1,14 +1,19 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "@/app/layout/AppLayout";
+import { AuthenticatedLayout } from "@/app/layout/AuthenticatedLayout";
 import { RequireAdmin, RequireAuth } from "@/app/router/routeGuards";
 import { SignInPage } from "@/features/auth/SignInPage";
+import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { HealthPage } from "@/features/health/HealthPage";
 import { HomePage } from "@/features/home/HomePage";
+import { JobApplicationPage } from "@/features/jobApplication/JobApplicationPage";
+import { SettingsPage } from "@/features/settings/SettingsPage";
 import { UsersPage } from "@/features/users/UsersPage";
+import { appPaths } from "@/shared/config/paths";
 
 export const appRouter = createBrowserRouter([
   {
-    path: "/",
+    path: appPaths.home,
     element: <AppLayout />,
     children: [
       {
@@ -23,15 +28,32 @@ export const appRouter = createBrowserRouter([
         element: <RequireAuth />,
         children: [
           {
-            path: "health",
-            element: <HealthPage />,
-          },
-          {
-            element: <RequireAdmin />,
+            element: <AuthenticatedLayout />,
             children: [
               {
-                path: "users",
-                element: <UsersPage />,
+                path: "dashboard",
+                element: <DashboardPage />,
+              },
+              {
+                path: "job-application",
+                element: <JobApplicationPage />,
+              },
+              {
+                path: "settings",
+                element: <SettingsPage />,
+              },
+              {
+                path: "health",
+                element: <HealthPage />,
+              },
+              {
+                element: <RequireAdmin />,
+                children: [
+                  {
+                    path: "users",
+                    element: <UsersPage />,
+                  },
+                ],
               },
             ],
           },

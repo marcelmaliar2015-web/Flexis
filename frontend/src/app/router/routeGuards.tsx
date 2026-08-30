@@ -2,6 +2,7 @@ import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/shared/auth/AuthProvider";
+import { appPaths } from "@/shared/config/paths";
 
 export function RequireAuth() {
   const auth = useAuth();
@@ -16,7 +17,7 @@ export function RequireAuth() {
   }
 
   if (!auth.user) {
-    return <Navigate to="/sign-in" replace state={{ from: location }} />;
+    return <Navigate to={appPaths.signIn} replace state={{ from: location }} />;
   }
 
   return <Outlet />;
@@ -26,7 +27,7 @@ export function RequireAdmin() {
   const auth = useAuth();
 
   if (auth.user?.role !== "Admin") {
-    return <Navigate to="/health" replace />;
+    return <Navigate to={appPaths.dashboard} replace />;
   }
 
   return <Outlet />;

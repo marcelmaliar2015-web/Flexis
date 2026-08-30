@@ -14,7 +14,7 @@ React 19, TypeScript, Vite, MUI, TanStack Query, React Router.
 
 ## Boundaries
 
-- `app/` owns shell, theme, router, providers, guards.
+- `app/` owns shell, theme, router, providers, guards, and the signed-in left nav.
 - `features/` owns screens and feature hooks.
 - `shared/` owns API client, session, config, and shared types.
 - Features do not import other features. `shared/` does not import `app/` or `features/`.

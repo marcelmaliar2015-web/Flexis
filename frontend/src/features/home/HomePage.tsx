@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link as RouterLink } from "react-router-dom";
 import { getHealthStatus, healthQueryKey } from "@/shared/api/health";
 import { useAuth } from "@/shared/auth/AuthProvider";
+import { appPaths } from "@/shared/config/paths";
 
 const capabilities = [
   {
@@ -101,8 +102,8 @@ export function HomePage() {
   });
 
   const platformStatus = healthQuery.data?.status;
-  const primaryTo = auth.user ? "/health" : "/sign-in";
-  const primaryLabel = auth.user ? "View system health" : "Sign in";
+  const primaryTo = auth.user ? appPaths.dashboard : appPaths.signIn;
+  const primaryLabel = auth.user ? "Open dashboard" : "Sign in";
 
   return (
     <Stack>

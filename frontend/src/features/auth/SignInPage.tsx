@@ -10,6 +10,7 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "@/shared/api/client";
 import { useAuth } from "@/shared/auth/AuthProvider";
+import { appPaths } from "@/shared/config/paths";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -43,7 +44,7 @@ export function SignInPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (auth.user) {
-    return <Navigate to="/health" replace />;
+    return <Navigate to={appPaths.dashboard} replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -52,7 +53,7 @@ export function SignInPage() {
     setIsSubmitting(true);
     try {
       await auth.signIn({ email, password });
-      const from = (location.state as LocationState | null)?.from?.pathname ?? "/health";
+      const from = (location.state as LocationState | null)?.from?.pathname ?? appPaths.dashboard;
       navigate(from, { replace: true });
     } catch (caught) {
       if (caught instanceof ApiError) {
