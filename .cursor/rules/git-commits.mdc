@@ -1,0 +1,33 @@
+---
+description: Commit only when the user says Commit using short ACTION prefix messages
+alwaysApply: true
+---
+
+# Git commits
+
+Commit only when the user says `Commit`. Do not commit unprompted.
+
+## Message format
+
+```
+[ACTION]: content
+```
+
+- ACTION is one word in uppercase: `ADD`, `UPDATE`, `FIX`, `REMOVE`, `REFACTOR`, `DOCS`
+- content is 3 to 8 plain words that name what changed
+- No symbols in content: no comma dash slash quote period parentheses
+- No filler words such as `in` `and` `the` `a` `an` `of` `to` `for` `with` `on`
+- Not a sentence. Not why. Only what changed.
+
+## Examples
+
+```
+# ❌ BAD
+Add architecture folder and cursor rules for the project
+
+# ❌ BAD
+[ADD]: architecture docs, cursor rules, and commit format
+
+# ✅ GOOD
+[ADD]: architecture docs cursor rules
+```

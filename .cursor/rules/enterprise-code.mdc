@@ -1,0 +1,43 @@
+---
+description: Enterprise-level, long-term maintainable structure and code for Flexis
+alwaysApply: true
+---
+
+# Enterprise code
+
+Write code a new engineer (and a new Cursor session) can understand without explanation. Prefer structure over cleverness.
+
+## Structure
+
+- Clear module boundaries. One responsibility per file and module.
+- Place code where `architecture/` says it lives. New placement → update architecture in the same turn.
+- Small, named functions and types. No nested anonymous logic at boundaries.
+- Shared constants only when used in more than one file.
+
+## Clarity
+
+- Names describe intent (`getActiveLeaseById`, not `getData` / `handle`).
+- Explicit types at public boundaries. No unexplained `any`.
+- Linear, obvious control flow. Fail explicitly; do not swallow errors.
+- No comments that narrate the code. Comment only non-obvious constraints.
+
+## Change discipline
+
+- Smallest change that solves the problem. No drive-by refactors or unused abstractions.
+- Match existing patterns in the same layer. A new pattern needs an ADR in `architecture/decisions/`.
+- Do not add unused files, exports, or dependencies.
+
+## Example
+
+```typescript
+// ❌ BAD
+export async function handle(req: any) {
+  const d = await db.query("...");
+  return d;
+}
+
+// ✅ GOOD
+export async function getLeaseById(id: LeaseId): Promise<Lease> {
+  return leaseRepository.findById(id);
+}
+```

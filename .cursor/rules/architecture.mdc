@@ -1,0 +1,34 @@
+---
+description: Keep architecture/ current as the source of truth for Flexis frontend and backend
+alwaysApply: true
+---
+
+# Architecture source of truth
+
+`architecture/` is mandatory project context. Keep it accurate in the same turn as every relevant code change. A new Cursor session with no chat history must understand Flexis from these files alone.
+
+## After every change
+
+If you add, rename, move, or delete a module, route, screen, API, entity, auth path, env var, or convention — update the matching architecture file before you finish. Do not defer. Do not describe systems that are not in the code.
+
+## Where to write (do not collapse into one file)
+
+- `architecture/README.md` — index; update when you add an architecture file
+- `architecture/overview.md` — product, system context, tech stack, repo layout
+- `architecture/conventions.md` — naming, errors, env, shared patterns
+- `architecture/frontend/` — overview, structure, routing, state, UI
+- `architecture/backend/` — overview, structure, API, data, security
+- `architecture/decisions/` — one ADR file per significant decision
+
+## File rules
+
+- Current facts only. No plans, speculation, or chat recap.
+- Unused section: a single `None yet.` line — not empty prose.
+- Names, paths, and endpoints must match the codebase.
+- Prefer a new focused file over growing a file past ~150 lines.
+- Do not duplicate the same fact; link to the file that owns it.
+
+## Do not
+
+- Finish a feature with stale architecture
+- Put implementation dumps or generated API specs here; summarize and link to code
