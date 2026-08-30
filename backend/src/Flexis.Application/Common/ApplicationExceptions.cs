@@ -39,3 +39,11 @@ public sealed class DomainRuleException : Exception
     {
     }
 }
+
+public sealed class GoogleOAuthException : Exception
+{
+    public GoogleOAuthException(string message)
+        : base(message)
+    {
+    }
+}

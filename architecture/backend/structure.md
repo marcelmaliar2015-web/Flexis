@@ -12,13 +12,17 @@ backend/src/
     Common/
     Health/
     Users/
+    Google/
   Flexis.Domain/
     Users/
+    Google/
   Flexis.Infrastructure/
     Persistence/Postgres/
     Persistence/Postgres/Users/
+    Persistence/Postgres/Google/
     Persistence/Mongo/
     Security/
+    Google/
 ```
 
 Shared MSBuild settings: `backend/Directory.Build.props` (`net10.0`, nullable, warnings as errors, NuGet audit on direct packages).
@@ -29,7 +33,7 @@ Shared MSBuild settings: `backend/Directory.Build.props` (`net10.0`, nullable, w
 | --- | --- |
 | Flexis.Domain | Domain model |
 | Flexis.Application | Application services and API contracts |
-| Flexis.Infrastructure | PostgreSQL, MongoDB, JWT, password hashing, health checks |
+| Flexis.Infrastructure | PostgreSQL, MongoDB, JWT, password hashing, Google OAuth, health checks |
 | Flexis.Api | Host, CORS, JWT bearer, controllers |
 
 ## Layers

@@ -27,3 +27,4 @@ Sign-in and already-signed-in visits to `/sign-in` go to `/dashboard`. Non-admin
 - [overview.md](overview.md)
 - [../backend/security.md](../backend/security.md)
 - [../decisions/005-signed-in-left-nav.md](../decisions/005-signed-in-left-nav.md)
+- [../decisions/006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md)

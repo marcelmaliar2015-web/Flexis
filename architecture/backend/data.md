@@ -6,7 +6,7 @@ Two stores, registered in `Flexis.Infrastructure.DependencyInjection`.
 
 | Store | Use | Access |
 | --- | --- | --- |
-| PostgreSQL | Relational data, users | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
+| PostgreSQL | Relational data, users, Google connections | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
 | MongoDB | Document data | `IMongoClient` singleton, `IMongoDatabase` named `Mongo:Database` |
 
 Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, database `flexis`).
@@ -14,6 +14,8 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 ## Entities
 
 `User` in `Flexis.Domain.Users`. Table `users`, unique email. EF configuration: `Persistence/Postgres/Users/UserConfiguration.cs`.
+
+`GoogleConnection` in `Flexis.Domain.Google`. Table `google_connections`, unique `UserId`, cascade from `users`. EF configuration: `Persistence/Postgres/Google/GoogleConnectionConfiguration.cs`. Refresh and access tokens are stored protected, not as plaintext.
 
 ## Migrations
 

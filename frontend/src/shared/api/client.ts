@@ -23,7 +23,23 @@ export async function putJson<T>(path: string, body: unknown): Promise<T> {
   return requestJson<T>(path, { method: "PUT", body: JSON.stringify(body) });
 }
 
+export async function deleteRequest(path: string): Promise<void> {
+  const response = await send(path, { method: "DELETE" });
+  if (response.status === 204) {
+    return;
+  }
+
+  if (response.status === 503) {
+    return;
+  }
+}
+
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await send(path, init);
+  return (await response.json()) as T;
+}
+
+async function send(path: string, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json");
   if (init?.body && !headers.has("Content-Type")) {
@@ -57,7 +73,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(problemMessage(body, response.status), response.status);
   }
 
-  return (await response.json()) as T;
+  return response;
 }
 
 function problemMessage(body: unknown, status: number): string {

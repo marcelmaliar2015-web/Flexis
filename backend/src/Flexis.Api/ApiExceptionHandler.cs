@@ -17,6 +17,7 @@ internal sealed class ApiExceptionHandler : IExceptionHandler
             NotFoundException => (StatusCodes.Status404NotFound, exception.Message),
             ConflictException => (StatusCodes.Status409Conflict, exception.Message),
             DomainRuleException => (StatusCodes.Status409Conflict, exception.Message),
+            GoogleOAuthException => (StatusCodes.Status400BadRequest, exception.Message),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
         };
 

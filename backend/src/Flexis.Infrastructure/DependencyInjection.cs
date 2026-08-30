@@ -1,7 +1,10 @@
 using Flexis.Application.Auth;
+using Flexis.Application.Google;
 using Flexis.Application.Users;
+using Flexis.Infrastructure.Google;
 using Flexis.Infrastructure.Persistence.Mongo;
 using Flexis.Infrastructure.Persistence.Postgres;
+using Flexis.Infrastructure.Persistence.Postgres.Google;
 using Flexis.Infrastructure.Persistence.Postgres.Users;
 using Flexis.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +43,25 @@ public static class DependencyInjection
 
         services.AddOptions<AuthSeedSettings>()
             .Bind(configuration.GetSection(AuthSeedSettings.SectionName));
+
+        services.AddOptions<GoogleOAuthSettings>()
+            .Bind(configuration.GetSection(GoogleOAuthSettings.SectionName))
+            .Validate(
+                settings => !string.IsNullOrWhiteSpace(settings.TokenProtectionKey) && settings.TokenProtectionKey.Length >= 32,
+                "Google:TokenProtectionKey must be at least 32 characters.")
+            .ValidateOnStart();
+
+        services.AddOptions<FrontendOriginSettings>()
+            .Bind(configuration.GetSection(FrontendOriginSettings.SectionName))
+            .Validate(settings => settings.Origins is { Length: > 0 }, "Frontend:Origins is required.")
+            .ValidateOnStart();
+
+        services.AddMemoryCache();
+        services.AddHttpClient<IGoogleOAuthGateway, GoogleOAuthClient>();
+        services.AddSingleton<IGoogleTokenProtector, AesGoogleTokenProtector>();
+        services.AddSingleton<IGoogleOAuthStateStore, MemoryGoogleOAuthStateStore>();
+        services.AddSingleton<IFrontendOrigins, ConfigurationFrontendOrigins>();
+        services.AddScoped<IGoogleConnectionRepository, GoogleConnectionRepository>();
 
         services.AddSingleton<IMongoClient>(serviceProvider =>
         {

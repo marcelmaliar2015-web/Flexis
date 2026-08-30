@@ -1,3 +1,4 @@
+using Flexis.Domain.Google;
 using Flexis.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +12,8 @@ public sealed class FlexisDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+
+    public DbSet<GoogleConnection> GoogleConnections => Set<GoogleConnection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
