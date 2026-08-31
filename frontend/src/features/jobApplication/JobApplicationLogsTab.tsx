@@ -1,4 +1,3 @@
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -10,7 +9,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { jobApplicationLogsQueryKey, listJobApplicationLogs } from "@/shared/api/jobApplicationLogs";
 import type { JobApplicationLog } from "@/shared/types/jobApplication";
-import { errorMessage } from "@/features/jobApplication/pipelineUi";
 
 const FilterRow = styled(Stack)(({ theme }) => ({
   flexWrap: "wrap",
@@ -172,7 +170,6 @@ export function JobApplicationLogsTab() {
           Refresh
         </Button>
       </Stack>
-      {errorMessage(logsQuery.error) ? <Alert severity="error">{errorMessage(logsQuery.error)}</Alert> : null}
       <TextField
         fullWidth
         size="small"

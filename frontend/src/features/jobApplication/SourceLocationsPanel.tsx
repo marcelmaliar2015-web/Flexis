@@ -61,7 +61,6 @@ export function SourceLocationsPanel({ actionsEnabled }: { actionsEnabled: boole
       <Typography variant="h6" component="h2">
         Locations
       </Typography>
-      {errorMessage(sourcesQuery.error) ? <Alert severity="error">{errorMessage(sourcesQuery.error)}</Alert> : null}
       {sourcesQuery.isSuccess && (sourcesQuery.data ?? []).length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           Create a source first. Each source workbook starts with a US tab. Add more locations here.
@@ -155,8 +154,6 @@ function SourceLocationCard({
             ) : null}
           </Stack>
         </Stack>
-        {errorMessage(locationsQuery.error) ? <Alert severity="error">{errorMessage(locationsQuery.error)}</Alert> : null}
-        {errorMessage(deleteMutation.error) ? <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert> : null}
         {item.spreadsheetId.length > 0 && !actionsEnabled ? (
           <Typography variant="body2" color="text.secondary">
             Connect Gmail to load locations.

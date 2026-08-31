@@ -10,7 +10,7 @@ React 19, TypeScript, Vite, MUI, TanStack Query, React Router.
 
 ## Entry
 
-`frontend/src/main.tsx` mounts `App`. `App` wraps providers and `RouterProvider`.
+`frontend/src/main.tsx` mounts `App`. `App` wraps providers and `RouterProvider`. Local dev: double-click `frontend/run.bat` or run `npm run dev` in `frontend/` (`http://127.0.0.1:5173`).
 
 ## Boundaries
 

@@ -155,7 +155,7 @@ export function HelpProblemsTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="Check now stays disabled"
-                secondary="Connect Gmail on Job Application Settings, then save an OpenAI API key on Mail Check Settings."
+                secondary="Connect Gmail on Mail Check Settings, then save an OpenAI API key there."
               />
             </ListItem>
             <ListItem disableGutters>

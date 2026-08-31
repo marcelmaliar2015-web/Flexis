@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Flexis.Application.Common;
 using Flexis.Application.JobApplication;
+using Flexis.Application.MailCheck;
 using Flexis.Domain.Google;
 
 namespace Flexis.Application.Google;
@@ -17,6 +18,7 @@ public sealed class GoogleConnectionService
     private readonly IFrontendOrigins _frontendOrigins;
     private readonly GoogleDriveLayoutService _driveLayout;
     private readonly JobApplicationActivity _activity;
+    private readonly MailConnectionService _mailConnections;
 
     public GoogleConnectionService(
         IGoogleOAuthGateway oauth,
@@ -25,7 +27,8 @@ public sealed class GoogleConnectionService
         IGoogleConnectionRepository connections,
         IFrontendOrigins frontendOrigins,
         GoogleDriveLayoutService driveLayout,
-        JobApplicationActivity activity)
+        JobApplicationActivity activity,
+        MailConnectionService mailConnections)
     {
         _oauth = oauth;
         _states = states;
@@ -34,6 +37,7 @@ public sealed class GoogleConnectionService
         _frontendOrigins = frontendOrigins;
         _driveLayout = driveLayout;
         _activity = activity;
+        _mailConnections = mailConnections;
     }
 
     public async Task<GoogleConnectionStatusDto> GetStatusAsync(
@@ -62,8 +66,17 @@ public sealed class GoogleConnectionService
         var returnUrl = NormalizeReturnUrl(request.ReturnUrl);
         var state = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
         var (verifier, challenge) = CreatePkce();
-        _states.Save(state, new GoogleOAuthPending(userId, verifier, returnUrl), OAuthStateLifetime);
-        return new GoogleConnectStartDto(await _oauth.CreateAuthorizationUrlAsync(state, challenge, cancellationToken));
+        _states.Save(
+            state,
+            new GoogleOAuthPending(
+                userId,
+                verifier,
+                returnUrl,
+                OAuthConnectTarget.JobApplication,
+                GoogleWorkspaceScopes.Request),
+            OAuthStateLifetime);
+        return new GoogleConnectStartDto(
+            await _oauth.CreateAuthorizationUrlAsync(state, challenge, GoogleWorkspaceScopes.Request, cancellationToken));
     }
 
     public async Task<string> CompleteCallbackAsync(
@@ -81,23 +94,29 @@ public sealed class GoogleConnectionService
         if (!string.IsNullOrWhiteSpace(error))
         {
             var result = string.Equals(error, "access_denied", StringComparison.Ordinal) ? "denied" : "error";
-            return AppendResult(pending.ReturnUrl, result);
+            return RedirectResult(pending, result);
         }
 
         if (string.IsNullOrWhiteSpace(code))
         {
-            return AppendResult(pending.ReturnUrl, "error");
+            return RedirectResult(pending, "error");
         }
 
         try
         {
             var tokens = await _oauth.ExchangeCodeAsync(code, pending.CodeVerifier, cancellationToken);
+            var profile = await _oauth.GetUserInfoAsync(tokens.AccessToken, cancellationToken);
+            if (pending.Target == OAuthConnectTarget.MailCheck)
+            {
+                await _mailConnections.CompleteGmailConnectAsync(pending.UserId, tokens, profile, cancellationToken);
+                return MailConnectionService.AppendMailboxResult(pending.ReturnUrl, "connected");
+            }
+
             if (string.IsNullOrWhiteSpace(tokens.RefreshToken))
             {
                 throw new GoogleOAuthException("Google did not return a refresh token.");
             }
 
-            var profile = await _oauth.GetUserInfoAsync(tokens.AccessToken, cancellationToken);
             var existing = await _connections.GetByUserIdAsync(pending.UserId, cancellationToken);
             var refreshProtected = _protector.Protect(tokens.RefreshToken);
             var accessProtected = _protector.Protect(tokens.AccessToken);
@@ -134,11 +153,11 @@ public sealed class GoogleConnectionService
                 "Connected Gmail",
                 $"Google account {profile.Email} is connected. Flexis can read and write Job Application sheets and Gmail for this user.",
                 cancellationToken);
-            return AppendResult(pending.ReturnUrl, "connected");
+            return RedirectResult(pending, "connected");
         }
         catch (GoogleOAuthException)
         {
-            return AppendResult(pending.ReturnUrl, "error");
+            return RedirectResult(pending, "error");
         }
     }
 
@@ -212,6 +231,16 @@ public sealed class GoogleConnectionService
             ? _frontendOrigins.Origins[0]
             : "http://127.0.0.1:5173";
         return origin + JobApplicationPath.OriginalString;
+    }
+
+    private string RedirectResult(GoogleOAuthPending pending, string result)
+    {
+        if (pending.Target == OAuthConnectTarget.MailCheck)
+        {
+            return MailConnectionService.AppendMailboxResult(pending.ReturnUrl, result);
+        }
+
+        return AppendResult(pending.ReturnUrl, result);
     }
 
     private static string AppendResult(string returnUrl, string result)

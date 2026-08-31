@@ -9,7 +9,7 @@ import {
 } from "react";
 import { setAccessToken } from "@/shared/api/accessToken";
 import { getCurrentUser, signIn as requestSignIn } from "@/shared/api/auth";
-import { ApiError } from "@/shared/api/client";
+import { isApiError } from "@/shared/api/errors";
 import { readStoredAccessToken, writeStoredAccessToken } from "@/shared/auth/tokenStorage";
 import type { SignInRequest } from "@/shared/types/auth";
 import type { UserDto } from "@/shared/types/user";
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(current);
       })
       .catch((error: unknown) => {
-        if (error instanceof ApiError && error.status === 401) {
+        if (isApiError(error) && error.status === 401) {
           applySession(null, null);
           return;
         }

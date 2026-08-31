@@ -75,7 +75,6 @@ export function GoogleClientSettings() {
               Create the web client with Help, then paste Client ID and Client secret here.
             </Typography>
           </Stack>
-          {errorMessage(clientQuery.error) ? <Alert severity="error">{errorMessage(clientQuery.error)}</Alert> : null}
           {formError ? <Alert severity="error">{formError}</Alert> : null}
           {saveMutation.isSuccess ? <Alert severity="success">Google Cloud client saved.</Alert> : null}
           <TextField

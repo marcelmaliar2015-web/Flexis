@@ -33,6 +33,8 @@ public sealed class FlexisDbContext : DbContext
 
     public DbSet<MailCheckProcessedMessage> MailCheckProcessedMessages => Set<MailCheckProcessedMessage>();
 
+    public DbSet<MailConnection> MailConnections => Set<MailConnection>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FlexisDbContext).Assembly);

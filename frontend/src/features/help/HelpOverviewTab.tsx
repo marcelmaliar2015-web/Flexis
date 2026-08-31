@@ -129,12 +129,12 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Mail Check</TableCell>
                   <TableCell align="left">
-                    Inbox of labeled interview mail, Check now plus auto check, and Settings for the
-                    OpenAI key and model. Uses the Job Application Gmail connect.
+                    Inbox of labeled interview mail, Check now plus auto check, and Settings for
+                    mailbox connect, OpenAI key, and model.
                   </TableCell>
                   <TableCell align="left">
-                    After Gmail is connected, save an OpenAI key so Flexis can label, pin, and trash
-                    job mail.
+                    Connect Gmail on Mail Check Settings, then save an OpenAI key so Flexis can
+                    label, pin, and trash job mail.
                   </TableCell>
                   <TableCell align="left">
                     <Link component={RouterLink} to={appPaths.mailCheck}>

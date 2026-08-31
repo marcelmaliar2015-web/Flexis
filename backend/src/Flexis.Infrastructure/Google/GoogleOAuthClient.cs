@@ -39,9 +39,18 @@ internal sealed class GoogleOAuthClient : IGoogleOAuthGateway
         return await _clients.GetAsync(cancellationToken) is not null;
     }
 
+    public Task<string> CreateAuthorizationUrlAsync(
+        string state,
+        string codeChallenge,
+        CancellationToken cancellationToken)
+    {
+        return CreateAuthorizationUrlAsync(state, codeChallenge, GoogleWorkspaceScopes.Request, cancellationToken);
+    }
+
     public async Task<string> CreateAuthorizationUrlAsync(
         string state,
         string codeChallenge,
+        string scopes,
         CancellationToken cancellationToken)
     {
         var client = await RequireClientAsync(cancellationToken);
@@ -50,7 +59,7 @@ internal sealed class GoogleOAuthClient : IGoogleOAuthGateway
             ["client_id"] = client.ClientId,
             ["redirect_uri"] = _settings.RedirectUri,
             ["response_type"] = "code",
-            ["scope"] = GoogleWorkspaceScopes.Request,
+            ["scope"] = scopes,
             ["access_type"] = "offline",
             ["prompt"] = "consent",
             ["include_granted_scopes"] = "true",

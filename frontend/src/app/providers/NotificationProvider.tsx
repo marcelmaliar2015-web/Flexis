@@ -5,11 +5,12 @@ import {
 } from "react";
 import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
-import { ApiError } from "@/shared/api/client";
+import { isApiError } from "@/shared/api/errors";
 import {
   dismissIssueToast,
   getIssueToast,
   reportIssue,
+  restoreIssueToast,
   subscribeIssues,
 } from "@/shared/notifications/issueStore";
 
@@ -21,9 +22,12 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   const [toast, setToast] = useState(getIssueToast());
 
   useEffect(() => {
-    return subscribeIssues(() => {
+    const unsubscribe = subscribeIssues(() => {
       setToast(getIssueToast());
     });
+    restoreIssueToast();
+    setToast(getIssueToast());
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -42,11 +46,11 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
     function onUnhandled(event: PromiseRejectionEvent) {
       const reason = event.reason;
-      if (reason instanceof ApiError) {
+      if (isApiError(reason)) {
         return;
       }
       const message = reason instanceof Error ? reason.message : String(reason ?? "Unhandled promise rejection.");
-      if (message.includes("ResizeObserver") || message.startsWith("API is not running.")) {
+      if (message.includes("ResizeObserver") || message.startsWith("Could not reach the API.")) {
         return;
       }
       reportIssue({
@@ -69,9 +73,15 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     <>
       {children}
       <Snackbar
+        key={toast?.id}
         open={toast !== null}
-        autoHideDuration={8000}
-        onClose={dismissIssueToast}
+        autoHideDuration={toast?.severity === "error" ? null : 8000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") {
+            return;
+          }
+          dismissIssueToast();
+        }}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
         {toast ? (

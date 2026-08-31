@@ -16,7 +16,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { getJobFinancialBoard, jobFinancialQueryKey, updateJobFinancialRates } from "@/shared/api/financial";
 import { formatCount, formatPrice, formatRate, parseRate } from "@/features/jobApplication/financialUi";
-import { errorMessage } from "@/features/jobApplication/pipelineUi";
 import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
 
 const Panel = styled(Box)(({ theme }) => ({
@@ -50,7 +49,6 @@ export function JobApplicationFinancialTab() {
     queryFn: getJobFinancialBoard,
   });
   const [selected, setSelected] = useState<string[]>([]);
-  const [rateError, setRateError] = useState<string | null>(null);
 
   const rows = boardQuery.data?.rows ?? [];
   const selectedSet = useMemo(() => new Set(selected.filter((id) => rows.some((row) => row.entryId === id))), [rows, selected]);
@@ -63,10 +61,8 @@ export function JobApplicationFinancialTab() {
     mutationFn: ({ entryId, applyRate, bonusRate }: { entryId: string; applyRate: number; bonusRate: number }) =>
       updateJobFinancialRates(entryId, { applyRate, bonusRate }),
     onSuccess: async () => {
-      setRateError(null);
       await refreshJobApplicationWorkspace(queryClient);
     },
-    onError: (error) => setRateError(errorMessage(error)),
   });
 
   function toggleAll() {
@@ -99,8 +95,6 @@ export function JobApplicationFinancialTab() {
           Refresh
         </Button>
       </Stack>
-      {errorMessage(boardQuery.error) ? <Alert severity="error">{errorMessage(boardQuery.error)}</Alert> : null}
-      {rateError ? <Alert severity="error">{rateError}</Alert> : null}
       <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
         <SummaryCard>
           <Typography variant="overline" color="text.secondary">

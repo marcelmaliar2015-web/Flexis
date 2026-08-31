@@ -40,8 +40,8 @@ export function MailCheckPage() {
             </Typography>
             <AccentRule />
             <Typography variant="body2" color="text.secondary">
-              Labels interview mail, pins it, and throws away application receipts. Connect Gmail
-              once on Job Application. The OpenAI key is the only cost.
+              Connect Gmail or Outlook on Settings, add your OpenAI key, and Flexis labels interview
+              mail, pins keepers, and trashes application noise.
             </Typography>
           </Stack>
           <Tabs

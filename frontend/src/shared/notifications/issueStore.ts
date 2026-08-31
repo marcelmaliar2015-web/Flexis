@@ -3,8 +3,11 @@ import { getApiBaseUrl } from "@/shared/config/env";
 import type { IssueDraft, IssueNotice } from "@/shared/types/issue";
 
 const storageKey = "flexis.issueNotices";
+const dismissedToastKey = "flexis.dismissedIssueToasts";
 const maxItems = 50;
+const maxDismissedToasts = 100;
 const dedupeMs = 180_000;
+const restoreToastMs = 120_000;
 const diagnosticsPath = "/api/diagnostics/events";
 
 type Listener = () => void;
@@ -90,6 +93,64 @@ function pushToServer(notice: IssueNotice) {
   }).catch(() => undefined);
 }
 
+function readDismissedToastIds(): Set<string> {
+  try {
+    const raw = window.sessionStorage.getItem(dismissedToastKey);
+    if (!raw) {
+      return new Set();
+    }
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return new Set();
+    }
+    return new Set(parsed.filter((value): value is string => typeof value === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+function persistDismissedToastIds(ids: Set<string>) {
+  try {
+    window.sessionStorage.setItem(
+      dismissedToastKey,
+      JSON.stringify([...ids].slice(-maxDismissedToasts)),
+    );
+  } catch {
+    return;
+  }
+}
+
+function markToastDismissed(id: string) {
+  const ids = readDismissedToastIds();
+  ids.add(id);
+  persistDismissedToastIds(ids);
+}
+
+export function restoreIssueToast() {
+  if (toast !== null) {
+    return;
+  }
+
+  const dismissed = readDismissedToastIds();
+  const now = Date.now();
+  const pending = items.find((item) => {
+    if (dismissed.has(item.id)) {
+      return false;
+    }
+    const occurredAt = Date.parse(item.occurredAt);
+    if (Number.isNaN(occurredAt)) {
+      return false;
+    }
+    return now - occurredAt < restoreToastMs;
+  });
+  if (!pending) {
+    return;
+  }
+
+  toast = pending;
+  emit();
+}
+
 export function subscribeIssues(listener: Listener): () => void {
   listeners.add(listener);
   return () => {
@@ -106,6 +167,9 @@ export function getIssueToast(): IssueNotice | null {
 }
 
 export function dismissIssueToast() {
+  if (toast) {
+    markToastDismissed(toast.id);
+  }
   toast = null;
   emit();
 }
@@ -113,6 +177,7 @@ export function dismissIssueToast() {
 export function clearIssueNotices() {
   items = [];
   toast = null;
+  persistDismissedToastIds(new Set());
   persist();
   emit();
 }
@@ -161,6 +226,11 @@ export function reportIssue(draft: IssueDraft) {
     );
   });
   if (duplicate) {
+    const dismissed = readDismissedToastIds();
+    dismissed.delete(duplicate.id);
+    persistDismissedToastIds(dismissed);
+    toast = duplicate;
+    emit();
     return;
   }
 

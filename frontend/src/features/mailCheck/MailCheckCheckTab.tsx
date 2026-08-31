@@ -11,7 +11,7 @@ import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { EmptyState, Panel } from "@/features/mailCheck/mailCheckLayout";
-import { actionLabel, errorMessage } from "@/features/mailCheck/mailCheckUi";
+import { actionLabel } from "@/features/mailCheck/mailCheckUi";
 import {
   getMailCheckSettings,
   mailCheckInboxRootQueryKey,
@@ -64,7 +64,7 @@ export function MailCheckCheckTab() {
     },
   });
 
-  const ready = Boolean(settings?.gmailConnected && settings.hasApiKey);
+  const ready = Boolean(settings?.mailboxConnected && settings.hasApiKey);
   const stats = lastRun ?? {
     processed: settings?.lastProcessed ?? 0,
     labeled: settings?.lastLabeled ?? 0,
@@ -75,13 +75,10 @@ export function MailCheckCheckTab() {
 
   return (
     <Stack spacing={2}>
-      {errorMessage(settingsQuery.error) ? <Alert severity="error">{errorMessage(settingsQuery.error)}</Alert> : null}
-      {errorMessage(checkMutation.error) ? <Alert severity="error">{errorMessage(checkMutation.error)}</Alert> : null}
-      {settings?.lastError ? <Alert severity="error">{settings.lastError}</Alert> : null}
-      {!settings?.gmailConnected ? (
-        <Alert severity="info">Connect Gmail on Job Application Settings before checking mail.</Alert>
+      {!settings?.mailboxConnected ? (
+        <Alert severity="info">Connect a mailbox on the Settings tab before checking mail.</Alert>
       ) : null}
-      {settings?.gmailConnected && !settings.hasApiKey ? (
+      {settings?.mailboxConnected && !settings.hasApiKey ? (
         <Alert severity="info">Save an OpenAI API key on the Settings tab. That is the only paid piece.</Alert>
       ) : null}
       <Panel>

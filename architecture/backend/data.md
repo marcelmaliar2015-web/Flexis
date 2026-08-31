@@ -31,6 +31,8 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 
 `MailCheckSettings` in `Flexis.Domain.MailCheck`. Table `mail_check_settings`. Unique `UserId`, cascade from `users`. OpenAI key stored protected. Default model `gpt-4o-mini`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckSettingsConfiguration.cs`.
 
+`MailConnection` in `Flexis.Domain.MailCheck`. Table `mail_connections`. Unique `UserId`, cascade from `users`. Provider is `Gmail` or `Outlook`. Refresh and access tokens are stored protected. EF configuration: `Persistence/Postgres/MailCheck/MailConnectionConfiguration.cs`.
+
 `MailCheckProcessedMessage` in `Flexis.Domain.MailCheck`. Table `mail_check_processed_messages`. Unique (`UserId`, `GmailMessageId`), cascade from `users`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckProcessedMessageConfiguration.cs`.
 
 ## Migrations

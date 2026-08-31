@@ -2,7 +2,6 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
-import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -14,11 +13,9 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link as RouterLink } from "react-router-dom";
 import { EmptyState } from "@/features/mailCheck/mailCheckLayout";
-import { errorMessage, gmailMessageUrl } from "@/features/mailCheck/mailCheckUi";
+import { gmailMessageUrl } from "@/features/mailCheck/mailCheckUi";
 import { getMailCheckInbox, getMailCheckSettings, mailCheckInboxQueryKey, mailCheckSettingsQueryKey } from "@/shared/api/mailCheck";
-import { appPaths } from "@/shared/config/paths";
 import { mailCheckKeepLabels, type MailCheckLabelSlug } from "@/shared/types/mailCheck";
 
 const FilterRow = styled(Stack)(({ theme }) => ({
@@ -37,7 +34,7 @@ export function MailCheckInboxTab() {
   const inboxQuery = useQuery({
     queryKey: mailCheckInboxQueryKey(filter),
     queryFn: () => getMailCheckInbox(filter),
-    enabled: settingsQuery.data?.gmailConnected === true,
+    enabled: settingsQuery.data?.mailboxConnected === true,
     refetchInterval: 30_000,
   });
   const settings = settingsQuery.data;
@@ -45,18 +42,10 @@ export function MailCheckInboxTab() {
 
   return (
     <Stack spacing={2}>
-      {errorMessage(settingsQuery.error) ? <Alert severity="error">{errorMessage(settingsQuery.error)}</Alert> : null}
-      {errorMessage(inboxQuery.error) ? <Alert severity="error">{errorMessage(inboxQuery.error)}</Alert> : null}
-      {settings && !settings.gmailConnected ? (
-        <Alert severity="info">
-          Connect Gmail on{" "}
-          <Link component={RouterLink} to={appPaths.jobApplication}>
-            Job Application
-          </Link>{" "}
-          Settings. Mail Check uses that same mailbox.
-        </Alert>
+      {settings && !settings.mailboxConnected ? (
+        <Alert severity="info">Connect a mailbox on the Settings tab to see labeled mail here.</Alert>
       ) : null}
-      {settings?.gmailConnected && !settings.hasApiKey ? (
+      {settings?.mailboxConnected && !settings.hasApiKey ? (
         <Alert severity="info">Save an OpenAI API key on the Settings tab so Flexis can label new mail.</Alert>
       ) : null}
       <FilterRow direction="row">
@@ -74,12 +63,12 @@ export function MailCheckInboxTab() {
           />
         ))}
       </FilterRow>
-      {inboxQuery.isPending && settings?.gmailConnected ? (
+      {inboxQuery.isPending && settings?.mailboxConnected ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
           <CircularProgress />
         </Box>
       ) : null}
-      {settings?.gmailConnected && !inboxQuery.isPending && items.length === 0 ? (
+      {settings?.mailboxConnected && !inboxQuery.isPending && items.length === 0 ? (
         <EmptyState>
           <Typography variant="body2" color="text.secondary">
             No labeled mail yet. Open Check to run now, or wait for the auto check. Inbox, spam, and

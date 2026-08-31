@@ -9,7 +9,7 @@ import {
   mailCheckSettingsQueryKey,
   runMailCheck,
 } from "@/shared/api/mailCheck";
-import { ApiError } from "@/shared/api/client";
+import { isApiError } from "@/shared/api/errors";
 import { reportIssue } from "@/shared/notifications/issueStore";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { appPaths } from "@/shared/config/paths";
@@ -37,7 +37,7 @@ export function MailCheckProvider({ children }: MailCheckProviderProps) {
     try {
       const settings = await getMailCheckSettings();
       queryClient.setQueryData(mailCheckSettingsQueryKey, settings);
-      if (!settings.hasApiKey || !settings.gmailConnected) {
+      if (!settings.hasApiKey || !settings.mailboxConnected) {
         return;
       }
 
@@ -91,11 +91,11 @@ export function MailCheckProvider({ children }: MailCheckProviderProps) {
         }
       }
     } catch (error) {
-      if (error instanceof ApiError && error.status === 404) {
+      if (isApiError(error) && error.status === 404) {
         unavailableRef.current = true;
         return;
       }
-      if (!(error instanceof ApiError)) {
+      if (!isApiError(error)) {
         reportIssue({
           severity: "error",
           source: "mail-check",

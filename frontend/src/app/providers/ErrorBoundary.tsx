@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import { reportIssue } from "@/shared/notifications/issueStore";
 
 type ErrorBoundaryProps = {
@@ -8,14 +8,14 @@ type ErrorBoundaryProps = {
 };
 
 type ErrorBoundaryState = {
-  message: string | null;
+  broken: boolean;
 };
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { message: null };
+  state: ErrorBoundaryState = { broken: false };
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { message: error.message };
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { broken: true };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -28,10 +28,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   render() {
-    if (this.state.message) {
+    if (this.state.broken) {
       return (
         <Box sx={{ p: 3 }}>
-          <Alert severity="error">{this.state.message}</Alert>
+          <Typography variant="body2" color="text.secondary">
+            Something broke. Open Issues in the header for details.
+          </Typography>
         </Box>
       );
     }

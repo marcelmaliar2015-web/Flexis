@@ -137,10 +137,6 @@ export function CatalogItemsPanel({
           {`New ${itemLabel}`}
         </Button>
       </Stack>
-      {errorMessage(itemsQuery.error) ? <Alert severity="error">{errorMessage(itemsQuery.error)}</Alert> : null}
-      {errorMessage(deleteMutation.error) ? (
-        <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert>
-      ) : null}
       <Panel>
         <TableContainer>
           <Table>

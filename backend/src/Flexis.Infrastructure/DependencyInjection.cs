@@ -81,6 +81,7 @@ public static class DependencyInjection
         services.AddScoped<IJobApplicationLogRepository, JobApplicationLogRepository>();
         services.AddScoped<IMailCheckSettingsRepository, MailCheckSettingsRepository>();
         services.AddScoped<IMailCheckProcessedMessageRepository, MailCheckProcessedMessageRepository>();
+        services.AddScoped<IMailConnectionRepository, MailConnectionRepository>();
 
         services.AddSingleton<IMongoClient>(serviceProvider =>
         {

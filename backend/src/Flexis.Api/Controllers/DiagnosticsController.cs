@@ -21,12 +21,14 @@ public sealed class DiagnosticsController : ControllerBase
             return NoContent();
         }
 
+        var loggedMessage = message.Length <= 1000 ? message : message[..1000];
+
         await log.WriteAsync(
             new IssueLogEntry(
                 DateTimeOffset.UtcNow,
                 severity,
                 source,
-                Truncate(message, 1000),
+                loggedMessage,
                 Truncate(request.Method, 16),
                 Truncate(request.Path, 300),
                 request.Status,

@@ -10,7 +10,7 @@ Every API failure, Mail Check classification error, unhandled browser error, and
 
 `POST /api/diagnostics/events` records client-only issues (network, Mail Check item failures, window errors) when a session exists. API exceptions are written by the exception handler and are not posted again.
 
-Page components do not repeat `ApiError` text in inline alerts; use `userFacingError` so the Issues drawer is the single place for API failure copy.
+Page components do not repeat API or network failures in inline alerts. Use `userFacingError` for form handlers. The Issues drawer and snackbar are the only place for failed request copy.
 
 ## Consequences
 

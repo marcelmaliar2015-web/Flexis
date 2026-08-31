@@ -172,9 +172,6 @@ export function DashboardBoard(props: DashboardBoardProps) {
         </Grid>
       </Grid>
 
-      {queryErrorMessage(props.financialError) ? <Alert severity="error">{queryErrorMessage(props.financialError)}</Alert> : null}
-      {queryErrorMessage(props.pipelineError) ? <Alert severity="error">{queryErrorMessage(props.pipelineError)}</Alert> : null}
-
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <KpiCard>
@@ -350,7 +347,6 @@ export function DashboardBoard(props: DashboardBoardProps) {
                   Pipeline, catalog, financial, and Gmail actions for this account, last 7 days.
                 </Typography>
               </Stack>
-              {queryErrorMessage(props.logsError) ? <Alert severity="error">{queryErrorMessage(props.logsError)}</Alert> : null}
               <DayChart>
                 {days.map((day) => (
                   <DayColumn key={day.key}>
@@ -449,7 +445,6 @@ export function DashboardBoard(props: DashboardBoardProps) {
                 Flexis users. The last active admin cannot be demoted, deactivated, or deleted.
               </Typography>
             </Stack>
-            {queryErrorMessage(props.usersError) ? <Alert severity="error">{queryErrorMessage(props.usersError)}</Alert> : null}
             <Grid container spacing={2}>
               <Grid size={{ xs: 6, md: 3 }}>
                 <Typography variant="overline" color="text.secondary">

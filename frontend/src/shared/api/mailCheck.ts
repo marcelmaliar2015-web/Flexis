@@ -1,14 +1,16 @@
-import { getJson, postJson, putJson } from "@/shared/api/client";
+import { deleteRequest, getJson, postJson, putJson } from "@/shared/api/client";
 import type {
   MailCheckInbox,
   MailCheckLabelSlug,
+  MailCheckMailboxStatus,
   MailCheckModels,
   MailCheckRun,
   MailCheckSettings,
   MailCheckSettingsWrite,
 } from "@/shared/types/mailCheck";
-
 export const mailCheckSettingsQueryKey = ["mail-check-settings"] as const;
+
+export const mailCheckMailboxQueryKey = ["mail-check-mailbox"] as const;
 
 export const mailCheckModelsQueryKey = ["mail-check-models"] as const;
 
@@ -42,4 +44,16 @@ export function runMailCheck(force: boolean): Promise<MailCheckRun> {
 export function getMailCheckInbox(label: MailCheckLabelSlug | "all"): Promise<MailCheckInbox> {
   const query = label === "all" ? "" : `?label=${encodeURIComponent(label)}`;
   return getJson<MailCheckInbox>(`/api/mail-check/inbox${query}`);
+}
+
+export function getMailCheckMailbox(): Promise<MailCheckMailboxStatus> {
+  return getJson<MailCheckMailboxStatus>("/api/mail-check/mailbox");
+}
+
+export function startMailCheckGmail(returnUrl: string): Promise<{ authorizationUrl: string }> {
+  return postJson<{ authorizationUrl: string }>("/api/mail-check/mailbox/gmail/start", { returnUrl });
+}
+
+export function disconnectMailCheckMailbox(): Promise<void> {
+  return deleteRequest("/api/mail-check/mailbox");
 }

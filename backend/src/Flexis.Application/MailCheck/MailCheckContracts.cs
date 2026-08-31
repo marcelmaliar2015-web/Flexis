@@ -13,8 +13,10 @@ public sealed record MailCheckSettingsDto(
     bool LastHasMore,
     int TotalLabeled,
     int TotalTrashed,
-    bool GmailConnected,
-    string? GoogleEmail);
+    bool MailboxConnected,
+    string? MailboxEmail,
+    string? MailboxProvider,
+    bool OutlookAvailable);
 
 public sealed record MailCheckSettingsWriteRequest(string? ApiKey, bool ClearApiKey, string Model);
 

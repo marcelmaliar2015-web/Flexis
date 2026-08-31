@@ -9,6 +9,32 @@ namespace Flexis.Api.Controllers;
 [Route("api/mail-check")]
 public sealed class MailCheckController : ControllerBase
 {
+    [HttpGet("mailbox")]
+    public Task<MailMailboxStatusDto> GetMailbox(
+        [FromServices] MailConnectionService mailbox,
+        CancellationToken cancellationToken)
+    {
+        return mailbox.GetStatusAsync(CurrentUserId(), cancellationToken);
+    }
+
+    [HttpPost("mailbox/gmail/start")]
+    public Task<MailConnectStartDto> StartGmailMailbox(
+        [FromBody] MailConnectStartRequest request,
+        [FromServices] MailConnectionService mailbox,
+        CancellationToken cancellationToken)
+    {
+        return mailbox.StartGmailConnectAsync(CurrentUserId(), request, cancellationToken);
+    }
+
+    [HttpDelete("mailbox")]
+    public async Task<IActionResult> DisconnectMailbox(
+        [FromServices] MailConnectionService mailbox,
+        CancellationToken cancellationToken)
+    {
+        await mailbox.DisconnectAsync(CurrentUserId(), cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("settings")]
     public Task<MailCheckSettingsDto> GetSettings(
         [FromServices] MailCheckService mailCheck,

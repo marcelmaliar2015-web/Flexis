@@ -6,7 +6,6 @@ import { queryClient } from "@/app/providers/queryClient";
 import { theme } from "@/app/providers/theme";
 import { ErrorBoundary } from "@/app/providers/ErrorBoundary";
 import { GoogleSyncProvider } from "@/app/providers/GoogleSyncProvider";
-import { MailCheckProvider } from "@/app/providers/MailCheckProvider";
 import { NotificationProvider } from "@/app/providers/NotificationProvider";
 import { AuthProvider } from "@/shared/auth/AuthProvider";
 
@@ -22,9 +21,7 @@ export function AppProviders({ children }: AppProvidersProps) {
         <NotificationProvider>
           <ErrorBoundary>
             <AuthProvider>
-              <GoogleSyncProvider>
-                <MailCheckProvider>{children}</MailCheckProvider>
-              </GoogleSyncProvider>
+              <GoogleSyncProvider>{children}</GoogleSyncProvider>
             </AuthProvider>
           </ErrorBoundary>
         </NotificationProvider>

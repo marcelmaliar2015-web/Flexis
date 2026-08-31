@@ -3,13 +3,12 @@ import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { MailCheckMailboxCard } from "@/features/mailCheck/MailCheckMailboxCard";
 import { Panel } from "@/features/mailCheck/mailCheckLayout";
 import { errorMessage } from "@/features/mailCheck/mailCheckUi";
 import {
@@ -19,7 +18,6 @@ import {
   mailCheckSettingsQueryKey,
   updateMailCheckSettings,
 } from "@/shared/api/mailCheck";
-import { appPaths } from "@/shared/config/paths";
 
 export function MailCheckSettingsTab() {
   const queryClient = useQueryClient();
@@ -103,43 +101,9 @@ export function MailCheckSettingsTab() {
 
   return (
     <Stack spacing={2}>
-      {errorMessage(settingsQuery.error) ? <Alert severity="error">{errorMessage(settingsQuery.error)}</Alert> : null}
       {formError ? <Alert severity="error">{formError}</Alert> : null}
       {saved && !formError ? <Alert severity="success">Mail Check settings saved.</Alert> : null}
-      <Panel>
-        <Stack spacing={2}>
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
-          >
-            <Stack spacing={1}>
-              <Typography variant="h6" component="h2">
-                Gmail
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Mail Check uses the Gmail already connected for Job Application. Connect stays on
-                that Settings tab. Gmail itself is free.
-              </Typography>
-            </Stack>
-            {settings?.gmailConnected ? (
-              <Chip color="success" label="Connected" />
-            ) : (
-              <Chip label="Not connected" />
-            )}
-          </Stack>
-          {settings?.gmailConnected && settings.googleEmail ? (
-            <Typography variant="body2">{settings.googleEmail}</Typography>
-          ) : (
-            <Typography variant="body2">
-              <Link component={RouterLink} to={appPaths.jobApplication}>
-                Open Job Application
-              </Link>{" "}
-              to connect Gmail.
-            </Typography>
-          )}
-        </Stack>
-      </Panel>
+      <MailCheckMailboxCard />
       <Panel>
         <Box component="form" onSubmit={handleSubmit}>
           <Stack spacing={2}>
@@ -190,11 +154,9 @@ export function MailCheckSettingsTab() {
                   {...params}
                   label="Model"
                   helperText={
-                    modelsQuery.isError
-                      ? errorMessage(modelsQuery.error)
-                      : settings?.hasApiKey
-                        ? "Recommended models are listed first. You can type any id."
-                        : "Save a key first to load models, or type an id such as gpt-4o-mini."
+                    settings?.hasApiKey
+                      ? "Recommended models are listed first. You can type any id."
+                      : "Save a key first to load models, or type an id such as gpt-4o-mini."
                   }
                 />
               )}

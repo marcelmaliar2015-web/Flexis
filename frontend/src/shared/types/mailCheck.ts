@@ -1,3 +1,5 @@
+export type MailCheckMailboxProvider = "gmail" | "outlook";
+
 export type MailCheckLabelSlug =
   | "interviewScheduled"
   | "waitingForAnswer"
@@ -19,8 +21,18 @@ export type MailCheckSettings = {
   lastHasMore: boolean;
   totalLabeled: number;
   totalTrashed: number;
-  gmailConnected: boolean;
-  googleEmail: string | null;
+  mailboxConnected: boolean;
+  mailboxEmail: string | null;
+  mailboxProvider: MailCheckMailboxProvider | null;
+  outlookAvailable: boolean;
+};
+
+export type MailCheckMailboxStatus = {
+  connected: boolean;
+  provider: MailCheckMailboxProvider | null;
+  email: string | null;
+  connectedAt: string | null;
+  outlookAvailable: boolean;
 };
 
 export type MailCheckSettingsWrite = {

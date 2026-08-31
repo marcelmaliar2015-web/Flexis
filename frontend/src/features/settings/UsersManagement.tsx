@@ -118,7 +118,6 @@ export function UsersManagement() {
           New user
         </Button>
       </Stack>
-      {errorMessage(usersQuery.error) ? <Alert severity="error">{errorMessage(usersQuery.error)}</Alert> : null}
       <Panel>
         <TableContainer>
           <Table>

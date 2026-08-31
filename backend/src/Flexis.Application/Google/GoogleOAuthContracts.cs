@@ -1,6 +1,17 @@
 namespace Flexis.Application.Google;
 
-public sealed record GoogleOAuthPending(Guid UserId, string CodeVerifier, string ReturnUrl);
+public enum OAuthConnectTarget
+{
+    JobApplication = 0,
+    MailCheck = 1,
+}
+
+public sealed record GoogleOAuthPending(
+    Guid UserId,
+    string CodeVerifier,
+    string ReturnUrl,
+    OAuthConnectTarget Target = OAuthConnectTarget.JobApplication,
+    string? Scopes = null);
 
 public sealed record GoogleOAuthTokenSet(
     string AccessToken,

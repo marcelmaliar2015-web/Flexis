@@ -200,22 +200,9 @@ export function JobApplicationPipelineEntryPage() {
             </Typography>
             <AccentRule />
           </Stack>
-          {errorMessage(boardQuery.error) ? <Alert severity="error">{errorMessage(boardQuery.error)}</Alert> : null}
           {boardQuery.isSuccess && !entry ? (
             <Alert severity="error">Pipeline entry was not found.</Alert>
           ) : null}
-          {errorMessage(updateRowMutation.error) ? (
-            <Alert severity="error">{errorMessage(updateRowMutation.error)}</Alert>
-          ) : null}
-          {errorMessage(applyMutation.error) ? <Alert severity="error">{errorMessage(applyMutation.error)}</Alert> : null}
-          {errorMessage(forwardMutation.error) ? (
-            <Alert severity="error">{errorMessage(forwardMutation.error)}</Alert>
-          ) : null}
-          {errorMessage(deleteMutation.error) ? (
-            <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert>
-          ) : null}
-          {errorMessage(bannedQuery.error) ? <Alert severity="error">{errorMessage(bannedQuery.error)}</Alert> : null}
-          {errorMessage(matchesQuery.error) ? <Alert severity="error">{errorMessage(matchesQuery.error)}</Alert> : null}
           {notice ? <Alert severity="success">{notice}</Alert> : null}
           {entry && board ? (
             <>

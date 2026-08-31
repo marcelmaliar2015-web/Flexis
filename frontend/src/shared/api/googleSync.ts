@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { ApiError } from "@/shared/api/client";
+import { isApiError } from "@/shared/api/errors";
 import { getJobFinancialBoard, jobFinancialQueryKey } from "@/shared/api/financial";
 import {
   getGoogleClient,
@@ -47,7 +47,7 @@ export async function syncGoogleWorkspace(
       queryFn: getGoogleClient,
     });
   } catch (error) {
-    if (!(error instanceof ApiError && error.status === 403)) {
+    if (!(isApiError(error) && error.status === 403)) {
       throw error;
     }
   }

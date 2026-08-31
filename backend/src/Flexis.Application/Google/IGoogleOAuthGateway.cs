@@ -4,7 +4,11 @@ public interface IGoogleOAuthGateway
 {
     Task<bool> IsConfiguredAsync(CancellationToken cancellationToken);
 
-    Task<string> CreateAuthorizationUrlAsync(string state, string codeChallenge, CancellationToken cancellationToken);
+    Task<string> CreateAuthorizationUrlAsync(
+        string state,
+        string codeChallenge,
+        string scopes,
+        CancellationToken cancellationToken);
 
     Task<GoogleOAuthTokenSet> ExchangeCodeAsync(
         string code,

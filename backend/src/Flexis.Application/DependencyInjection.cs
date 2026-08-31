@@ -22,6 +22,8 @@ public static class DependencyInjection
         services.AddScoped<JobApplicationActivity>();
         services.AddScoped<GoogleDriveLayoutService>();
         services.AddScoped<MailCheckService>();
+        services.AddScoped<MailConnectionService>();
+        services.AddScoped<MailAccessTokenService>();
         return services;
     }
 }

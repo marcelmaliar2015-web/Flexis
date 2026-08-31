@@ -89,7 +89,6 @@ export function JobApplicationFinancialDefaultsCard() {
               saved on them.
             </Typography>
           </Stack>
-          {errorMessage(boardQuery.error) ? <Alert severity="error">{errorMessage(boardQuery.error)}</Alert> : null}
           {formError ? <Alert severity="error">{formError}</Alert> : null}
           {saved && !formError ? <Alert severity="success">Default rates saved.</Alert> : null}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>

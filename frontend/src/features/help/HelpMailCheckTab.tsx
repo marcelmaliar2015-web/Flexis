@@ -19,8 +19,9 @@ export function HelpMailCheckTab() {
           Mail Check
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Auto-triage Gmail for interview work. Gmail is free and uses the Job Application connect.
-          The only cost is your OpenAI API key, which you paste on Mail Check Settings.
+          Auto-triage Gmail for interview work. Connect Gmail on Mail Check Settings. Outlook support
+          is planned next. The only cost is your OpenAI API key, which you paste on Mail Check
+          Settings.
         </Typography>
       </Stack>
       <Panel>
@@ -54,9 +55,8 @@ export function HelpMailCheckTab() {
                 <TableRow>
                   <TableCell align="left">Settings</TableCell>
                   <TableCell align="left">
-                    Gmail status (connect on Job Application) and OpenAI key plus model. The key is
-                    never shown again after save. Pick any chat or reasoning model; Flexis adapts the
-                    request.
+                    Mailbox connect for Gmail, plus OpenAI key and model. The key is never shown again
+                    after save. Pick any chat or reasoning model; Flexis adapts the request.
                   </TableCell>
                 </TableRow>
               </TableBody>

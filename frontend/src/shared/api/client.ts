@@ -60,15 +60,27 @@ async function send(path: string, init?: RequestInit): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(`${getApiBaseUrl()}${path}`, { ...init, headers });
-  } catch {
-    const message = "API is not running. Start backend/src/Flexis.Api.";
-    notifyApiFailure(message, 0, path, method);
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw error;
+    }
+
+    const message =
+      "Could not reach the API. Check backend/src/Flexis.Api is running on http://localhost:5080.";
+    notifyApiFailure(
+      message,
+      0,
+      path,
+      method,
+      error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+    );
     throw new Error(message);
   }
 
   if (!response.ok && response.status !== 503) {
     if (response.status === 502 || response.status === 504) {
-      const message = "API is not running. Start backend/src/Flexis.Api.";
+      const message =
+        "Could not reach the API. Check backend/src/Flexis.Api is running on http://localhost:5080.";
       notifyApiFailure(message, response.status, path, method);
       throw new Error(message);
     }
@@ -88,7 +100,20 @@ async function send(path: string, init?: RequestInit): Promise<Response> {
   return response;
 }
 
-function notifyApiFailure(message: string, status: number, path: string, method: string) {
+function isAbortError(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return true;
+  }
+  return error instanceof Error && error.name === "AbortError";
+}
+
+function notifyApiFailure(
+  message: string,
+  status: number,
+  path: string,
+  method: string,
+  detail?: string,
+) {
   if (path === "/api/diagnostics/events") {
     return;
   }
@@ -103,6 +128,7 @@ function notifyApiFailure(message: string, status: number, path: string, method:
     method,
     path,
     status,
+    detail,
   });
 }
 

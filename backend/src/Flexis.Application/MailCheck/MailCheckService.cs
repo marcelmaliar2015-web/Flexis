@@ -22,8 +22,8 @@ public sealed class MailCheckService
 
     private readonly IMailCheckSettingsRepository _settings;
     private readonly IMailCheckProcessedMessageRepository _processed;
-    private readonly IGoogleConnectionRepository _connections;
-    private readonly GoogleAccessTokenService _tokens;
+    private readonly IMailConnectionRepository _mailConnections;
+    private readonly MailAccessTokenService _mailTokens;
     private readonly IGoogleTokenProtector _protector;
     private readonly IGmailMailbox _gmail;
     private readonly IOpenAiGateway _openAi;
@@ -31,16 +31,16 @@ public sealed class MailCheckService
     public MailCheckService(
         IMailCheckSettingsRepository settings,
         IMailCheckProcessedMessageRepository processed,
-        IGoogleConnectionRepository connections,
-        GoogleAccessTokenService tokens,
+        IMailConnectionRepository mailConnections,
+        MailAccessTokenService mailTokens,
         IGoogleTokenProtector protector,
         IGmailMailbox gmail,
         IOpenAiGateway openAi)
     {
         _settings = settings;
         _processed = processed;
-        _connections = connections;
-        _tokens = tokens;
+        _mailConnections = mailConnections;
+        _mailTokens = mailTokens;
         _protector = protector;
         _gmail = gmail;
         _openAi = openAi;
@@ -83,10 +83,10 @@ public sealed class MailCheckService
         await _settings.SaveChangesAsync(cancellationToken);
         if (settings.HasApiKey)
         {
-            var connection = await _connections.GetByUserIdAsync(userId, cancellationToken);
+            var connection = await _mailConnections.GetByUserIdAsync(userId, cancellationToken);
             if (connection is not null)
             {
-                var token = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
+                var token = await _mailTokens.GetGmailAccessTokenAsync(userId, cancellationToken);
                 await _gmail.EnsureLabelsAsync(token, cancellationToken);
             }
         }
@@ -141,13 +141,13 @@ public sealed class MailCheckService
         string? labelSlug,
         CancellationToken cancellationToken)
     {
-        var connection = await _connections.GetByUserIdAsync(userId, cancellationToken);
+        var connection = await _mailConnections.GetByUserIdAsync(userId, cancellationToken);
         if (connection is null)
         {
-            throw new ValidationFailedException("Connect Gmail first.");
+            throw new ValidationFailedException("Connect a mailbox on Mail Check Settings first.");
         }
 
-        var token = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
+        var token = await _mailTokens.GetGmailAccessTokenAsync(userId, cancellationToken);
         var labels = await _gmail.EnsureLabelsAsync(token, cancellationToken);
         var filter = MailCheckLabels.KeepFromSlug(labelSlug);
         var listed = await _gmail.ListLabeledAsync(token, labels, filter, cancellationToken);
@@ -176,13 +176,13 @@ public sealed class MailCheckService
             throw new ValidationFailedException("Save an OpenAI API key on Mail Check Settings.");
         }
 
-        var connection = await _connections.GetByUserIdAsync(userId, cancellationToken);
+        var connection = await _mailConnections.GetByUserIdAsync(userId, cancellationToken);
         if (connection is null)
         {
-            throw new ValidationFailedException("Connect Gmail first.");
+            throw new ValidationFailedException("Connect a mailbox on Mail Check Settings first.");
         }
 
-        var token = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
+        var token = await _mailTokens.GetGmailAccessTokenAsync(userId, cancellationToken);
         var apiKey = _protector.Unprotect(settings.ApiKeyProtected!);
         var labels = await _gmail.EnsureLabelsAsync(token, cancellationToken);
         var ourLabelIds = labels.Values.ToHashSet(StringComparer.Ordinal);
@@ -360,7 +360,7 @@ public sealed class MailCheckService
         Guid userId,
         CancellationToken cancellationToken)
     {
-        var connection = await _connections.GetByUserIdAsync(userId, cancellationToken);
+        var connection = await _mailConnections.GetByUserIdAsync(userId, cancellationToken);
         return new MailCheckSettingsDto(
             settings.HasApiKey,
             settings.Model,
@@ -375,7 +375,9 @@ public sealed class MailCheckService
             settings.TotalLabeled,
             settings.TotalTrashed,
             connection is not null,
-            connection?.GoogleEmail);
+            connection?.Email,
+            connection is null ? null : connection.Provider == MailProvider.Gmail ? "gmail" : "outlook",
+            OutlookAvailable: false);
     }
 
     private static MailCheckRunDto EmptyRun(bool busy, bool hasMore)

@@ -21,7 +21,6 @@ import {
 } from "@/shared/api/google";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { appPaths } from "@/shared/config/paths";
-import { userFacingError } from "@/shared/api/errors";
 import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
 
 const Panel = styled(Box)(({ theme }) => ({
@@ -118,16 +117,10 @@ export function JobApplicationGmailCard() {
   });
 
   const status = connectionQuery.data;
-  const actionError =
-    userFacingError(connectMutation.error) ??
-    userFacingError(copyUrlMutation.error) ??
-    userFacingError(disconnectMutation.error) ??
-    userFacingError(connectionQuery.error);
 
   return (
     <Stack spacing={2}>
       {notice ? <Alert severity={notice.severity}>{notice.text}</Alert> : null}
-      {actionError ? <Alert severity="error">{actionError}</Alert> : null}
       <Panel>
         {connectionQuery.isPending && !status ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
