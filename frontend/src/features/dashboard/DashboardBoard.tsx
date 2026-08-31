@@ -94,7 +94,7 @@ export function DashboardBoard(props: DashboardBoardProps) {
             value={props.health?.status ?? (props.healthError ? "Unavailable" : "Checking")}
             detail={
               props.healthError
-                ? queryErrorMessage(props.healthError)
+                ? queryErrorMessage(props.healthError) ?? "See Issues in the header."
                 : props.health
                   ? props.health.checks.map((check) => `${check.name} ${check.status}`).join(" · ")
                   : "Reading API, PostgreSQL, and MongoDB."
@@ -120,7 +120,7 @@ export function DashboardBoard(props: DashboardBoardProps) {
             }
             detail={
               props.googleError
-                ? queryErrorMessage(props.googleError)
+                ? queryErrorMessage(props.googleError) ?? "See Issues in the header."
                 : props.google?.configured
                   ? "The Flexis web client is ready for Gmail connect."
                   : props.google
@@ -146,7 +146,7 @@ export function DashboardBoard(props: DashboardBoardProps) {
             }
             detail={
               props.googleError
-                ? queryErrorMessage(props.googleError)
+                ? queryErrorMessage(props.googleError) ?? "See Issues in the header."
                 : props.google?.connected
                   ? props.google.connectedAt
                     ? `Connected ${formatWhen(props.google.connectedAt)}. Sheet counts refresh with header Google sync.`
@@ -172,8 +172,8 @@ export function DashboardBoard(props: DashboardBoardProps) {
         </Grid>
       </Grid>
 
-      {props.financialError ? <Alert severity="error">{queryErrorMessage(props.financialError)}</Alert> : null}
-      {props.pipelineError ? <Alert severity="error">{queryErrorMessage(props.pipelineError)}</Alert> : null}
+      {queryErrorMessage(props.financialError) ? <Alert severity="error">{queryErrorMessage(props.financialError)}</Alert> : null}
+      {queryErrorMessage(props.pipelineError) ? <Alert severity="error">{queryErrorMessage(props.pipelineError)}</Alert> : null}
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
@@ -350,7 +350,7 @@ export function DashboardBoard(props: DashboardBoardProps) {
                   Pipeline, catalog, financial, and Gmail actions for this account, last 7 days.
                 </Typography>
               </Stack>
-              {props.logsError ? <Alert severity="error">{queryErrorMessage(props.logsError)}</Alert> : null}
+              {queryErrorMessage(props.logsError) ? <Alert severity="error">{queryErrorMessage(props.logsError)}</Alert> : null}
               <DayChart>
                 {days.map((day) => (
                   <DayColumn key={day.key}>
@@ -449,7 +449,7 @@ export function DashboardBoard(props: DashboardBoardProps) {
                 Flexis users. The last active admin cannot be demoted, deactivated, or deleted.
               </Typography>
             </Stack>
-            {props.usersError ? <Alert severity="error">{queryErrorMessage(props.usersError)}</Alert> : null}
+            {queryErrorMessage(props.usersError) ? <Alert severity="error">{queryErrorMessage(props.usersError)}</Alert> : null}
             <Grid container spacing={2}>
               <Grid size={{ xs: 6, md: 3 }}>
                 <Typography variant="overline" color="text.secondary">

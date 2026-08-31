@@ -21,6 +21,7 @@ import {
 } from "@/shared/api/google";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { appPaths } from "@/shared/config/paths";
+import { userFacingError } from "@/shared/api/errors";
 import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
 
 const Panel = styled(Box)(({ theme }) => ({
@@ -118,15 +119,10 @@ export function JobApplicationGmailCard() {
 
   const status = connectionQuery.data;
   const actionError =
-    connectMutation.error instanceof Error
-      ? connectMutation.error.message
-      : copyUrlMutation.error instanceof Error
-        ? copyUrlMutation.error.message
-        : disconnectMutation.error instanceof Error
-          ? disconnectMutation.error.message
-          : connectionQuery.error instanceof Error
-            ? connectionQuery.error.message
-            : null;
+    userFacingError(connectMutation.error) ??
+    userFacingError(copyUrlMutation.error) ??
+    userFacingError(disconnectMutation.error) ??
+    userFacingError(connectionQuery.error);
 
   return (
     <Stack spacing={2}>

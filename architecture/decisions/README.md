@@ -39,3 +39,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [017](017-signed-in-account-profile.md) | Signed-in account profile |
 | [018](018-guest-only-public-routes.md) | Guest-only landing and sign-in |
 | [019](019-mail-check.md) | Mail Check Gmail and OpenAI |
+| [020](020-issue-notifications.md) | Issue notifications |

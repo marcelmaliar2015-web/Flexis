@@ -1,8 +1,10 @@
 using Flexis.Application.Auth;
+using Flexis.Application.Diagnostics;
 using Flexis.Application.Google;
 using Flexis.Application.JobApplication;
 using Flexis.Application.MailCheck;
 using Flexis.Application.Users;
+using Flexis.Infrastructure.Diagnostics;
 using Flexis.Infrastructure.Google;
 using Flexis.Infrastructure.OpenAi;
 using Flexis.Infrastructure.Persistence.Mongo;
@@ -68,6 +70,7 @@ public static class DependencyInjection
         services.AddHttpClient<IGmailMailbox, GmailMailboxClient>();
         services.AddHttpClient<IOpenAiGateway, OpenAiClient>();
         services.AddSingleton<IGoogleTokenProtector, AesGoogleTokenProtector>();
+        services.AddSingleton<IIssueLog, FileIssueLog>();
         services.AddSingleton<IGoogleOAuthStateStore, MemoryGoogleOAuthStateStore>();
         services.AddSingleton<IFrontendOrigins, ConfigurationFrontendOrigins>();
         services.AddScoped<IGoogleConnectionRepository, GoogleConnectionRepository>();

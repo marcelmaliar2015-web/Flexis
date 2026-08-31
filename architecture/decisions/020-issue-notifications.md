@@ -1,0 +1,17 @@
+# Issue notifications
+
+## Context
+
+Errors were shown only on the screen that made the request, or swallowed by auto-check. That made it hard to see the exact failure and fix it later.
+
+## Decision
+
+Every API failure, Mail Check classification error, unhandled browser error, and UI render crash is recorded as an issue. The header Issues control opens the list. A snackbar shows the newest item. Each item keeps time, severity, source, message, HTTP method, path, and status. Copy all produces that log. The API writes the same facts to `.flexis/issue-log.jsonl` at the repo root (gitignored). Unexpected server exceptions also store the exception text in that file. Development 500 responses use the exception message. `GET /api/auth/me` 401 during session restore is not notified.
+
+`POST /api/diagnostics/events` records client-only issues (network, Mail Check item failures, window errors) when a session exists. API exceptions are written by the exception handler and are not posted again.
+
+Page components do not repeat `ApiError` text in inline alerts; use `userFacingError` so the Issues drawer is the single place for API failure copy.
+
+## Consequences
+
+Do not log request bodies, tokens, or the OpenAI key. Do not notify health `503` payloads. New failure paths should call `reportIssue` or throw through the API client.

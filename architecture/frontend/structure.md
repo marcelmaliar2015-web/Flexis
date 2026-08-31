@@ -19,6 +19,7 @@ frontend/src/
     auth/
     config/
     types/
+    notifications/
 ```
 
 Path alias `@/` maps to `frontend/src/`.
@@ -27,7 +28,7 @@ Path alias `@/` maps to `frontend/src/`.
 
 | Module | Responsibility |
 | --- | --- |
-| `app` | Bootstrap, theme, query client, routes, layout, guards, account menu, header Gmail status, Google workspace sync, Mail Check auto-check |
+| `app` | Bootstrap, theme, query client, routes, layout, guards, account menu, header Issues, header Gmail status, Google workspace sync, Mail Check auto-check |
 | `features/home` | Home screen |
 | `features/health` | Health screen and query hook |
 | `features/help` | Tabbed product guides. Overview is the product map; Google setup, Operations, Financial, Logs, Mail Check, and Problems are topic guides. |
@@ -40,6 +41,7 @@ Path alias `@/` maps to `frontend/src/`.
 | `shared/auth` | Session provider and token storage |
 | `shared/config` | Env access and `appPaths` |
 | `shared/types` | Shared TypeScript contracts |
+| `shared/notifications` | Issue notice store used by the API client and the header Issues list |
 
 ## Import rules
 

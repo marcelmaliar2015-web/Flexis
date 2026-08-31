@@ -200,22 +200,22 @@ export function JobApplicationPipelineEntryPage() {
             </Typography>
             <AccentRule />
           </Stack>
-          {boardQuery.isError ? <Alert severity="error">{errorMessage(boardQuery.error)}</Alert> : null}
+          {errorMessage(boardQuery.error) ? <Alert severity="error">{errorMessage(boardQuery.error)}</Alert> : null}
           {boardQuery.isSuccess && !entry ? (
             <Alert severity="error">Pipeline entry was not found.</Alert>
           ) : null}
-          {updateRowMutation.isError ? (
+          {errorMessage(updateRowMutation.error) ? (
             <Alert severity="error">{errorMessage(updateRowMutation.error)}</Alert>
           ) : null}
-          {applyMutation.isError ? <Alert severity="error">{errorMessage(applyMutation.error)}</Alert> : null}
-          {forwardMutation.isError ? (
+          {errorMessage(applyMutation.error) ? <Alert severity="error">{errorMessage(applyMutation.error)}</Alert> : null}
+          {errorMessage(forwardMutation.error) ? (
             <Alert severity="error">{errorMessage(forwardMutation.error)}</Alert>
           ) : null}
-          {deleteMutation.isError ? (
+          {errorMessage(deleteMutation.error) ? (
             <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert>
           ) : null}
-          {bannedQuery.isError ? <Alert severity="error">{errorMessage(bannedQuery.error)}</Alert> : null}
-          {matchesQuery.isError ? <Alert severity="error">{errorMessage(matchesQuery.error)}</Alert> : null}
+          {errorMessage(bannedQuery.error) ? <Alert severity="error">{errorMessage(bannedQuery.error)}</Alert> : null}
+          {errorMessage(matchesQuery.error) ? <Alert severity="error">{errorMessage(matchesQuery.error)}</Alert> : null}
           {notice ? <Alert severity="success">{notice}</Alert> : null}
           {entry && board ? (
             <>

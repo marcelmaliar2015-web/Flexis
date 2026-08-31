@@ -24,7 +24,7 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { ApiError } from "@/shared/api/client";
+import { userFacingError } from "@/shared/api/errors";
 import {
   createUser,
   deleteUser,
@@ -118,7 +118,7 @@ export function UsersManagement() {
           New user
         </Button>
       </Stack>
-      {usersQuery.isError ? <Alert severity="error">{errorMessage(usersQuery.error)}</Alert> : null}
+      {errorMessage(usersQuery.error) ? <Alert severity="error">{errorMessage(usersQuery.error)}</Alert> : null}
       <Panel>
         <TableContainer>
           <Table>
@@ -337,12 +337,6 @@ function UserEditorDialog({
   );
 }
 
-function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Request failed.";
+function errorMessage(error: unknown): string | null {
+  return userFacingError(error);
 }

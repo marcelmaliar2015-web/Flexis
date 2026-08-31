@@ -18,7 +18,7 @@ import { styled } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { SheetUrl } from "@/features/jobApplication/CatalogItemsPanel";
-import { ApiError } from "@/shared/api/client";
+import { userFacingError } from "@/shared/api/errors";
 import {
   createSourceLocation,
   deleteSourceLocation,
@@ -46,14 +46,8 @@ const Card = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2.5),
 }));
 
-function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Request failed.";
+function errorMessage(error: unknown): string | null {
+  return userFacingError(error);
 }
 
 export function SourceLocationsPanel({ actionsEnabled }: { actionsEnabled: boolean }) {
@@ -67,7 +61,7 @@ export function SourceLocationsPanel({ actionsEnabled }: { actionsEnabled: boole
       <Typography variant="h6" component="h2">
         Locations
       </Typography>
-      {sourcesQuery.isError ? <Alert severity="error">{errorMessage(sourcesQuery.error)}</Alert> : null}
+      {errorMessage(sourcesQuery.error) ? <Alert severity="error">{errorMessage(sourcesQuery.error)}</Alert> : null}
       {sourcesQuery.isSuccess && (sourcesQuery.data ?? []).length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           Create a source first. Each source workbook starts with a US tab. Add more locations here.
@@ -161,8 +155,8 @@ function SourceLocationCard({
             ) : null}
           </Stack>
         </Stack>
-        {locationsQuery.isError ? <Alert severity="error">{errorMessage(locationsQuery.error)}</Alert> : null}
-        {deleteMutation.isError ? <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert> : null}
+        {errorMessage(locationsQuery.error) ? <Alert severity="error">{errorMessage(locationsQuery.error)}</Alert> : null}
+        {errorMessage(deleteMutation.error) ? <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert> : null}
         {item.spreadsheetId.length > 0 && !actionsEnabled ? (
           <Typography variant="body2" color="text.secondary">
             Connect Gmail to load locations.

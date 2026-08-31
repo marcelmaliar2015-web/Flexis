@@ -15,6 +15,7 @@ backend/src/
     Google/
     JobApplication/
     MailCheck/
+    Diagnostics/
   Flexis.Domain/
     Users/
     Google/
@@ -30,6 +31,7 @@ backend/src/
     Security/
     Google/
     OpenAi/
+    Diagnostics/
 ```
 
 Shared MSBuild settings: `backend/Directory.Build.props` (`net10.0`, nullable, warnings as errors, NuGet audit on direct packages).
@@ -40,7 +42,7 @@ Shared MSBuild settings: `backend/Directory.Build.props` (`net10.0`, nullable, w
 | --- | --- |
 | Flexis.Domain | Domain model |
 | Flexis.Application | Application services and API contracts |
-| Flexis.Infrastructure | PostgreSQL, MongoDB, JWT, password hashing, Google OAuth, Google Sheets, Google Drive, Gmail, OpenAI, health checks |
+| Flexis.Infrastructure | PostgreSQL, MongoDB, JWT, password hashing, Google OAuth, Google Sheets, Google Drive, Gmail, OpenAI, issue log, health checks |
 | Flexis.Api | Host, CORS, JWT bearer, controllers |
 
 ## Layers

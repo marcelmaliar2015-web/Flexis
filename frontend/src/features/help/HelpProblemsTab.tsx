@@ -137,6 +137,12 @@ export function HelpProblemsTab() {
                 secondary="Click the header Google sync control to run a full refresh now. Confirm Gmail is connected. Red means the last successful sync is older than 8 minutes or a refresh failed."
               />
             </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Something failed and I need it fixed"
+                secondary="Open Issues in the header. Copy all and keep that text. Flexis also writes .flexis/issue-log.jsonl when the API is running. Those lines include time, source, request, status, and message."
+              />
+            </ListItem>
           </List>
         </Stack>
       </Panel>

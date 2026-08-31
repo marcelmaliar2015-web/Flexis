@@ -18,7 +18,7 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { ApiError } from "@/shared/api/client";
+import { userFacingError } from "@/shared/api/errors";
 import {
   createJobCatalogItem,
   deleteJobCatalogItem,
@@ -63,14 +63,8 @@ function formatCreatedAt(value: string): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value));
 }
 
-function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Request failed.";
+function errorMessage(error: unknown): string | null {
+  return userFacingError(error);
 }
 
 export function CatalogItemsPanel({
@@ -143,8 +137,8 @@ export function CatalogItemsPanel({
           {`New ${itemLabel}`}
         </Button>
       </Stack>
-      {itemsQuery.isError ? <Alert severity="error">{errorMessage(itemsQuery.error)}</Alert> : null}
-      {deleteMutation.isError ? (
+      {errorMessage(itemsQuery.error) ? <Alert severity="error">{errorMessage(itemsQuery.error)}</Alert> : null}
+      {errorMessage(deleteMutation.error) ? (
         <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert>
       ) : null}
       <Panel>

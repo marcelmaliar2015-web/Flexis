@@ -172,7 +172,7 @@ export function JobApplicationLogsTab() {
           Refresh
         </Button>
       </Stack>
-      {logsQuery.isError ? <Alert severity="error">{errorMessage(logsQuery.error)}</Alert> : null}
+      {errorMessage(logsQuery.error) ? <Alert severity="error">{errorMessage(logsQuery.error)}</Alert> : null}
       <TextField
         fullWidth
         size="small"

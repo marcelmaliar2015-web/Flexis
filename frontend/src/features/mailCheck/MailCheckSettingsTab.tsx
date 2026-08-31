@@ -103,7 +103,7 @@ export function MailCheckSettingsTab() {
 
   return (
     <Stack spacing={2}>
-      {settingsQuery.isError ? <Alert severity="error">{errorMessage(settingsQuery.error)}</Alert> : null}
+      {errorMessage(settingsQuery.error) ? <Alert severity="error">{errorMessage(settingsQuery.error)}</Alert> : null}
       {formError ? <Alert severity="error">{formError}</Alert> : null}
       {saved && !formError ? <Alert severity="success">Mail Check settings saved.</Alert> : null}
       <Panel>

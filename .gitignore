@@ -27,5 +27,7 @@ appsettings.*.local.json
 *.log
 npm-debug.log*
 
+.flexis/
+
 .DS_Store
 Thumbs.db

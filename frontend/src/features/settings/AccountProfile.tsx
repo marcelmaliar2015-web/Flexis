@@ -10,7 +10,7 @@ import { styled } from "@mui/material/styles";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { updateCurrentUser } from "@/shared/api/auth";
-import { ApiError } from "@/shared/api/client";
+import { userFacingError } from "@/shared/api/errors";
 import { usersQueryKey } from "@/shared/api/users";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { userInitials } from "@/shared/auth/userInitials";
@@ -31,14 +31,8 @@ const ProfileAvatar = styled(Avatar)(({ theme }) => ({
   fontWeight: 600,
 }));
 
-function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Request failed.";
+function errorMessage(error: unknown): string | null {
+  return userFacingError(error);
 }
 
 export function AccountProfile() {

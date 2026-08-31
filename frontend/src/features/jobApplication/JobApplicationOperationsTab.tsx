@@ -121,12 +121,12 @@ export function JobApplicationOperationsTab() {
       {!connected ? (
         <Alert severity="info">Connect Gmail on the Settings tab before using the pipeline.</Alert>
       ) : null}
-      {boardQuery.isError ? <Alert severity="error">{errorMessage(boardQuery.error)}</Alert> : null}
-      {applyAllMutation.isError ? <Alert severity="error">{errorMessage(applyAllMutation.error)}</Alert> : null}
-      {forwardAllMutation.isError ? (
+      {errorMessage(boardQuery.error) ? <Alert severity="error">{errorMessage(boardQuery.error)}</Alert> : null}
+      {errorMessage(applyAllMutation.error) ? <Alert severity="error">{errorMessage(applyAllMutation.error)}</Alert> : null}
+      {errorMessage(forwardAllMutation.error) ? (
         <Alert severity="error">{errorMessage(forwardAllMutation.error)}</Alert>
       ) : null}
-      {deleteAllMutation.isError ? (
+      {errorMessage(deleteAllMutation.error) ? (
         <Alert severity="error">{errorMessage(deleteAllMutation.error)}</Alert>
       ) : null}
       {notice ? <Alert severity="success">{notice}</Alert> : null}

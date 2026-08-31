@@ -45,8 +45,8 @@ export function MailCheckInboxTab() {
 
   return (
     <Stack spacing={2}>
-      {settingsQuery.isError ? <Alert severity="error">{errorMessage(settingsQuery.error)}</Alert> : null}
-      {inboxQuery.isError ? <Alert severity="error">{errorMessage(inboxQuery.error)}</Alert> : null}
+      {errorMessage(settingsQuery.error) ? <Alert severity="error">{errorMessage(settingsQuery.error)}</Alert> : null}
+      {errorMessage(inboxQuery.error) ? <Alert severity="error">{errorMessage(inboxQuery.error)}</Alert> : null}
       {settings && !settings.gmailConnected ? (
         <Alert severity="info">
           Connect Gmail on{" "}

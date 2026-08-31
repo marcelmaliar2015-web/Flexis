@@ -14,6 +14,8 @@ Cross-cutting rules. Layer-specific detail lives under `frontend/` or `backend/`
 - API controllers return HTTP status codes with JSON bodies. Unhealthy health checks return `503`. Application exceptions map to Problem Details.
 - Frontend API helper `getJson` throws on non-OK responses except `503` (parsed as a health payload). Other failures throw `ApiError`.
 - Do not swallow exceptions. Health checks convert connection failures into an unhealthy result.
+- Errors and warnings also go to the header Issues list and `.flexis/issue-log.jsonl`. See [decisions/020-issue-notifications.md](decisions/020-issue-notifications.md).
+- Page inline error alerts use `userFacingError` in `frontend/src/shared/api/errors.ts`. `ApiError` failures are not repeated on the page; they appear only in Issues (and the snackbar). Network and validation errors still show inline.
 
 ## Environment and config
 

@@ -7,7 +7,7 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
-import { ApiError } from "@/shared/api/client";
+import { userFacingError } from "@/shared/api/errors";
 import {
   getGoogleClient,
   googleClientQueryKey,
@@ -22,14 +22,8 @@ const Panel = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
 }));
 
-function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Request failed.";
+function errorMessage(error: unknown): string | null {
+  return userFacingError(error);
 }
 
 export function GoogleClientSettings() {
@@ -81,7 +75,7 @@ export function GoogleClientSettings() {
               Create the web client with Help, then paste Client ID and Client secret here.
             </Typography>
           </Stack>
-          {clientQuery.isError ? <Alert severity="error">{errorMessage(clientQuery.error)}</Alert> : null}
+          {errorMessage(clientQuery.error) ? <Alert severity="error">{errorMessage(clientQuery.error)}</Alert> : null}
           {formError ? <Alert severity="error">{formError}</Alert> : null}
           {saveMutation.isSuccess ? <Alert severity="success">Google Cloud client saved.</Alert> : null}
           <TextField

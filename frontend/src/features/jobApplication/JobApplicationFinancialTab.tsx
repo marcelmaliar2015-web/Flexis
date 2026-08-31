@@ -99,7 +99,7 @@ export function JobApplicationFinancialTab() {
           Refresh
         </Button>
       </Stack>
-      {boardQuery.isError ? <Alert severity="error">{errorMessage(boardQuery.error)}</Alert> : null}
+      {errorMessage(boardQuery.error) ? <Alert severity="error">{errorMessage(boardQuery.error)}</Alert> : null}
       {rateError ? <Alert severity="error">{rateError}</Alert> : null}
       <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
         <SummaryCard>

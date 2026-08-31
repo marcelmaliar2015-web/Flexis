@@ -184,6 +184,12 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             </ListItem>
             <ListItem disableGutters>
               <ListItemText
+                primary="Issues"
+                secondary="Left of Google sync when signed in, and next to Sign in for visitors. Badge is the count. A snackbar appears on each new error or warning. Open Issues for time, source, HTTP method, path, status, and full message. Copy all produces a pasteable log. The API also appends the same facts to .flexis/issue-log.jsonl."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
                 primary="Google sync"
                 secondary="Left of Gmail status. Updated x mins ago plus a red, amber, or green lamp bar. Green is under 2 minutes, amber under 8, red after that or on failure. Lamps chase while a sync runs. Click to refresh sheets and Job Application configuration now. Auto refresh is every 3 minutes while this browser tab is visible."
               />

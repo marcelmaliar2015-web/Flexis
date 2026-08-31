@@ -1,4 +1,4 @@
-import { ApiError } from "@/shared/api/client";
+import { userFacingError } from "@/shared/api/errors";
 import type { JobPipelineBoard, JobPipelineForwardResult, JobPipelineUpdateResult } from "@/shared/types/pipeline";
 
 export function listingsNotice(result: JobPipelineUpdateResult, all: boolean): string {
@@ -26,14 +26,8 @@ export function forwardNotice(result: JobPipelineForwardResult): string {
   return `Archived the current sheet as ${result.archivedSheetName}. New empty ${result.mainSheetName} tab.`;
 }
 
-export function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Request failed.";
+export function errorMessage(error: unknown): string | null {
+  return userFacingError(error);
 }
 
 export function sourceChoiceValue(sourceId: string, sheetId: number): string {

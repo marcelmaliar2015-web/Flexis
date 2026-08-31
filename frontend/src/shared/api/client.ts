@@ -1,13 +1,18 @@
 import { getApiBaseUrl } from "@/shared/config/env";
 import { getAccessToken } from "@/shared/api/accessToken";
+import { reportIssue } from "@/shared/notifications/issueStore";
 
 export class ApiError extends Error {
   readonly status: number;
+  readonly path: string;
+  readonly method: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, path: string, method: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.path = path;
+    this.method = method;
   }
 }
 
@@ -40,6 +45,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function send(path: string, init?: RequestInit): Promise<Response> {
+  const method = (init?.method ?? "GET").toUpperCase();
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json");
   if (init?.body && !headers.has("Content-Type")) {
@@ -55,12 +61,16 @@ async function send(path: string, init?: RequestInit): Promise<Response> {
   try {
     response = await fetch(`${getApiBaseUrl()}${path}`, { ...init, headers });
   } catch {
-    throw new Error("API is not running. Start backend/src/Flexis.Api.");
+    const message = "API is not running. Start backend/src/Flexis.Api.";
+    notifyApiFailure(message, 0, path, method);
+    throw new Error(message);
   }
 
   if (!response.ok && response.status !== 503) {
     if (response.status === 502 || response.status === 504) {
-      throw new Error("API is not running. Start backend/src/Flexis.Api.");
+      const message = "API is not running. Start backend/src/Flexis.Api.";
+      notifyApiFailure(message, response.status, path, method);
+      throw new Error(message);
     }
 
     let body: unknown = null;
@@ -70,13 +80,33 @@ async function send(path: string, init?: RequestInit): Promise<Response> {
       body = null;
     }
 
-    throw new ApiError(problemMessage(body, response.status), response.status);
+    const message = problemMessage(body, response.status, method, path);
+    notifyApiFailure(message, response.status, path, method);
+    throw new ApiError(message, response.status, path, method);
   }
 
   return response;
 }
 
-function problemMessage(body: unknown, status: number): string {
+function notifyApiFailure(message: string, status: number, path: string, method: string) {
+  if (path === "/api/diagnostics/events") {
+    return;
+  }
+  if (method === "GET" && path === "/api/auth/me" && status === 401) {
+    return;
+  }
+
+  reportIssue({
+    severity: "error",
+    source: "api",
+    message,
+    method,
+    path,
+    status,
+  });
+}
+
+function problemMessage(body: unknown, status: number, method: string, path: string): string {
   if (body && typeof body === "object") {
     const record = body as { detail?: unknown; title?: unknown; message?: unknown };
     if (typeof record.detail === "string" && record.detail.length > 0) {
@@ -90,5 +120,9 @@ function problemMessage(body: unknown, status: number): string {
     }
   }
 
-  return `Request failed with status ${status}.`;
+  if (status === 404) {
+    return `${method} ${path} was not found. Restart backend/src/Flexis.Api so it matches this app.`;
+  }
+
+  return `${method} ${path} failed with status ${status}.`;
 }

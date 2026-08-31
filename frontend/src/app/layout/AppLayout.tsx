@@ -8,6 +8,7 @@ import { styled } from "@mui/material/styles";
 import { Link as RouterLink, Outlet } from "react-router-dom";
 import { GoogleConnectStatus } from "@/app/layout/GoogleConnectStatus";
 import { GoogleSyncStatus } from "@/app/layout/GoogleSyncStatus";
+import { NotificationCenter } from "@/app/layout/NotificationCenter";
 import { UserMenu } from "@/app/layout/UserMenu";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { appPaths } from "@/shared/config/paths";
@@ -77,15 +78,19 @@ export function AppLayout() {
           </Box>
           {auth.user ? (
             <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexShrink: 0 }}>
+              <NotificationCenter />
               <GoogleSyncStatus />
               <GoogleConnectStatus />
               <HeaderRail />
               <UserMenu />
             </Stack>
           ) : (
-            <Button color="inherit" component={RouterLink} to={appPaths.signIn} variant="text">
-              Sign in
-            </Button>
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexShrink: 0 }}>
+              <NotificationCenter />
+              <Button color="inherit" component={RouterLink} to={appPaths.signIn} variant="text">
+                Sign in
+              </Button>
+            </Stack>
           )}
         </Toolbar>
       </ShellBar>

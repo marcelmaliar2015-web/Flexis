@@ -1,14 +1,7 @@
-import { ApiError } from "@/shared/api/client";
+import { userFacingError } from "@/shared/api/errors";
 import type { MailCheckAction } from "@/shared/types/mailCheck";
-
-export function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Request failed.";
+export function errorMessage(error: unknown): string | null {
+  return userFacingError(error);
 }
 
 export function gmailMessageUrl(threadId: string, id: string): string {

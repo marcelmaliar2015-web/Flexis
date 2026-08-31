@@ -75,8 +75,8 @@ export function MailCheckCheckTab() {
 
   return (
     <Stack spacing={2}>
-      {settingsQuery.isError ? <Alert severity="error">{errorMessage(settingsQuery.error)}</Alert> : null}
-      {checkMutation.isError ? <Alert severity="error">{errorMessage(checkMutation.error)}</Alert> : null}
+      {errorMessage(settingsQuery.error) ? <Alert severity="error">{errorMessage(settingsQuery.error)}</Alert> : null}
+      {errorMessage(checkMutation.error) ? <Alert severity="error">{errorMessage(checkMutation.error)}</Alert> : null}
       {settings?.lastError ? <Alert severity="error">{settings.lastError}</Alert> : null}
       {!settings?.gmailConnected ? (
         <Alert severity="info">Connect Gmail on Job Application Settings before checking mail.</Alert>

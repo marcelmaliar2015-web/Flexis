@@ -1,4 +1,4 @@
-import { ApiError } from "@/shared/api/client";
+import { userFacingError } from "@/shared/api/errors";
 import { appPaths } from "@/shared/config/paths";
 import type { JobApplicationLog, JobFinancialBoard, JobFinancialRow } from "@/shared/types/jobApplication";
 import type { GoogleConnectionStatus } from "@/shared/types/google";
@@ -47,14 +47,8 @@ export type UserSummary = {
   admins: number;
 };
 
-export function queryErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Request failed.";
+export function queryErrorMessage(error: unknown): string | null {
+  return userFacingError(error);
 }
 
 export function formatPrice(value: number): string {

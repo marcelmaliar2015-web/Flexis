@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import {
   getMailCheckSettings,
   mailCheckInboxRootQueryKey,
@@ -8,7 +9,10 @@ import {
   mailCheckSettingsQueryKey,
   runMailCheck,
 } from "@/shared/api/mailCheck";
+import { ApiError } from "@/shared/api/client";
+import { reportIssue } from "@/shared/notifications/issueStore";
 import { useAuth } from "@/shared/auth/AuthProvider";
+import { appPaths } from "@/shared/config/paths";
 import type { MailCheckRun } from "@/shared/types/mailCheck";
 
 type MailCheckProviderProps = {
@@ -17,12 +21,15 @@ type MailCheckProviderProps = {
 
 export function MailCheckProvider({ children }: MailCheckProviderProps) {
   const auth = useAuth();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const busyRef = useRef(false);
   const lastAtRef = useRef<number | null>(null);
+  const unavailableRef = useRef(false);
+  const onMailCheck = location.pathname === appPaths.mailCheck || location.pathname.startsWith(`${appPaths.mailCheck}/`);
 
   const runAuto = useCallback(async () => {
-    if (!auth.user || busyRef.current || document.visibilityState !== "visible") {
+    if (!auth.user || !onMailCheck || busyRef.current || unavailableRef.current || document.visibilityState !== "visible") {
       return;
     }
 
@@ -32,6 +39,16 @@ export function MailCheckProvider({ children }: MailCheckProviderProps) {
       queryClient.setQueryData(mailCheckSettingsQueryKey, settings);
       if (!settings.hasApiKey || !settings.gmailConnected) {
         return;
+      }
+
+      if (settings.lastError) {
+        reportIssue({
+          severity: "error",
+          source: "mail-check",
+          message: settings.lastError,
+          method: "POST",
+          path: "/api/mail-check/run",
+        });
       }
 
       let result: MailCheckRun = await runMailCheck(false);
@@ -59,17 +76,42 @@ export function MailCheckProvider({ children }: MailCheckProviderProps) {
         lastAtRef.current = Date.now();
         await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
         await queryClient.invalidateQueries({ queryKey: mailCheckInboxRootQueryKey });
+        if (result.errors > 0) {
+          const failed = result.items.filter((item) => item.action === "error");
+          reportIssue({
+            severity: "error",
+            source: "mail-check",
+            message: `Mail Check failed on ${result.errors} message(s).`,
+            method: "POST",
+            path: "/api/mail-check/run",
+            detail: failed
+              .map((item) => `${item.from} ${item.subject}: ${item.reason}`.trim())
+              .join("\n"),
+          });
+        }
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        unavailableRef.current = true;
+        return;
+      }
+      if (!(error instanceof ApiError)) {
+        reportIssue({
+          severity: "error",
+          source: "mail-check",
+          message: error instanceof Error ? error.message : "Mail Check auto-check failed.",
+          method: "POST",
+          path: "/api/mail-check/run",
+        });
+      }
       return;
     } finally {
       busyRef.current = false;
     }
-  }, [auth.user, queryClient]);
+  }, [auth.user, onMailCheck, queryClient]);
 
   useEffect(() => {
-    if (!auth.user) {
-      lastAtRef.current = null;
+    if (!auth.user || !onMailCheck) {
       return;
     }
 
@@ -96,7 +138,7 @@ export function MailCheckProvider({ children }: MailCheckProviderProps) {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [auth.user, runAuto]);
+  }, [auth.user, onMailCheck, runAuto]);
 
   return children;
 }
