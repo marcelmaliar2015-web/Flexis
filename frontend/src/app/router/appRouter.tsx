@@ -1,7 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "@/app/layout/AppLayout";
 import { AuthenticatedLayout } from "@/app/layout/AuthenticatedLayout";
-import { RequireAuth } from "@/app/router/routeGuards";
+import { RequireAuth, RequireGuest } from "@/app/router/routeGuards";
 import { SignInPage } from "@/features/auth/SignInPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { HealthPage } from "@/features/health/HealthPage";
@@ -18,12 +18,17 @@ export const appRouter = createBrowserRouter([
     element: <AppLayout />,
     children: [
       {
-        index: true,
-        element: <HomePage />,
-      },
-      {
-        path: "sign-in",
-        element: <SignInPage />,
+        element: <RequireGuest />,
+        children: [
+          {
+            index: true,
+            element: <HomePage />,
+          },
+          {
+            path: "sign-in",
+            element: <SignInPage />,
+          },
+        ],
       },
       {
         element: <RequireAuth />,

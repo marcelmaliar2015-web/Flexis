@@ -1,13 +1,13 @@
 # Frontend routing
 
-React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. Layout route renders `AppLayout` and an `Outlet`. Authenticated product routes also render `AuthenticatedLayout`. Guard: `RequireAuth` in `routeGuards.tsx`.
+React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. Layout route renders `AppLayout` and an `Outlet`. Authenticated product routes also render `AuthenticatedLayout`. Guards: `RequireAuth` and `RequireGuest` in `routeGuards.tsx`.
 
 ## Routes
 
 | Path | Screen | Access |
 | --- | --- | --- |
-| `/` | `HomePage` | Public |
-| `/sign-in` | `SignInPage` | Public |
+| `/` | `HomePage` | Guest |
+| `/sign-in` | `SignInPage` | Guest |
 | `/dashboard` | `DashboardPage` | Authenticated |
 | `/job-application` | `JobApplicationPage` | Authenticated |
 | `/job-application/pipeline/:entryId` | `JobApplicationPipelineEntryPage` | Authenticated |
@@ -16,11 +16,11 @@ React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. L
 | `/health` | `HealthPage` | Authenticated |
 | `/users` | Redirect to `/settings` | Authenticated |
 
-Sign-in and already-signed-in visits to `/sign-in` go to `/dashboard`. Unauthenticated visits to protected routes redirect to `/sign-in` with `state.from`. Settings always has the signed-in account profile. Admin Google Cloud client and other users are on `/settings`, not a separate screen. `/health` has no nav link.
+Signed-in visits to `/` or `/sign-in` go to `/dashboard`, or to `state.from` when sign-in started from a protected route. Unauthenticated visits to protected routes redirect to `/sign-in` with `state.from`. Settings always has the signed-in account profile. Admin Google Cloud client and other users are on `/settings`, not a separate screen. `/health` has no nav link.
 
 ## Guards and access
 
-`RequireAuth` wraps `AuthenticatedLayout`. Settings shows the Google Cloud client and the other-users table only when `role` is `Admin`. Every signed-in role can edit display name and password on Settings.
+`RequireGuest` wraps `/` and `/sign-in`. `RequireAuth` wraps `AuthenticatedLayout`. Both wait for session restore before redirecting. Settings shows the Google Cloud client and the other-users table only when `role` is `Admin`. Every signed-in role can edit display name and password on Settings.
 
 ## Related
 
@@ -34,3 +34,4 @@ Sign-in and already-signed-in visits to `/sign-in` go to `/dashboard`. Unauthent
 - [../decisions/012-pipeline-banned-companies.md](../decisions/012-pipeline-banned-companies.md)
 - [../decisions/016-dashboard-workspace-status.md](../decisions/016-dashboard-workspace-status.md)
 - [../decisions/017-signed-in-account-profile.md](../decisions/017-signed-in-account-profile.md)
+- [../decisions/018-guest-only-public-routes.md](../decisions/018-guest-only-public-routes.md)

@@ -37,3 +37,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [015](015-google-workspace-sync.md) | Google workspace sync |
 | [016](016-dashboard-workspace-status.md) | Dashboard workspace status |
 | [017](017-signed-in-account-profile.md) | Signed-in account profile |
+| [018](018-guest-only-public-routes.md) | Guest-only landing and sign-in |

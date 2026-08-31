@@ -10,7 +10,6 @@ import { alpha, styled } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 import { Link as RouterLink } from "react-router-dom";
 import { getHealthStatus, healthQueryKey } from "@/shared/api/health";
-import { useAuth } from "@/shared/auth/AuthProvider";
 import { appPaths } from "@/shared/config/paths";
 
 const capabilities = [
@@ -95,15 +94,12 @@ function platformChipLabel(status: string | undefined, failed: boolean) {
 }
 
 export function HomePage() {
-  const auth = useAuth();
   const healthQuery = useQuery({
     queryKey: healthQueryKey,
     queryFn: getHealthStatus,
   });
 
   const platformStatus = healthQuery.data?.status;
-  const primaryTo = auth.user ? appPaths.dashboard : appPaths.signIn;
-  const primaryLabel = auth.user ? "Open dashboard" : "Sign in";
 
   return (
     <Stack>
@@ -126,8 +122,8 @@ export function HomePage() {
                     one calm surface.
                   </Typography>
                 </Box>
-                <Button component={RouterLink} to={primaryTo} size="large">
-                  {primaryLabel}
+                <Button component={RouterLink} to={appPaths.signIn} size="large">
+                  Sign in
                 </Button>
               </Stack>
             </Grid>

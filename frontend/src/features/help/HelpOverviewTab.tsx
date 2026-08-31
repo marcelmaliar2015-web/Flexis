@@ -32,7 +32,9 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
           After sign-in the shell is a header, a left nav, and a scrolling content pane. Job
           Application is where listings, sheets, pricing, and Gmail live. Dashboard shows whether
           that workspace is healthy and producing counts. Settings holds your account. This Help set
-          is the product map and the how-to guides.
+          is the product map and the how-to guides. The landing page and Sign in are for visitors
+          who are not signed in. Opening them while signed in returns you to Dashboard, or to the
+          screen you were sent from.
         </Typography>
       </Stack>
       <Panel>

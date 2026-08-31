@@ -7,10 +7,8 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useState, type FormEvent } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "@/shared/api/client";
 import { useAuth } from "@/shared/auth/AuthProvider";
-import { appPaths } from "@/shared/config/paths";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -28,24 +26,12 @@ const AccentRule = styled("span")(({ theme }) => ({
   backgroundColor: theme.palette.secondary.main,
 }));
 
-type LocationState = {
-  from?: {
-    pathname: string;
-  };
-};
-
 export function SignInPage() {
   const auth = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (auth.user) {
-    return <Navigate to={appPaths.dashboard} replace />;
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,8 +39,6 @@ export function SignInPage() {
     setIsSubmitting(true);
     try {
       await auth.signIn({ email, password });
-      const from = (location.state as LocationState | null)?.from?.pathname ?? appPaths.dashboard;
-      navigate(from, { replace: true });
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -63,7 +47,6 @@ export function SignInPage() {
       } else {
         setError("Sign in failed.");
       }
-    } finally {
       setIsSubmitting(false);
     }
   }

@@ -18,7 +18,7 @@ Authenticated product routes use `AuthenticatedLayout`: a left panel with Dashbo
 
 ## Home landing
 
-`HomePage` is the first screen at `/`. Hero band, live platform preview (shared health query), and three capability cards. Primary action is Sign in when anonymous, or Open dashboard when signed in.
+`HomePage` is the visitor landing at `/`. Hero band, live platform preview (shared health query), and three capability cards. Primary action is Sign in. Signed-in visits are sent to Dashboard.
 
 ## Component patterns
 
@@ -41,3 +41,4 @@ Feature screens are functions in `features/*/`. Shared presentational pieces go 
 - [../decisions/015-google-workspace-sync.md](../decisions/015-google-workspace-sync.md)
 - [../decisions/016-dashboard-workspace-status.md](../decisions/016-dashboard-workspace-status.md)
 - [../decisions/017-signed-in-account-profile.md](../decisions/017-signed-in-account-profile.md)
+- [../decisions/018-guest-only-public-routes.md](../decisions/018-guest-only-public-routes.md)
