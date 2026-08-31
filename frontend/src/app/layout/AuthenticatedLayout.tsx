@@ -28,6 +28,7 @@ const MainPane = styled("section")({
   minWidth: 0,
   minHeight: 0,
   overflow: "auto",
+  scrollbarGutter: "stable",
 });
 
 const appNavItems = [
