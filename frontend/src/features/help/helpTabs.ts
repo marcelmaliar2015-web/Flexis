@@ -10,6 +10,11 @@ export const helpTabItems = [
     summary: "Google Cloud client, APIs, scopes, Drive folders, and Connect Gmail.",
   },
   {
+    value: "microsoft",
+    label: "Microsoft setup",
+    summary: "Azure app registration, Graph scopes, and Connect Outlook.",
+  },
+  {
     value: "operations",
     label: "Operations",
     summary: "Pipeline rows, Update, Forward, banned companies, and sheet lock.",
@@ -27,7 +32,7 @@ export const helpTabItems = [
   {
     value: "mailCheck",
     label: "Mail Check",
-    summary: "Gmail labels, OpenAI key, auto check, pin, and trash.",
+    summary: "Gmail or Outlook connect, OpenAI key, auto check, pin, and trash.",
   },
   {
     value: "problems",

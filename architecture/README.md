@@ -21,6 +21,7 @@ A new session should read this index, then `overview.md`, then the frontend or b
 | [backend/data.md](backend/data.md) | Persistence, entities, migrations |
 | [backend/security.md](backend/security.md) | Auth, authorization, secrets |
 | [backend/google-oauth-setup.md](backend/google-oauth-setup.md) | Local Google Cloud OAuth steps |
+| [backend/microsoft-oauth-setup.md](backend/microsoft-oauth-setup.md) | Local Azure OAuth for Mail Check Outlook |
 | [decisions/](decisions/README.md) | Architecture decision records |
 
 ## Update contract

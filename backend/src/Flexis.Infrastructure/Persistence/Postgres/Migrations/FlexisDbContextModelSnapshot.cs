@@ -107,6 +107,29 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("google_client_credentials", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.Microsoft.MicrosoftClientCredentials", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ClientSecretProtected")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("microsoft_client_credentials", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobCatalogItem", b =>
                 {
                     b.Property<Guid>("Id")

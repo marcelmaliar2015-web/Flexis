@@ -1,101 +1,362 @@
+import Alert from "@mui/material/Alert";
+
+import Button from "@mui/material/Button";
+
+import Link from "@mui/material/Link";
+
 import List from "@mui/material/List";
+
 import ListItem from "@mui/material/ListItem";
+
 import ListItemText from "@mui/material/ListItemText";
+
 import Stack from "@mui/material/Stack";
+
 import Table from "@mui/material/Table";
+
 import TableBody from "@mui/material/TableBody";
+
 import TableCell from "@mui/material/TableCell";
+
 import TableContainer from "@mui/material/TableContainer";
+
 import TableHead from "@mui/material/TableHead";
+
 import TableRow from "@mui/material/TableRow";
+
 import Typography from "@mui/material/Typography";
+
+import { Link as RouterLink } from "react-router-dom";
+
 import { Panel } from "@/features/help/helpUi";
 
-export function HelpMailCheckTab() {
+import type { HelpTabValue } from "@/features/help/helpTabs";
+
+import { appPaths } from "@/shared/config/paths";
+
+
+
+type HelpMailCheckTabProps = {
+
+  onOpenTab?: (tab: HelpTabValue) => void;
+
+};
+
+
+
+export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
+
   return (
+
     <Stack spacing={2}>
+
       <Stack spacing={0.5}>
+
         <Typography variant="h6" component="h2">
+
           Mail Check
+
         </Typography>
+
         <Typography variant="body2" color="text.secondary">
-          Auto-triage Gmail or Outlook for interview work. Connect a mailbox on Mail Check Settings.
-          The only cost is your OpenAI API key, which you paste on Mail Check Settings.
+
+          Auto-triage Gmail or Outlook for interview work. Connect one mailbox on Mail Check Settings.
+
+          The only cost is your OpenAI API key, which you paste on the same tab.
+
         </Typography>
+
       </Stack>
+
       <Panel>
+
         <Stack spacing={1.5}>
+
           <Typography variant="h6" component="h2">
-            Tabs
+
+            Before you start
+
           </Typography>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell align="left">Tab</TableCell>
-                  <TableCell align="left">What it does</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <TableRow>
-                  <TableCell align="left">Inbox</TableCell>
-                  <TableCell align="left">
-                    Mail Flexis labeled and pinned. Filter by Interview Scheduled, Waiting for
-                    answer, Need to Schedule/Availability, or Others.
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell align="left">Check</TableCell>
-                  <TableCell align="left">
-                    Check now, last-run counts, and why each message was labeled, trashed, or left
-                    alone. Auto-check runs about every two minutes while this browser tab is visible.
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell align="left">Settings</TableCell>
-                  <TableCell align="left">
-                    Mailbox connect for Gmail, plus OpenAI key and model. The key is never shown again
-                    after save. Pick any chat or reasoning model; Flexis adapts the request.
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Stack>
-      </Panel>
-      <Panel>
-        <Stack spacing={1.5}>
-          <Typography variant="h6" component="h2">
-            What Flexis does
-          </Typography>
+
           <List disablePadding>
+
             <ListItem disableGutters>
+
               <ListItemText
-                primary="Creates four Gmail labels"
-                secondary="Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others. Created when you save a key with Gmail connected, and on each check."
+
+                primary="Gmail"
+
+                secondary="Uses the same Google Cloud client as Job Application. An admin saves it on product Settings. Each user connects their own Gmail on Mail Check Settings."
+
               />
+
             </ListItem>
+
             <ListItem disableGutters>
+
               <ListItemText
-                primary="Reads inbox, spam, and other categories"
-                secondary="Promotions, updates, forums, and social are included. Real recruiter mail often lands there."
+
+                primary="Outlook"
+
+                secondary="Uses the same Flexis Azure app for everyone. An admin saves Application ID and client secret on product Settings. Each user connects their own mailbox on Mail Check Settings."
+
               />
+
             </ListItem>
+
             <ListItem disableGutters>
+
               <ListItemText
-                primary="Pins keepers"
-                secondary="Labeled interview mail is starred. Mail found in spam is moved back to the inbox."
+
+                primary="OpenAI key"
+
+                secondary="Required before auto-check classifies mail. Saved encrypted on the API. Never shown again after save."
+
               />
+
             </ListItem>
-            <ListItem disableGutters>
-              <ListItemText
-                primary="Trashes noise only"
-                secondary="Application-received receipts, mass rejections, and job-board alerts go to trash. Personal mail is never trashed."
-              />
-            </ListItem>
+
           </List>
+
+          {onOpenTab ? (
+
+            <Stack direction="row" spacing={1}>
+
+              <Button variant="text" onClick={() => onOpenTab("google")}>
+
+                Google setup
+
+              </Button>
+
+              <Button variant="text" onClick={() => onOpenTab("microsoft")}>
+
+                Microsoft setup
+
+              </Button>
+
+            </Stack>
+
+          ) : null}
+
         </Stack>
+
       </Panel>
+
+      <Panel>
+
+        <Stack spacing={1.5}>
+
+          <Typography variant="h6" component="h2">
+
+            Tabs
+
+          </Typography>
+
+          <TableContainer>
+
+            <Table size="small">
+
+              <TableHead>
+
+                <TableRow>
+
+                  <TableCell align="left">Tab</TableCell>
+
+                  <TableCell align="left">What it does</TableCell>
+
+                </TableRow>
+
+              </TableHead>
+
+              <TableBody>
+
+                <TableRow>
+
+                  <TableCell align="left">Inbox</TableCell>
+
+                  <TableCell align="left">
+
+                    Mail Flexis labeled or categorized and pinned. Filter by Interview Scheduled,
+
+                    Waiting for answer, Need to Schedule/Availability, or Others.
+
+                  </TableCell>
+
+                </TableRow>
+
+                <TableRow>
+
+                  <TableCell align="left">Check</TableCell>
+
+                  <TableCell align="left">
+
+                    Check now, last-run counts, and why each message was labeled, trashed, or left
+
+                    alone. Auto-check runs about every two minutes while this browser tab is visible.
+
+                  </TableCell>
+
+                </TableRow>
+
+                <TableRow>
+
+                  <TableCell align="left">Settings</TableCell>
+
+                  <TableCell align="left">
+
+                    Connect Gmail or Outlook, plus OpenAI key and model. Pick any chat or reasoning
+
+                    model; Flexis adapts the request.
+
+                  </TableCell>
+
+                </TableRow>
+
+              </TableBody>
+
+            </Table>
+
+          </TableContainer>
+
+        </Stack>
+
+      </Panel>
+
+      <Panel>
+
+        <Stack spacing={1.5}>
+
+          <Typography variant="h6" component="h2">
+
+            What Flexis does
+
+          </Typography>
+
+          <List disablePadding>
+
+            <ListItem disableGutters>
+
+              <ListItemText
+
+                primary="Creates four keep groups"
+
+                secondary="Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others. Gmail labels or Outlook master categories. Created when you save a key with a mailbox connected, and on each check."
+
+              />
+
+            </ListItem>
+
+            <ListItem disableGutters>
+
+              <ListItemText
+
+                primary="Reads inbox and junk or spam"
+
+                secondary="Gmail also reads promotions, updates, forums, and social. Real recruiter mail often lands there."
+
+              />
+
+            </ListItem>
+
+            <ListItem disableGutters>
+
+              <ListItemText
+
+                primary="Pins keepers"
+
+                secondary="Gmail stars labeled mail. Outlook flags categorized mail. Junk or spam keepers move back to the inbox."
+
+              />
+
+            </ListItem>
+
+            <ListItem disableGutters>
+
+              <ListItemText
+
+                primary="Trashes noise only"
+
+                secondary="Application-received receipts, mass rejections, and job-board alerts go to trash. Personal mail is never trashed."
+
+              />
+
+            </ListItem>
+
+          </List>
+
+        </Stack>
+
+      </Panel>
+
+      <Panel>
+
+        <Stack spacing={1.5}>
+
+          <Typography variant="h6" component="h2">
+
+            Connect flow
+
+          </Typography>
+
+          <List disablePadding>
+
+            <ListItem disableGutters>
+
+              <ListItemText primary="Open Mail Check, Settings tab." />
+
+            </ListItem>
+
+            <ListItem disableGutters>
+
+              <ListItemText primary="Connect Gmail or Connect Outlook. Only one mailbox at a time." />
+
+            </ListItem>
+
+            <ListItem disableGutters>
+
+              <ListItemText primary="Sign in and accept permissions. Flexis returns to Mail Check with a connected chip." />
+
+            </ListItem>
+
+            <ListItem disableGutters>
+
+              <ListItemText primary="Paste an OpenAI API key, pick a model, and Save." />
+
+            </ListItem>
+
+            <ListItem disableGutters>
+
+              <ListItemText
+
+                primary={
+
+                  <Link component={RouterLink} to={appPaths.mailCheck}>
+
+                    Open Mail Check
+
+                  </Link>
+
+                }
+
+              />
+
+            </ListItem>
+
+          </List>
+
+          <Alert severity="info">
+
+            Mail Check mailbox is separate from Job Application Gmail used for Sheets and pipeline.
+
+          </Alert>
+
+        </Stack>
+
+      </Panel>
+
     </Stack>
+
   );
+
 }
+

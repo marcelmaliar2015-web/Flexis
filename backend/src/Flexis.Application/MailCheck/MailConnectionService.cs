@@ -82,7 +82,7 @@ public sealed class MailConnectionService
     {
         if (!await _microsoftOAuth.IsConfiguredAsync(cancellationToken))
         {
-            throw new ValidationFailedException("An admin must save Microsoft OAuth settings in appsettings.");
+            throw new ValidationFailedException("An admin must save the Microsoft client in Settings.");
         }
 
         var returnUrl = NormalizeReturnUrl(request.ReturnUrl);

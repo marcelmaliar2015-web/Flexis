@@ -158,7 +158,7 @@ export function MailCheckMailboxCard() {
               <Typography variant="body2" color="text.secondary">
                 {mailbox?.outlookAvailable
                   ? "Uses Outlook categories and flags. Works with Microsoft 365 and Outlook.com."
-                  : "An admin must set Microsoft ClientId, ClientSecret, and RedirectUri in backend appsettings."}
+                  : "An admin must save the Microsoft client on Settings before Connect Outlook is available."}
               </Typography>
               {mailbox?.provider === "outlook" && connected ? (
                 <Button

@@ -6,7 +6,12 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useState, type ReactNode } from "react";
 
-export const redirectUri = "http://localhost:5080/api/google/connections/callback";
+export const googleRedirectUri = "http://localhost:5080/api/google/connections/callback";
+
+export const outlookRedirectUri =
+  "http://localhost:5080/api/mail-check/mailbox/outlook/callback";
+
+export const redirectUri = googleRedirectUri;
 
 export const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -45,19 +50,19 @@ export function ExternalLink({ href, children }: { href: string; children: React
   );
 }
 
-export function RedirectUriBlock() {
+export function RedirectUriBlock({ uri = googleRedirectUri }: { uri?: string }) {
   const [copied, setCopied] = useState(false);
 
   return (
     <Stack spacing={1}>
       <Typography variant="body2" component="code">
-        {redirectUri}
+        {uri}
       </Typography>
       <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
         <Button
           variant="outlined"
           onClick={() => {
-            void copyText(redirectUri).then(() => setCopied(true));
+            void copyText(uri).then(() => setCopied(true));
           }}
         >
           Copy URL

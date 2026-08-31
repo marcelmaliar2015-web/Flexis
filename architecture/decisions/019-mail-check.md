@@ -8,7 +8,7 @@ Job seekers need interview mail kept and application receipts discarded. Mail Ch
 
 Mail Check is a signed-in module under `/mail-check` with Inbox, Check, and Settings tabs. It stores a per-user mailbox connection in `mail_connections`. Gmail and Outlook connect and disconnect live on Mail Check Settings. Job Application Gmail stays on Job Application Settings for Sheets and Drive.
 
-Gmail OAuth uses `openid`, `userinfo.email`, and `gmail.modify`. Outlook OAuth uses Microsoft identity with `Mail.ReadWrite` and `MailboxSettings.ReadWrite` through Microsoft Graph. Outlook requires `Microsoft:ClientId`, `Microsoft:ClientSecret`, and `Microsoft:RedirectUri` in appsettings. The API returns `outlookAvailable: true` when those values are set.
+Gmail OAuth uses `openid`, `userinfo.email`, and `gmail.modify`. Outlook OAuth uses Microsoft identity with `Mail.ReadWrite` and `MailboxSettings.ReadWrite` through Microsoft Graph. Outlook requires an admin to save the Microsoft client on Settings. The API returns `outlookAvailable: true` when that client is saved and `Microsoft:RedirectUri` is set.
 
 Gmail uses labels and stars. Outlook uses master categories and flagged messages. Both create the same four keep groups: Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others.
 

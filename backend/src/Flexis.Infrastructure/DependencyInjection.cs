@@ -15,6 +15,7 @@ using Flexis.Infrastructure.Persistence.Postgres;
 using Flexis.Infrastructure.Persistence.Postgres.Google;
 using Flexis.Infrastructure.Persistence.Postgres.JobApplication;
 using Flexis.Infrastructure.Persistence.Postgres.MailCheck;
+using Flexis.Infrastructure.Persistence.Postgres.Microsoft;
 using Flexis.Infrastructure.Persistence.Postgres.Users;
 using Flexis.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -85,6 +86,7 @@ public static class DependencyInjection
         services.AddSingleton<IFrontendOrigins, ConfigurationFrontendOrigins>();
         services.AddScoped<IGoogleConnectionRepository, GoogleConnectionRepository>();
         services.AddScoped<IGoogleClientCredentialStore, GoogleClientCredentialStore>();
+        services.AddScoped<IMicrosoftClientCredentialStore, MicrosoftClientCredentialStore>();
         services.AddScoped<IJobCatalogRepository, JobCatalogRepository>();
         services.AddScoped<IJobPipelineRepository, JobPipelineRepository>();
         services.AddScoped<IJobFinancialSettingsRepository, JobFinancialSettingsRepository>();

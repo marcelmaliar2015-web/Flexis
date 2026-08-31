@@ -30,8 +30,8 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
         </Typography>
         <Typography variant="body2" color="text.secondary">
           After sign-in the shell is a header, a left nav, and a scrolling content pane. Job
-          Application is where listings, sheets, pricing, and Gmail live. Mail Check triages that
-          same Gmail for interview mail. Dashboard shows whether that workspace is healthy and
+          Application is where listings, sheets, pricing, and Gmail live. Mail Check triages Gmail or
+          Outlook for interview mail. Dashboard shows whether that workspace is healthy and
           producing counts. Settings holds your account. This Help set is the product map and the
           how-to guides. The landing page and Sign in are for visitors who are not signed in.
           Opening them while signed in returns you to Dashboard, or to the screen you were sent from.
@@ -129,12 +129,12 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Mail Check</TableCell>
                   <TableCell align="left">
-                    Inbox of labeled interview mail, Check now plus auto check, and Settings for
-                    mailbox connect, OpenAI key, and model.
+                    Inbox of labeled or categorized interview mail, Check now plus auto check, and
+                    Settings for mailbox connect, OpenAI key, and model.
                   </TableCell>
                   <TableCell align="left">
-                    Connect Gmail on Mail Check Settings, then save an OpenAI key so Flexis can
-                    label, pin, and trash job mail.
+                    Connect Gmail or Outlook on Mail Check Settings, then save an OpenAI key so Flexis
+                    can label, pin, and trash job mail.
                   </TableCell>
                   <TableCell align="left">
                     <Link component={RouterLink} to={appPaths.mailCheck}>
@@ -146,11 +146,11 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                   <TableCell align="left">Settings</TableCell>
                   <TableCell align="left">
                     Your account: display name and optional password. Email and role stay as
-                    assigned. Admin also sees Google Cloud client and other users. You are not a row
+                    assigned. Admin also sees Google Cloud client, Microsoft client, and other users. You are not a row
                     in that users table.
                   </TableCell>
                   <TableCell align="left">
-                    Change your name or password. Admins save the Flexis Google Cloud web client and
+                    Change your name or password. Admins save the Flexis Google Cloud web client, Microsoft client, and
                     manage other accounts.
                   </TableCell>
                   <TableCell align="left">
@@ -162,7 +162,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Help</TableCell>
                   <TableCell align="left">This guide set.</TableCell>
-                  <TableCell align="left">Learn the product, set up Google, or fix a problem.</TableCell>
+                  <TableCell align="left">Learn the product, set up Google or Microsoft, or fix a problem.</TableCell>
                   <TableCell align="left">This page</TableCell>
                 </TableRow>
               </TableBody>
@@ -299,7 +299,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             <ListItem disableGutters>
               <ListItemText
                 primary="Admin"
-                secondary="Save the Flexis Google Cloud web client. Create, edit, and delete other users. The last active admin cannot be demoted, deactivated, or deleted. The users table does not include your own account."
+                secondary="Save the Flexis Google Cloud web client and Microsoft client on Settings. Create, edit, and delete other users. The last active admin cannot be demoted, deactivated, or deleted. The users table does not include your own account."
               />
             </ListItem>
             <ListItem disableGutters>
@@ -350,7 +350,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             <ListItem disableGutters>
               <ListItemText
                 primary="6. Turn on Mail Check"
-                secondary="Mail Check, Settings tab. Paste an OpenAI API key and pick a model. Flexis creates the four Gmail labels and starts checking inbox, spam, and other categories."
+                secondary="Optional: admin saves Microsoft client on Settings for Outlook. Mail Check, Settings tab. Connect Gmail or Outlook, paste an OpenAI API key, and pick a model."
               />
             </ListItem>
           </List>

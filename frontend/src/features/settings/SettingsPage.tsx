@@ -6,6 +6,7 @@ import { styled } from "@mui/material/styles";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { AccountProfile } from "./AccountProfile";
 import { GoogleClientSettings } from "./GoogleClientSettings";
+import { MicrosoftClientSettings } from "./MicrosoftClientSettings";
 import { UsersManagement } from "./UsersManagement";
 
 const AccentRule = styled("span")(({ theme }) => ({
@@ -35,13 +36,14 @@ export function SettingsPage() {
             <Typography variant="body2" color="text.secondary">
               Update your name and password here. Job Application settings, including Gmail, profiles,
               and sources, live under Job Application.
-              {isAdmin ? " Google Cloud client and other users are below." : ""}
+              {isAdmin ? " Google Cloud client, Microsoft client, and other users are below." : ""}
             </Typography>
           </Stack>
           <AccountProfile />
           {isAdmin ? (
             <Stack spacing={4}>
               <GoogleClientSettings />
+              <MicrosoftClientSettings />
               <UsersManagement />
             </Stack>
           ) : null}

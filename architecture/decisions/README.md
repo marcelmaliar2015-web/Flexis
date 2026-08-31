@@ -40,3 +40,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [018](018-guest-only-public-routes.md) | Guest-only landing and sign-in |
 | [019](019-mail-check.md) | Mail Check Gmail and OpenAI |
 | [020](020-issue-notifications.md) | Issue notifications |
+| [021](021-microsoft-client-in-settings.md) | Microsoft client in Settings |

@@ -18,6 +18,8 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | DELETE | `/api/users/{id}` | Admin | `204` |
 | GET | `/api/google/client` | Admin | `200` + `GoogleClientSettingsDto` |
 | PUT | `/api/google/client` | Admin | `200` + `GoogleClientSettingsDto` |
+| GET | `/api/microsoft/client` | Admin | `200` + `MicrosoftClientSettingsDto` |
+| PUT | `/api/microsoft/client` | Admin | `200` + `MicrosoftClientSettingsDto` |
 | GET | `/api/google/connections` | Authenticated | `200` + `GoogleConnectionStatusDto` |
 | POST | `/api/google/connections/start` | Authenticated | `200` + `GoogleConnectStartDto` |
 | GET | `/api/google/connections/callback` | Anonymous | `302` to the Job Application return URL |
@@ -67,6 +69,8 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 `UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`. `PUT /api/auth/me` body: `displayName`, `password` (omit or blank to keep the current password). Email, role, and active cannot change on that path. Admin user PUT body: `displayName`, `role`, `isActive`, `password` (optional).
 
 `GoogleClientSettingsDto`: `clientId`, `hasSecret`. PUT body: `clientId`, `clientSecret` (omit or blank to keep the stored secret). The secret is never returned.
+
+`MicrosoftClientSettingsDto`: `clientId`, `hasSecret`. PUT body: `clientId`, `clientSecret` (omit or blank to keep the stored secret). The secret is never returned.
 
 `GoogleConnectionStatusDto`: `configured`, `connected`, `googleEmail`, `connectedAt`, `capabilities`. `configured` is true when an admin has saved the Google Cloud client (or config fallback is set) and `Google:RedirectUri` is set. `GoogleConnectStartDto`: `authorizationUrl`. Start body: `returnUrl` (origin must be in `Frontend:Origins`, path `/job-application`).
 

@@ -10,6 +10,7 @@ import { HelpFinancialTab } from "@/features/help/HelpFinancialTab";
 import { HelpGoogleTab } from "@/features/help/HelpGoogleTab";
 import { HelpLogsTab } from "@/features/help/HelpLogsTab";
 import { HelpMailCheckTab } from "@/features/help/HelpMailCheckTab";
+import { HelpMicrosoftTab } from "@/features/help/HelpMicrosoftTab";
 import { HelpOperationsTab } from "@/features/help/HelpOperationsTab";
 import { HelpOverviewTab } from "@/features/help/HelpOverviewTab";
 import { HelpProblemsTab } from "@/features/help/HelpProblemsTab";
@@ -27,6 +28,7 @@ export function HelpPage() {
   const [tab, setTab] = useState<HelpTabValue>("overview");
   const [visited, setVisited] = useState({
     google: false,
+    microsoft: false,
     operations: false,
     financial: false,
     logs: false,
@@ -77,6 +79,11 @@ export function HelpPage() {
               <HelpGoogleTab />
             </Box>
           ) : null}
+          {tab === "microsoft" || visited.microsoft ? (
+            <Box role="tabpanel" hidden={tab !== "microsoft"}>
+              <HelpMicrosoftTab />
+            </Box>
+          ) : null}
           {tab === "operations" || visited.operations ? (
             <Box role="tabpanel" hidden={tab !== "operations"}>
               <HelpOperationsTab />
@@ -94,7 +101,7 @@ export function HelpPage() {
           ) : null}
           {tab === "mailCheck" || visited.mailCheck ? (
             <Box role="tabpanel" hidden={tab !== "mailCheck"}>
-              <HelpMailCheckTab />
+              <HelpMailCheckTab onOpenTab={openTab} />
             </Box>
           ) : null}
           {tab === "problems" || visited.problems ? (

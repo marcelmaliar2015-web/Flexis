@@ -8,11 +8,11 @@ JWT Bearer. Sign-in `POST /api/auth/sign-in` returns `accessToken` and `UserDto`
 
 Fallback policy requires an authenticated user. `GET /api/health`, `POST /api/auth/sign-in`, `GET /api/google/connections/callback`, and `GET /api/mail-check/mailbox/outlook/callback` are anonymous. `GET/POST /api/users` and `PUT/DELETE /api/users/{id}` require role `Admin`. `PUT /api/auth/me` is authenticated and cannot change role or active. `GET/PUT /api/google/client` require role `Admin`. `POST /api/diagnostics/events` is authenticated. Roles: `Admin`, `User`, `Viewer`. CORS policy `Frontend` allows `Frontend:Origins`.
 
-Job Application Google connect uses authorization code + PKCE. Refresh tokens are AES-GCM protected with `Google:TokenProtectionKey`. Scopes are listed in [006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md). Local Google Cloud steps: [google-oauth-setup.md](google-oauth-setup.md). The same guide is in the app at `/help` on the Google setup tab. Mail Check uses a separate mailbox OAuth connection in `mail_connections`. Gmail scopes are in [019-mail-check.md](../decisions/019-mail-check.md). Outlook uses Microsoft Graph mail scopes configured in `Microsoft` appsettings.
+Job Application Google connect uses authorization code + PKCE. Refresh tokens are AES-GCM protected with `Google:TokenProtectionKey`. Scopes are listed in [006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md). Local Google Cloud steps: [google-oauth-setup.md](google-oauth-setup.md). The same guide is in the app at `/help` on the Google setup tab. Mail Check uses a separate mailbox OAuth connection in `mail_connections`. Gmail scopes are in [019-mail-check.md](../decisions/019-mail-check.md). Outlook uses Microsoft Graph mail scopes. Local Azure steps: [microsoft-oauth-setup.md](microsoft-oauth-setup.md). Admins save Application ID and client secret on Settings (`GET`/`PUT /api/microsoft/client`). The same guide is in the app at `/help` on the Microsoft setup tab. `Microsoft:RedirectUri` stays in config.
 
 ## Secrets and transport
 
-Development uses HTTP on port 5080, local Compose credentials, and a development JWT key in `appsettings.Development.json`. The Flexis Google Cloud Client ID and secret are saved by an admin in Settings and stored AES-GCM protected. `Google:RedirectUri` and `Google:TokenProtectionKey` stay in config. `Microsoft:ClientId`, `Microsoft:ClientSecret`, and `Microsoft:RedirectUri` configure Outlook mail connect. The per-user OpenAI API key is AES-GCM protected with the same `Google:TokenProtectionKey` and is never returned.
+Development uses HTTP on port 5080, local Compose credentials, and a development JWT key in `appsettings.Development.json`. The Flexis Google Cloud Client ID and secret are saved by an admin in Settings and stored AES-GCM protected. `Google:RedirectUri` and `Google:TokenProtectionKey` stay in config. The Microsoft client ID and secret are saved by an admin in Settings and stored AES-GCM protected. `Microsoft:RedirectUri` and `Microsoft:TenantId` stay in config. The per-user OpenAI API key is AES-GCM protected with the same `Google:TokenProtectionKey` and is never returned.
 
 ## Related
 
@@ -26,3 +26,4 @@ Development uses HTTP on port 5080, local Compose credentials, and a development
 - [../decisions/019-mail-check.md](../decisions/019-mail-check.md)
 - [../decisions/020-issue-notifications.md](../decisions/020-issue-notifications.md)
 - [google-oauth-setup.md](google-oauth-setup.md)
+- [microsoft-oauth-setup.md](microsoft-oauth-setup.md)
