@@ -47,6 +47,22 @@ public sealed class JobPipelineController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("update-all")]
+    public Task<JobPipelineUpdateResultDto> ApplyAll(
+        [FromServices] JobPipelineService pipeline,
+        CancellationToken cancellationToken)
+    {
+        return pipeline.ApplyAllAsync(CurrentUserId(), cancellationToken);
+    }
+
+    [HttpPost("forward-all")]
+    public Task<JobPipelineBatchForwardResultDto> ForwardAll(
+        [FromServices] JobPipelineService pipeline,
+        CancellationToken cancellationToken)
+    {
+        return pipeline.ForwardAllAsync(CurrentUserId(), cancellationToken);
+    }
+
     [HttpPost("{id:guid}/update")]
     public Task<JobPipelineUpdateResultDto> Apply(
         Guid id,
@@ -54,6 +70,15 @@ public sealed class JobPipelineController : ControllerBase
         CancellationToken cancellationToken)
     {
         return pipeline.ApplyAsync(CurrentUserId(), id, cancellationToken);
+    }
+
+    [HttpPost("{id:guid}/forward")]
+    public Task<JobPipelineForwardResultDto> Forward(
+        Guid id,
+        [FromServices] JobPipelineService pipeline,
+        CancellationToken cancellationToken)
+    {
+        return pipeline.ForwardAsync(CurrentUserId(), id, cancellationToken);
     }
 
     private Guid CurrentUserId()

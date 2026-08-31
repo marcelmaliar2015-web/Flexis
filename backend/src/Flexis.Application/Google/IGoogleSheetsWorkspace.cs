@@ -48,6 +48,14 @@ public interface IGoogleSheetsWorkspace
         string name,
         CancellationToken cancellationToken);
 
+    Task<SpreadsheetSheet> ReplaceProfileMainSheetAsync(
+        string accessToken,
+        string spreadsheetId,
+        int currentMainSheetId,
+        string archiveTabName,
+        string newMainTabName,
+        CancellationToken cancellationToken);
+
     Task DeleteSheetAsync(
         string accessToken,
         string spreadsheetId,

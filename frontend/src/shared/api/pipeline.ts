@@ -2,6 +2,8 @@ import { deleteRequest, getJson, postJson, putJson } from "@/shared/api/client";
 import type {
   JobPipelineBoard,
   JobPipelineEntry,
+  JobPipelineForwardResult,
+  JobPipelineBatchForwardResult,
   JobPipelineUpdateResult,
   JobPipelineWriteRequest,
 } from "@/shared/types/pipeline";
@@ -29,4 +31,16 @@ export function deleteJobPipelineEntry(id: string): Promise<void> {
 
 export function applyJobPipelineEntry(id: string): Promise<JobPipelineUpdateResult> {
   return postJson<JobPipelineUpdateResult>(`/api/job-application/pipeline/${id}/update`, {});
+}
+
+export function applyAllJobPipelineEntries(): Promise<JobPipelineUpdateResult> {
+  return postJson<JobPipelineUpdateResult>("/api/job-application/pipeline/update-all", {});
+}
+
+export function forwardJobPipelineEntry(id: string): Promise<JobPipelineForwardResult> {
+  return postJson<JobPipelineForwardResult>(`/api/job-application/pipeline/${id}/forward`, {});
+}
+
+export function forwardAllJobPipelineEntries(): Promise<JobPipelineBatchForwardResult> {
+  return postJson<JobPipelineBatchForwardResult>("/api/job-application/pipeline/forward-all", {});
 }

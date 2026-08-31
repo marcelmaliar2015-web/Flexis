@@ -37,7 +37,10 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | POST | `/api/job-application/pipeline` | Authenticated | `201` + `JobPipelineEntryDto` |
 | PUT | `/api/job-application/pipeline/{id}` | Authenticated | `200` + `JobPipelineEntryDto` |
 | DELETE | `/api/job-application/pipeline/{id}` | Authenticated | `204` |
+| POST | `/api/job-application/pipeline/update-all` | Authenticated | `200` + `JobPipelineUpdateResultDto` |
+| POST | `/api/job-application/pipeline/forward-all` | Authenticated | `200` + `JobPipelineBatchForwardResultDto` |
 | POST | `/api/job-application/pipeline/{id}/update` | Authenticated | `200` + `JobPipelineUpdateResultDto` |
+| POST | `/api/job-application/pipeline/{id}/forward` | Authenticated | `200` + `JobPipelineForwardResultDto` |
 
 `UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`.
 
@@ -45,11 +48,11 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 
 `GoogleConnectionStatusDto`: `configured`, `connected`, `googleEmail`, `connectedAt`, `capabilities`. `configured` is true when an admin has saved the Google Cloud client (or config fallback is set) and `Google:RedirectUri` is set. `GoogleConnectStartDto`: `authorizationUrl`. Start body: `returnUrl` (origin must be in `Frontend:Origins`, path `/job-application`).
 
-`JobCatalogItemDto`: `id`, `title`, `createdAt`, `url`, `spreadsheetId`. Write body: `title`. Create makes a Google Sheet in `Flexis` / `Job Application` / `Profiles` or `Sources`; `url` is that spreadsheet. Duplicate title per kind for that user: `409`. Missing item: `404`. Gmail must be connected to create, rename a sheet, delete a sheet, or manage locations. Profile tab name is the title. Source first tab is `US`. Tabs use a fixed 21 pixel row height, black body text, and wrap with no overflow. The header keeps navy background and light text. The connected owner can edit every cell. Invited editors can edit only Status and Issue on profile tabs. Source tabs are owner-only.
+`JobCatalogItemDto`: `id`, `title`, `createdAt`, `url`, `spreadsheetId`. Write body: `title`. Create makes a Google Sheet in `Flexis` / `Job Application` / `Profiles` or `Sources`; `url` is that spreadsheet. Duplicate title per kind for that user: `409`. Missing item: `404`. Gmail must be connected to create, rename a sheet, delete a sheet, or manage locations. Profile main tab name is the title. Source first tab is `US`. Tabs use a fixed 21 pixel row height, black body text, and wrap with no overflow. The header keeps navy background and light text. The connected owner can edit every cell. Invited editors can edit only Status and Issue on the named profile main tab. Numbered profile log tabs and source tabs are owner-only.
 
 `SourceLocationDto`: `sheetId`, `name`. Write body: `name`. Locations are source spreadsheet tabs. Duplicate name: `409`. Last location cannot be deleted: `409`.
 
-`JobPipelineBoardDto`: `entries`, `profiles`, `sources` (each source includes `locations`). `JobPipelineEntryDto`: `id`, `profileId`, `sourceId`, `locationSheetId`, `locationName`, `createdAt`. Write body: `profileId`, `sourceId`, `locationSheetId`. Duplicate profile and source location: `409`. Update copies Company Name, Position, Link, and JD from that source tab onto the profile sheet and skips rows already present (`added`, `skipped`). Then it reapplies owner lock; invited editors can still edit Status and Issue on the profile.
+`JobPipelineBoardDto`: `entries`, `profiles`, `sources` (each source includes `locations`). `JobPipelineEntryDto`: `id`, `profileId`, `sourceId`, `locationSheetId`, `locationName`, `createdAt`. Write body: `profileId`, `sourceId`, `locationSheetId`. Duplicate profile and source location: `409`. Update copies Company Name, Position, Link, and JD from that source tab onto the named profile main tab and skips rows already present (`added`, `skipped`). Update All does that for every pipeline entry. Forward renames the current main tab to the next unused number (`1`, `2`, `3`, …) and creates a new empty main tab with the original name (`archivedSheetName`, `mainSheetName`). Forward All does that once per distinct profile (`forwarded`). Then it reapplies owner lock; invited editors can still edit Status and Issue only on the named main tab. Numbered log tabs stay owner-only.
 
 ## Contracts and errors
 

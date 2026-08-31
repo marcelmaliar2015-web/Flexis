@@ -145,10 +145,7 @@ public sealed class JobPipelineService
         var location = sourceSheets.FirstOrDefault(sheet => sheet.SheetId == entry.LocationSheetId)
             ?? throw new NotFoundException("Source location was not found.");
         var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
-        if (profileSheets.Count == 0)
-        {
-            throw new ValidationFailedException("This profile has no Google Sheet tab.");
-        }
+        var main = RequireMainProfileSheet(profileSheets, profile.Title);
 
         var incoming = await _sheets.ReadListingsAsync(
             access.AccessToken,
@@ -158,7 +155,7 @@ public sealed class JobPipelineService
         var existing = await _sheets.ReadListingsAsync(
             access.AccessToken,
             profile.SpreadsheetId,
-            profileSheets[0].Name,
+            main.Name,
             cancellationToken);
         var seen = new HashSet<string>(existing.Select(ListingKey), StringComparer.Ordinal);
         var fresh = new List<JobListingRow>();
@@ -184,7 +181,7 @@ public sealed class JobPipelineService
             await _sheets.AppendListingsAsync(
                 access.AccessToken,
                 profile.SpreadsheetId,
-                profileSheets[0].Name,
+                main.Name,
                 fresh,
                 cancellationToken);
         }
@@ -203,6 +200,73 @@ public sealed class JobPipelineService
             cancellationToken);
 
         return new JobPipelineUpdateResultDto(fresh.Count, skipped);
+    }
+
+    public async Task<JobPipelineUpdateResultDto> ApplyAllAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var entries = await _entries.ListAsync(userId, cancellationToken);
+        var added = 0;
+        var skipped = 0;
+        foreach (var entry in entries)
+        {
+            var result = await ApplyAsync(userId, entry.Id, cancellationToken);
+            added += result.Added;
+            skipped += result.Skipped;
+        }
+
+        return new JobPipelineUpdateResultDto(added, skipped);
+    }
+
+    public async Task<JobPipelineForwardResultDto> ForwardAsync(
+        Guid userId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var entry = await RequireEntry(userId, id, cancellationToken);
+        var profile = await RequireCatalog(userId, entry.ProfileId, JobCatalogKind.Profile, cancellationToken);
+        if (string.IsNullOrWhiteSpace(profile.SpreadsheetId))
+        {
+            throw new ValidationFailedException("This profile has no Google Sheet.");
+        }
+
+        var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+        var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
+        var main = RequireMainProfileSheet(profileSheets, profile.Title);
+        var archiveName = JobSheetNames.NextArchiveTab(profileSheets.Select(sheet => sheet.Name));
+        await _sheets.ReplaceProfileMainSheetAsync(
+            access.AccessToken,
+            profile.SpreadsheetId,
+            main.SheetId,
+            archiveName,
+            main.Name,
+            cancellationToken);
+        await _sheets.ProtectWorkbookAsync(
+            access.AccessToken,
+            profile.SpreadsheetId,
+            access.OwnerEmail,
+            JobWorkbookKind.Profile,
+            cancellationToken);
+
+        return new JobPipelineForwardResultDto(archiveName, main.Name);
+    }
+
+    public async Task<JobPipelineBatchForwardResultDto> ForwardAllAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var entries = await _entries.ListAsync(userId, cancellationToken);
+        var forwardedProfiles = new HashSet<Guid>();
+        foreach (var entry in entries)
+        {
+            if (!forwardedProfiles.Add(entry.ProfileId))
+            {
+                continue;
+            }
+
+            await ForwardAsync(userId, entry.Id, cancellationToken);
+        }
+
+        return new JobPipelineBatchForwardResultDto(forwardedProfiles.Count);
     }
 
     private async Task<JobPipelineEntry> ResolveAsync(
@@ -265,6 +329,15 @@ public sealed class JobPipelineService
         }
 
         return item;
+    }
+
+    private static SpreadsheetSheet RequireMainProfileSheet(
+        IReadOnlyList<SpreadsheetSheet> sheets,
+        string profileTitle)
+    {
+        var mainName = JobCatalogRules.SheetTabName(profileTitle);
+        return sheets.FirstOrDefault(sheet => sheet.Name == mainName)
+            ?? throw new ValidationFailedException("This profile has no main Google Sheet tab.");
     }
 
     private static JobPipelineEntryDto ToDto(JobPipelineEntry entry)

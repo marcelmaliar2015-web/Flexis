@@ -167,55 +167,46 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             cancellationToken);
     }
 
-    public async Task<SpreadsheetSheet> AddSourceLocationSheetAsync(
+    public Task<SpreadsheetSheet> AddSourceLocationSheetAsync(
         string accessToken,
         string spreadsheetId,
         string name,
         CancellationToken cancellationToken)
     {
-        var columns = ColumnsFor(JobWorkbookKind.Source);
-        var sheetId = Random.Shared.Next(1, int.MaxValue);
-        var addBody = new
+        return AddFormattedSheetAsync(accessToken, spreadsheetId, name, JobWorkbookKind.Source, null, cancellationToken);
+    }
+
+    public async Task<SpreadsheetSheet> ReplaceProfileMainSheetAsync(
+        string accessToken,
+        string spreadsheetId,
+        int currentMainSheetId,
+        string archiveTabName,
+        string newMainTabName,
+        CancellationToken cancellationToken)
+    {
+        var columns = ColumnsFor(JobWorkbookKind.Profile);
+        var newSheetId = Random.Shared.Next(1, int.MaxValue);
+        var requests = new List<object>
         {
-            requests = new object[]
+            new
             {
-                new
+                updateSheetProperties = new
                 {
-                    addSheet = new
-                    {
-                        properties = new
-                        {
-                            sheetId,
-                            title = name,
-                            gridProperties = new
-                            {
-                                frozenRowCount = 1,
-                                rowCount = 200,
-                                columnCount = columns.Length
-                            }
-                        }
-                    }
-                },
-                new
-                {
-                    updateCells = new
-                    {
-                        start = new { sheetId, rowIndex = 0, columnIndex = 0 },
-                        rows = new[] { new { values = columns.Select(HeaderCell).ToArray() } },
-                        fields = "userEnteredValue"
-                    }
+                    properties = new { sheetId = currentMainSheetId, title = archiveTabName },
+                    fields = "title"
                 }
-            }.Concat(FormatRequests(sheetId, columns)).ToArray()
+            }
         };
+        requests.AddRange(AddSheetRequests(newSheetId, newMainTabName, columns, 0));
 
         await SendJson<object>(
             accessToken,
             HttpMethod.Post,
             $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
-            addBody,
+            new { requests },
             cancellationToken);
 
-        return new SpreadsheetSheet(sheetId, name);
+        return new SpreadsheetSheet(newSheetId, newMainTabName);
     }
 
     public Task DeleteSheetAsync(
@@ -421,11 +412,10 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         var payload = await SendJson<SpreadsheetList>(
             accessToken,
             HttpMethod.Get,
-            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets(properties(sheetId),protectedRanges(protectedRangeId,description))",
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets(properties(sheetId,title),protectedRanges(protectedRangeId,description))",
             null,
             cancellationToken);
 
-        var invitedColumns = InvitedEditColumnIndexes(kind);
         var requests = new List<object>();
         foreach (var sheet in payload.Sheets ?? [])
         {
@@ -435,6 +425,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             }
 
             var sheetId = sheet.Properties.SheetId;
+            var invitedColumns = InvitedEditColumnIndexes(kind, sheet.Properties.Title);
             foreach (var range in sheet.ProtectedRanges ?? [])
             {
                 if (!string.Equals(range.Description, FlexisLockDescription, StringComparison.Ordinal))
@@ -552,14 +543,81 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             ];
     }
 
-    private static int[] InvitedEditColumnIndexes(JobWorkbookKind kind)
+    private static int[] InvitedEditColumnIndexes(JobWorkbookKind kind, string? sheetTitle)
     {
+        if (kind == JobWorkbookKind.Profile && JobSheetNames.IsArchiveTab(sheetTitle))
+        {
+            return [];
+        }
+
         var columns = ColumnsFor(kind);
         return columns
             .Select((column, index) => (column.Name, index))
             .Where(column => column.Name is "Status" or "Issue")
             .Select(column => column.index)
             .ToArray();
+    }
+
+    private async Task<SpreadsheetSheet> AddFormattedSheetAsync(
+        string accessToken,
+        string spreadsheetId,
+        string name,
+        JobWorkbookKind kind,
+        int? index,
+        CancellationToken cancellationToken)
+    {
+        var columns = ColumnsFor(kind);
+        var sheetId = Random.Shared.Next(1, int.MaxValue);
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new { requests = AddSheetRequests(sheetId, name, columns, index) },
+            cancellationToken);
+
+        return new SpreadsheetSheet(sheetId, name);
+    }
+
+    private static object[] AddSheetRequests(int sheetId, string name, Column[] columns, int? index)
+    {
+        object properties = index is { } sheetIndex
+            ? new
+            {
+                sheetId,
+                title = name,
+                index = sheetIndex,
+                gridProperties = new
+                {
+                    frozenRowCount = 1,
+                    rowCount = 200,
+                    columnCount = columns.Length
+                }
+            }
+            : new
+            {
+                sheetId,
+                title = name,
+                gridProperties = new
+                {
+                    frozenRowCount = 1,
+                    rowCount = 200,
+                    columnCount = columns.Length
+                }
+            };
+
+        return new object[]
+        {
+            new { addSheet = new { properties } },
+            new
+            {
+                updateCells = new
+                {
+                    start = new { sheetId, rowIndex = 0, columnIndex = 0 },
+                    rows = new[] { new { values = columns.Select(HeaderCell).ToArray() } },
+                    fields = "userEnteredValue"
+                }
+            }
+        }.Concat(FormatRequests(sheetId, columns)).ToArray();
     }
 
     private static object HeaderCell(Column column)

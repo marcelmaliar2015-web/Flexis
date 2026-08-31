@@ -34,3 +34,12 @@ export type JobPipelineUpdateResult = {
   added: number;
   skipped: number;
 };
+
+export type JobPipelineForwardResult = {
+  archivedSheetName: string;
+  mainSheetName: string;
+};
+
+export type JobPipelineBatchForwardResult = {
+  forwarded: number;
+};

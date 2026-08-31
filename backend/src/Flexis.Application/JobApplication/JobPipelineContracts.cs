@@ -23,3 +23,7 @@ public sealed record JobPipelineBoardDto(
 public sealed record JobPipelineWriteRequest(Guid ProfileId, Guid SourceId, int LocationSheetId);
 
 public sealed record JobPipelineUpdateResultDto(int Added, int Skipped);
+
+public sealed record JobPipelineForwardResultDto(string ArchivedSheetName, string MainSheetName);
+
+public sealed record JobPipelineBatchForwardResultDto(int Forwarded);

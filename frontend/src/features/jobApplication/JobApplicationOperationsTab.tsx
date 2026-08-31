@@ -23,14 +23,22 @@ import { useState, type FormEvent } from "react";
 import { ApiError } from "@/shared/api/client";
 import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
 import {
+  applyAllJobPipelineEntries,
   applyJobPipelineEntry,
   createJobPipelineEntry,
   deleteJobPipelineEntry,
+  forwardAllJobPipelineEntries,
+  forwardJobPipelineEntry,
   getJobPipelineBoard,
   jobPipelineQueryKey,
   updateJobPipelineEntry,
 } from "@/shared/api/pipeline";
-import type { JobPipelineEntry, JobPipelineWriteRequest } from "@/shared/types/pipeline";
+import type {
+  JobPipelineEntry,
+  JobPipelineForwardResult,
+  JobPipelineUpdateResult,
+  JobPipelineWriteRequest,
+} from "@/shared/types/pipeline";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -38,6 +46,24 @@ const Panel = styled(Box)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
   overflow: "hidden",
 }));
+
+function listingsNotice(result: JobPipelineUpdateResult, all: boolean): string {
+  if (result.added === 0 && result.skipped === 0) {
+    return all
+      ? "No listings to add from those source locations."
+      : "No listings to add from that source location.";
+  }
+  if (result.added === 0) {
+    return all ? "Those listings are already on the profile sheets." : "Those listings are already on this profile.";
+  }
+  return result.skipped > 0
+    ? `Added ${result.added}. Skipped ${result.skipped} already on this profile.`
+    : `Added ${result.added}.`;
+}
+
+function forwardNotice(result: JobPipelineForwardResult): string {
+  return `Archived the current sheet as ${result.archivedSheetName}. New empty ${result.mainSheetName} tab.`;
+}
 
 function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -104,21 +130,27 @@ export function JobApplicationOperationsTab() {
 
   const applyMutation = useMutation({
     mutationFn: (id: string) => applyJobPipelineEntry(id),
-    onSuccess: (result) => {
-      if (result.added === 0 && result.skipped === 0) {
-        setNotice("No listings to add from that source location.");
-        return;
-      }
-      if (result.added === 0) {
-        setNotice("Those listings are already on this profile.");
-        return;
-      }
+    onSuccess: (result) => setNotice(listingsNotice(result, false)),
+  });
+
+  const applyAllMutation = useMutation({
+    mutationFn: applyAllJobPipelineEntries,
+    onSuccess: (result) => setNotice(listingsNotice(result, true)),
+  });
+
+  const forwardMutation = useMutation({
+    mutationFn: (id: string) => forwardJobPipelineEntry(id),
+    onSuccess: (result) => setNotice(forwardNotice(result)),
+  });
+
+  const forwardAllMutation = useMutation({
+    mutationFn: forwardAllJobPipelineEntries,
+    onSuccess: (result) =>
       setNotice(
-        result.skipped > 0
-          ? `Added ${result.added}. Skipped ${result.skipped} already on this profile.`
-          : `Added ${result.added}.`,
-      );
-    },
+        result.forwarded === 1
+          ? "Forwarded 1 profile sheet."
+          : `Forwarded ${result.forwarded} profile sheets.`,
+      ),
   });
 
   const deleteMutation = useMutation({
@@ -130,6 +162,12 @@ export function JobApplicationOperationsTab() {
   });
 
   const board = boardQuery.data;
+  const entries = board?.entries ?? [];
+  const actionsBusy =
+    applyMutation.isPending ||
+    applyAllMutation.isPending ||
+    forwardMutation.isPending ||
+    forwardAllMutation.isPending;
   const sourceChoices =
     board?.sources.flatMap((source) =>
       source.locations.map((location) => ({
@@ -148,6 +186,11 @@ export function JobApplicationOperationsTab() {
         <Alert severity="error">{errorMessage(updateRowMutation.error)}</Alert>
       ) : null}
       {applyMutation.isError ? <Alert severity="error">{errorMessage(applyMutation.error)}</Alert> : null}
+      {applyAllMutation.isError ? <Alert severity="error">{errorMessage(applyAllMutation.error)}</Alert> : null}
+      {forwardMutation.isError ? <Alert severity="error">{errorMessage(forwardMutation.error)}</Alert> : null}
+      {forwardAllMutation.isError ? (
+        <Alert severity="error">{errorMessage(forwardAllMutation.error)}</Alert>
+      ) : null}
       {deleteMutation.isError ? <Alert severity="error">{errorMessage(deleteMutation.error)}</Alert> : null}
       {notice ? <Alert severity="success">{notice}</Alert> : null}
       <Stack
@@ -158,15 +201,37 @@ export function JobApplicationOperationsTab() {
         <Typography variant="h6" component="h2">
           Pipeline
         </Typography>
-        <Button
-          disabled={!connected || sourceChoices.length === 0 || (board?.profiles.length ?? 0) === 0}
-          onClick={() => {
-            setFormError(null);
-            setCreating(true);
-          }}
-        >
-          New
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            disabled={!connected || entries.length === 0 || actionsBusy}
+            loading={applyAllMutation.isPending}
+            onClick={() => {
+              setNotice(null);
+              applyAllMutation.mutate();
+            }}
+          >
+            Update All
+          </Button>
+          <Button
+            disabled={!connected || entries.length === 0 || actionsBusy}
+            loading={forwardAllMutation.isPending}
+            onClick={() => {
+              setNotice(null);
+              forwardAllMutation.mutate();
+            }}
+          >
+            Forward All
+          </Button>
+          <Button
+            disabled={!connected || sourceChoices.length === 0 || (board?.profiles.length ?? 0) === 0}
+            onClick={() => {
+              setFormError(null);
+              setCreating(true);
+            }}
+          >
+            New
+          </Button>
+        </Stack>
       </Stack>
       <Panel>
         <TableContainer>
@@ -179,7 +244,7 @@ export function JobApplicationOperationsTab() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {(board?.entries ?? []).map((entry) => (
+              {entries.map((entry) => (
                 <TableRow key={entry.id} hover>
                   <TableCell>
                     <FormControl fullWidth size="small">
@@ -188,7 +253,7 @@ export function JobApplicationOperationsTab() {
                         labelId={`pipeline-profile-${entry.id}`}
                         label="Profile"
                         value={entry.profileId}
-                        disabled={!connected || updateRowMutation.isPending}
+                        disabled={!connected || updateRowMutation.isPending || actionsBusy}
                         onChange={(event) =>
                           updateRowMutation.mutate({
                             id: entry.id,
@@ -215,7 +280,7 @@ export function JobApplicationOperationsTab() {
                         labelId={`pipeline-source-${entry.id}`}
                         label="Source"
                         value={sourceChoiceValue(entry.sourceId, entry.locationSheetId)}
-                        disabled={!connected || updateRowMutation.isPending}
+                        disabled={!connected || updateRowMutation.isPending || actionsBusy}
                         onChange={(event) => {
                           const parsed = parseSourceChoice(String(event.target.value));
                           if (!parsed) {
@@ -242,7 +307,7 @@ export function JobApplicationOperationsTab() {
                   <TableCell>
                     <Stack direction="row" spacing={0.5} sx={{ justifyContent: "center" }}>
                       <Button
-                        disabled={!connected || applyMutation.isPending}
+                        disabled={!connected || actionsBusy}
                         loading={applyMutation.isPending && applyMutation.variables === entry.id}
                         onClick={() => {
                           setNotice(null);
@@ -251,7 +316,17 @@ export function JobApplicationOperationsTab() {
                       >
                         Update
                       </Button>
-                      <Button variant="text" disabled={deleteMutation.isPending} onClick={() => setToDelete(entry)}>
+                      <Button
+                        disabled={!connected || actionsBusy}
+                        loading={forwardMutation.isPending && forwardMutation.variables === entry.id}
+                        onClick={() => {
+                          setNotice(null);
+                          forwardMutation.mutate(entry.id);
+                        }}
+                      >
+                        Forward
+                      </Button>
+                      <Button variant="text" disabled={deleteMutation.isPending || actionsBusy} onClick={() => setToDelete(entry)}>
                         Delete
                       </Button>
                     </Stack>
