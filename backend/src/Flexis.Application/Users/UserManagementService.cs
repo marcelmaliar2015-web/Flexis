@@ -73,6 +73,29 @@ public sealed class UserManagementService
         return UserMapper.ToDto(user);
     }
 
+    public async Task<UserDto> UpdateCurrentAsync(
+        Guid id,
+        UpdateCurrentUserRequest request,
+        CancellationToken cancellationToken)
+    {
+        var displayName = UserRules.NormalizeDisplayName(request.DisplayName);
+        var user = await _users.GetByIdAsync(id, cancellationToken);
+        if (user is null || !user.IsActive)
+        {
+            throw new AuthenticationFailedException("Session is no longer valid.");
+        }
+
+        user.SetDisplayName(displayName);
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            UserRules.EnsurePassword(request.Password);
+            user.SetPasswordHash(_passwordHasher.Hash(request.Password));
+        }
+
+        await _users.SaveChangesAsync(cancellationToken);
+        return UserMapper.ToDto(user);
+    }
+
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var user = await _users.GetByIdAsync(id, cancellationToken)

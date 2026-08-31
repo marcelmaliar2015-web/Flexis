@@ -92,6 +92,8 @@ export function UsersManagement() {
     onError: (error) => setFormError(errorMessage(error)),
   });
 
+  const others = (usersQuery.data ?? []).filter((user) => user.id !== auth.user?.id);
+
   return (
     <Stack spacing={2}>
       <Stack
@@ -104,7 +106,7 @@ export function UsersManagement() {
             Users
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Create, edit, and delete accounts. Assign Admin, User, or Viewer.
+            Other Flexis accounts. Your profile is in Your account above. Assign Admin, User, or Viewer.
           </Typography>
         </Stack>
         <Button
@@ -130,7 +132,16 @@ export function UsersManagement() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {(usersQuery.data ?? []).map((user) => (
+              {others.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <Typography variant="body2" color="text.secondary">
+                      No other users yet.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                others.map((user) => (
                 <TableRow key={user.id} hover>
                   <TableCell>{user.displayName}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -165,7 +176,8 @@ export function UsersManagement() {
                     </Stack>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>

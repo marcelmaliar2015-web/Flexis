@@ -2,11 +2,11 @@
 
 ## Client state
 
-Session in `shared/auth/AuthProvider.tsx`. Access token in memory plus `localStorage` key `flexis.accessToken`. No other global client store.
+Session in `shared/auth/AuthProvider.tsx`. Access token in memory plus `localStorage` key `flexis.accessToken`. `replaceUser` updates the signed-in `UserDto` after `PUT /api/auth/me`. No other global client store.
 
 ## Server data
 
-TanStack Query. Query client is created in `frontend/src/app/providers/queryClient.ts`. Feature hooks live next to the screen (`useHealthStatus`). `HomePage` also reads `healthQueryKey` from `shared/api/health` so the landing preview shares the same cache. Users list uses `usersQueryKey`. Google connection uses `googleConnectionQueryKey` (Job Application Gmail card and the signed-in AppBar status). Google Cloud client uses `googleClientQueryKey`. Job catalog lists use `jobCatalogQueryKey`. Source locations use `sourceLocationsQueryKey`. Pipeline uses `jobPipelineQueryKey`. Banned companies use `jobPipelineBannedQueryKey`. Sheet matches use `jobPipelineBannedMatchesQueryKey` and refetch every 10 seconds on the pipeline entry page. Financial uses `jobFinancialQueryKey`. Activity logs use `jobApplicationLogsQueryKey`. Signed-in `GoogleSyncProvider` refreshes Google-backed keys every 3 minutes (connection, then pipeline and financial when Gmail is connected) and on AppBar click (full sheet and catalog refresh). See [../decisions/015-google-workspace-sync.md](../decisions/015-google-workspace-sync.md).
+TanStack Query. Query client is created in `frontend/src/app/providers/queryClient.ts`. Feature hooks live next to the screen (`useHealthStatus`). `HomePage` also reads `healthQueryKey` from `shared/api/health` so the landing preview shares the same cache. Users list uses `usersQueryKey`. Google connection uses `googleConnectionQueryKey` (Job Application Gmail card and the signed-in AppBar status). Google Cloud client uses `googleClientQueryKey`. Job catalog lists use `jobCatalogQueryKey`. Source locations use `sourceLocationsQueryKey`. Pipeline uses `jobPipelineQueryKey`. Banned companies use `jobPipelineBannedQueryKey`. Sheet matches use `jobPipelineBannedMatchesQueryKey` and refetch every 10 seconds on the pipeline entry page. Financial uses `jobFinancialQueryKey`. Activity logs use `jobApplicationLogsQueryKey`. Dashboard reads health, Google connection, pipeline, financial, logs, and `usersQueryKey` when Admin. Signed-in `GoogleSyncProvider` refreshes Google-backed keys every 3 minutes (connection, then pipeline and financial when Gmail is connected) and on AppBar click (full sheet and catalog refresh). See [../decisions/015-google-workspace-sync.md](../decisions/015-google-workspace-sync.md).
 
 ## Data flow
 

@@ -19,6 +19,7 @@ type AuthContextValue = {
   isReady: boolean;
   signIn: (request: SignInRequest) => Promise<void>;
   signOut: () => void;
+  replaceUser: (user: UserDto) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -73,14 +74,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     applySession(null, null);
   }, [applySession]);
 
+  const replaceUser = useCallback((nextUser: UserDto) => {
+    setUser(nextUser);
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
       isReady,
       signIn,
       signOut,
+      replaceUser,
     }),
-    [user, isReady, signIn, signOut],
+    [user, isReady, signIn, signOut, replaceUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -4,6 +4,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useAuth } from "@/shared/auth/AuthProvider";
+import { AccountProfile } from "./AccountProfile";
 import { GoogleClientSettings } from "./GoogleClientSettings";
 import { UsersManagement } from "./UsersManagement";
 
@@ -31,13 +32,13 @@ export function SettingsPage() {
               Settings
             </Typography>
             <AccentRule />
-            {!isAdmin ? (
-              <Typography variant="body2" color="text.secondary">
-                Job Application settings, including Gmail, profiles, and sources, live under Job
-                Application. An admin configures the Google Cloud client and users here.
-              </Typography>
-            ) : null}
+            <Typography variant="body2" color="text.secondary">
+              Update your name and password here. Job Application settings, including Gmail, profiles,
+              and sources, live under Job Application.
+              {isAdmin ? " Google Cloud client and other users are below." : ""}
+            </Typography>
           </Stack>
+          <AccountProfile />
           {isAdmin ? (
             <Stack spacing={4}>
               <GoogleClientSettings />

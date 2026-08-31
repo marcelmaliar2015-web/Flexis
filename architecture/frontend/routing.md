@@ -16,11 +16,11 @@ React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. L
 | `/health` | `HealthPage` | Authenticated |
 | `/users` | Redirect to `/settings` | Authenticated |
 
-Sign-in and already-signed-in visits to `/sign-in` go to `/dashboard`. Unauthenticated visits to protected routes redirect to `/sign-in` with `state.from`. Admin Google Cloud client and user management are on `/settings`, not a separate screen. `/health` has no nav link.
+Sign-in and already-signed-in visits to `/sign-in` go to `/dashboard`. Unauthenticated visits to protected routes redirect to `/sign-in` with `state.from`. Settings always has the signed-in account profile. Admin Google Cloud client and other users are on `/settings`, not a separate screen. `/health` has no nav link.
 
 ## Guards and access
 
-`RequireAuth` wraps `AuthenticatedLayout`. Settings shows the Google Cloud client and the users table only when `role` is `Admin`.
+`RequireAuth` wraps `AuthenticatedLayout`. Settings shows the Google Cloud client and the other-users table only when `role` is `Admin`. Every signed-in role can edit display name and password on Settings.
 
 ## Related
 
@@ -32,3 +32,5 @@ Sign-in and already-signed-in visits to `/sign-in` go to `/dashboard`. Unauthent
 - [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)
 - [../decisions/010-job-application-pipeline.md](../decisions/010-job-application-pipeline.md)
 - [../decisions/012-pipeline-banned-companies.md](../decisions/012-pipeline-banned-companies.md)
+- [../decisions/016-dashboard-workspace-status.md](../decisions/016-dashboard-workspace-status.md)
+- [../decisions/017-signed-in-account-profile.md](../decisions/017-signed-in-account-profile.md)

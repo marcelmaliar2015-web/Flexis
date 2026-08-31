@@ -2,11 +2,11 @@
 
 ## Authentication
 
-JWT Bearer. Sign-in `POST /api/auth/sign-in` returns `accessToken` and `UserDto`. `GET /api/auth/me` returns the current user. Tokens are signed with `Jwt:SigningKey` (issuer `Jwt:Issuer`, audience `Jwt:Audience`). Development seed (empty `users` table): `admin@flexis.local` / `FlexisAdmin1!`, `user@flexis.local` / `FlexisUser1!`, `viewer@flexis.local` / `FlexisViewer1!`.
+JWT Bearer. Sign-in `POST /api/auth/sign-in` returns `accessToken` and `UserDto`. `GET /api/auth/me` returns the current user. `PUT /api/auth/me` updates display name and optional password for that user. Tokens are signed with `Jwt:SigningKey` (issuer `Jwt:Issuer`, audience `Jwt:Audience`). Development seed (empty `users` table): `admin@flexis.local` / `FlexisAdmin1!`, `user@flexis.local` / `FlexisUser1!`, `viewer@flexis.local` / `FlexisViewer1!`.
 
 ## Authorization
 
-Fallback policy requires an authenticated user. `GET /api/health`, `POST /api/auth/sign-in`, and `GET /api/google/connections/callback` are anonymous. `GET/POST /api/users` and `PUT/DELETE /api/users/{id}` require role `Admin`. `GET/PUT /api/google/client` require role `Admin`. Roles: `Admin`, `User`, `Viewer`. CORS policy `Frontend` allows `Frontend:Origins`.
+Fallback policy requires an authenticated user. `GET /api/health`, `POST /api/auth/sign-in`, and `GET /api/google/connections/callback` are anonymous. `GET/POST /api/users` and `PUT/DELETE /api/users/{id}` require role `Admin`. `PUT /api/auth/me` is authenticated and cannot change role or active. `GET/PUT /api/google/client` require role `Admin`. Roles: `Admin`, `User`, `Viewer`. CORS policy `Frontend` allows `Frontend:Origins`.
 
 Job Application Google connect uses authorization code + PKCE. Refresh tokens are AES-GCM protected with `Google:TokenProtectionKey`. Scopes are listed in [006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md). Local Google Cloud steps: [google-oauth-setup.md](google-oauth-setup.md). The same guide is in the app at `/help` on the Google setup tab.
 
@@ -22,4 +22,5 @@ Development uses HTTP on port 5080, local Compose credentials, and a development
 - [../decisions/004-jwt-role-users.md](../decisions/004-jwt-role-users.md)
 - [../decisions/006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md)
 - [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)
+- [../decisions/017-signed-in-account-profile.md](../decisions/017-signed-in-account-profile.md)
 - [google-oauth-setup.md](google-oauth-setup.md)

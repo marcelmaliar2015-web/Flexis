@@ -30,7 +30,7 @@ export function HelpOverviewTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="Left nav"
-                secondary="Dashboard, Job Application, Settings, and Help. Dashboard is an empty landing. Work happens in Job Application."
+                secondary="Dashboard, Job Application, Settings, and Help. Dashboard is the workspace status board. Work happens in Job Application."
               />
             </ListItem>
             <ListItem disableGutters>
@@ -48,7 +48,7 @@ export function HelpOverviewTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="Account menu"
-                secondary="Initials avatar in the app bar. Shows display name, email, and role, then Settings, Help, and Sign out."
+                secondary="Initials avatar in the app bar. Compact header with avatar, name, email, and role, then Settings, Help, and Sign out. Edit name and password on Settings."
               />
             </ListItem>
             <ListItem disableGutters>
@@ -66,15 +66,15 @@ export function HelpOverviewTab() {
             Roles
           </Typography>
           <Typography variant="body2">
-            Every signed-in person uses the same Job Application screens. Admin is the only role that
-            sees Google Cloud client and user management on product Settings.
+            Every signed-in person uses the same Job Application screens. Settings always has Your account.
+            Admin is the only role that sees Google Cloud client and other users on product Settings.
           </Typography>
           <List disablePadding>
             <ListItem disableGutters>
-              <ListItemText primary="Admin" secondary="Save the Flexis Google Cloud web client. Create, edit, and delete users. The last active admin cannot be demoted, deactivated, or deleted." />
+              <ListItemText primary="Admin" secondary="Save the Flexis Google Cloud web client. Create, edit, and delete other users. The last active admin cannot be demoted, deactivated, or deleted." />
             </ListItem>
             <ListItem disableGutters>
-              <ListItemText primary="User and Viewer" secondary="Same product screens today. Connect their own Gmail on Job Application. Cannot edit the Flexis Google Cloud client or the users table." />
+              <ListItemText primary="User and Viewer" secondary="Same product screens today. Connect their own Gmail on Job Application. Edit their display name and password on Settings. Cannot edit the Flexis Google Cloud client or the users table." />
             </ListItem>
           </List>
         </Stack>

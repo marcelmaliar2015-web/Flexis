@@ -30,4 +30,15 @@ public sealed class AuthController : ControllerBase
             ?? throw new AuthenticationFailedException("Session is no longer valid.");
         return auth.GetCurrentUserAsync(Guid.Parse(subject), cancellationToken);
     }
+
+    [HttpPut("me")]
+    public Task<UserDto> UpdateMe(
+        [FromBody] UpdateCurrentUserRequest request,
+        [FromServices] UserManagementService users,
+        CancellationToken cancellationToken)
+    {
+        var subject = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new AuthenticationFailedException("Session is no longer valid.");
+        return users.UpdateCurrentAsync(Guid.Parse(subject), request, cancellationToken);
+    }
 }

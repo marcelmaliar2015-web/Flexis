@@ -1,4 +1,5 @@
 import Avatar from "@mui/material/Avatar";
+import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
@@ -9,8 +10,8 @@ import { styled } from "@mui/material/styles";
 import { useState, type MouseEvent } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useAuth } from "@/shared/auth/AuthProvider";
+import { userInitials } from "@/shared/auth/userInitials";
 import { appPaths } from "@/shared/config/paths";
-import type { UserDto } from "@/shared/types/user";
 
 const AccountButton = styled(IconButton)(({ theme }) => ({
   padding: 3,
@@ -31,9 +32,19 @@ const AccountAvatar = styled(Avatar)(({ theme }) => ({
   fontWeight: 600,
 }));
 
+const HeaderAvatar = styled(Avatar)(({ theme }) => ({
+  width: 40,
+  height: 40,
+  flexShrink: 0,
+  backgroundColor: theme.palette.primary.main,
+  color: theme.palette.primary.contrastText,
+  fontSize: "0.95rem",
+  fontWeight: 600,
+}));
+
 const AccountMenu = styled(Menu)(({ theme }) => ({
   "& .MuiPaper-root": {
-    minWidth: 240,
+    width: 280,
     marginTop: theme.spacing(1),
     border: `1px solid ${theme.palette.divider}`,
     boxShadow: "0 16px 40px rgba(14, 39, 68, 0.12)",
@@ -41,19 +52,24 @@ const AccountMenu = styled(Menu)(({ theme }) => ({
 }));
 
 const Identity = styled("div")(({ theme }) => ({
-  padding: theme.spacing(1.5, 2, 1.25),
+  display: "flex",
+  alignItems: "center",
+  gap: theme.spacing(1.5),
+  padding: theme.spacing(1.75, 2, 1.5),
 }));
 
-function initials(user: UserDto): string {
-  const parts = user.displayName.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) {
-    return user.email.slice(0, 1).toUpperCase();
-  }
-  if (parts.length === 1) {
-    return parts[0].slice(0, 1).toUpperCase();
-  }
-  return `${parts[0].slice(0, 1)}${parts[1].slice(0, 1)}`.toUpperCase();
-}
+const IdentityCopy = styled("div")({
+  minWidth: 0,
+  display: "flex",
+  flexDirection: "column",
+  gap: 2,
+});
+
+const EmailLine = styled(Typography)({
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
 
 export function UserMenu() {
   const auth = useAuth();
@@ -83,7 +99,7 @@ export function UserMenu() {
         aria-expanded={open ? "true" : undefined}
         onClick={openMenu}
       >
-        <AccountAvatar>{initials(user)}</AccountAvatar>
+        <AccountAvatar>{userInitials(user)}</AccountAvatar>
       </AccountButton>
       <AccountMenu
         id="account-menu"
@@ -94,15 +110,18 @@ export function UserMenu() {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Identity>
-          <Stack spacing={0.25}>
-            <Typography variant="subtitle2">{user.displayName}</Typography>
-            <Typography variant="caption" color="text.secondary">
+          <HeaderAvatar>{userInitials(user)}</HeaderAvatar>
+          <IdentityCopy>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0 }}>
+              <Typography variant="subtitle2" noWrap>
+                {user.displayName}
+              </Typography>
+              <Chip size="small" label={user.role} />
+            </Stack>
+            <EmailLine variant="caption" color="text.secondary">
               {user.email}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {user.role}
-            </Typography>
-          </Stack>
+            </EmailLine>
+          </IdentityCopy>
         </Identity>
         <Divider />
         <MenuItem component={RouterLink} to={appPaths.settings} onClick={closeMenu}>

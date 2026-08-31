@@ -35,3 +35,5 @@ One file per significant architecture choice. Record a decision when you introdu
 | [013](013-job-application-financial-logs.md) | Job application financial and activity logs |
 | [014](014-header-google-status.md) | Header Google connect status |
 | [015](015-google-workspace-sync.md) | Google workspace sync |
+| [016](016-dashboard-workspace-status.md) | Dashboard workspace status |
+| [017](017-signed-in-account-profile.md) | Signed-in account profile |

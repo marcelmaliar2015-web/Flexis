@@ -11,6 +11,7 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | GET | `/api/health` | Anonymous | `200` or `503` + `HealthStatusDto` |
 | POST | `/api/auth/sign-in` | Anonymous | `200` + `SignInResultDto` |
 | GET | `/api/auth/me` | Authenticated | `200` + `UserDto` |
+| PUT | `/api/auth/me` | Authenticated | `200` + `UserDto` |
 | GET | `/api/users` | Admin | `200` + `UserDto[]` |
 | POST | `/api/users` | Admin | `201` + `UserDto` |
 | PUT | `/api/users/{id}` | Admin | `200` + `UserDto` |
@@ -52,7 +53,7 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | PUT | `/api/job-application/financial/rows/{entryId}/rates` | Authenticated | `200` + `JobFinancialRowDto` |
 | GET | `/api/job-application/logs` | Authenticated | `200` + `JobApplicationLogDto[]` |
 
-`UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`.
+`UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`. `PUT /api/auth/me` body: `displayName`, `password` (omit or blank to keep the current password). Email, role, and active cannot change on that path. Admin user PUT body: `displayName`, `role`, `isActive`, `password` (optional).
 
 `GoogleClientSettingsDto`: `clientId`, `hasSecret`. PUT body: `clientId`, `clientSecret` (omit or blank to keep the stored secret). The secret is never returned.
 
@@ -85,3 +86,4 @@ Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. L
 - [../decisions/010-job-application-pipeline.md](../decisions/010-job-application-pipeline.md)
 - [../decisions/012-pipeline-banned-companies.md](../decisions/012-pipeline-banned-companies.md)
 - [../decisions/013-job-application-financial-logs.md](../decisions/013-job-application-financial-logs.md)
+- [../decisions/017-signed-in-account-profile.md](../decisions/017-signed-in-account-profile.md)

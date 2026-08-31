@@ -13,3 +13,7 @@ public sealed record UpdateUserRequest(
     UserRole Role,
     bool IsActive,
     string? Password);
+
+public sealed record UpdateCurrentUserRequest(
+    string DisplayName,
+    string? Password);
