@@ -47,6 +47,15 @@ public sealed class JobPipelineController : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete]
+    public async Task<IActionResult> DeleteAll(
+        [FromServices] JobPipelineService pipeline,
+        CancellationToken cancellationToken)
+    {
+        await pipeline.DeleteAllAsync(CurrentUserId(), cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("update-all")]
     public Task<JobPipelineUpdateResultDto> ApplyAll(
         [FromServices] JobPipelineService pipeline,

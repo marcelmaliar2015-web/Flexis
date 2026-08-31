@@ -108,6 +108,14 @@ internal sealed class JobPipelineRepository : IJobPipelineRepository
         _db.JobPipelineEntries.RemoveRange(entries);
     }
 
+    public async Task RemoveAllAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var entries = await _db.JobPipelineEntries
+            .Where(entry => entry.UserId == userId)
+            .ToListAsync(cancellationToken);
+        _db.JobPipelineEntries.RemoveRange(entries);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         return _db.SaveChangesAsync(cancellationToken);

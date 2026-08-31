@@ -127,6 +127,12 @@ public sealed class JobPipelineService
         await _entries.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task DeleteAllAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        await _entries.RemoveAllAsync(userId, cancellationToken);
+        await _entries.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<JobPipelineUpdateResultDto> ApplyAsync(
         Guid userId,
         Guid id,

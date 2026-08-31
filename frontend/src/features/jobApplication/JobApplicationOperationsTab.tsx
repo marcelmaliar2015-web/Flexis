@@ -25,6 +25,7 @@ import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/goog
 import {
   applyAllJobPipelineEntries,
   createJobPipelineEntry,
+  deleteAllJobPipelineEntries,
   forwardAllJobPipelineEntries,
   getJobPipelineBoard,
   jobPipelineQueryKey,
@@ -67,6 +68,7 @@ export function JobApplicationOperationsTab() {
   const [creating, setCreating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
   const createMutation = useMutation({
     mutationFn: (request: JobPipelineWriteRequest) => createJobPipelineEntry(request),
@@ -93,9 +95,17 @@ export function JobApplicationOperationsTab() {
       ),
   });
 
+  const deleteAllMutation = useMutation({
+    mutationFn: deleteAllJobPipelineEntries,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+      setDeleteAllOpen(false);
+    },
+  });
+
   const board = boardQuery.data;
   const entries = board?.entries ?? [];
-  const actionsBusy = applyAllMutation.isPending || forwardAllMutation.isPending;
+  const actionsBusy = applyAllMutation.isPending || forwardAllMutation.isPending || deleteAllMutation.isPending;
   const sourceChoices = board ? sourceChoicesFromBoard(board) : [];
 
   return (
@@ -107,6 +117,9 @@ export function JobApplicationOperationsTab() {
       {applyAllMutation.isError ? <Alert severity="error">{errorMessage(applyAllMutation.error)}</Alert> : null}
       {forwardAllMutation.isError ? (
         <Alert severity="error">{errorMessage(forwardAllMutation.error)}</Alert>
+      ) : null}
+      {deleteAllMutation.isError ? (
+        <Alert severity="error">{errorMessage(deleteAllMutation.error)}</Alert>
       ) : null}
       {notice ? <Alert severity="success">{notice}</Alert> : null}
       <Stack
@@ -137,6 +150,12 @@ export function JobApplicationOperationsTab() {
             }}
           >
             Forward All
+          </Button>
+          <Button
+            disabled={!connected || entries.length === 0 || actionsBusy}
+            onClick={() => setDeleteAllOpen(true)}
+          >
+            Delete All
           </Button>
           <Button
             disabled={!connected || sourceChoices.length === 0 || (board?.profiles.length ?? 0) === 0}
@@ -186,6 +205,28 @@ export function JobApplicationOperationsTab() {
           onClose={() => setCreating(false)}
           onCreate={(request) => createMutation.mutate(request)}
         />
+      ) : null}
+      {deleteAllOpen ? (
+        <Dialog open onClose={() => setDeleteAllOpen(false)} fullWidth maxWidth="xs">
+          <DialogTitle>Delete all pipeline entries</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2">
+              Remove every pipeline entry? Listings already on profile sheets stay.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button variant="text" onClick={() => setDeleteAllOpen(false)} disabled={deleteAllMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              disabled={deleteAllMutation.isPending}
+              loading={deleteAllMutation.isPending}
+              onClick={() => deleteAllMutation.mutate()}
+            >
+              Delete All
+            </Button>
+          </DialogActions>
+        </Dialog>
       ) : null}
     </Stack>
   );

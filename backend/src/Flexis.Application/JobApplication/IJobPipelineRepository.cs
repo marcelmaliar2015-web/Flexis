@@ -41,5 +41,7 @@ public interface IJobPipelineRepository
 
     Task RemoveByCatalogItemIdAsync(Guid userId, Guid catalogItemId, CancellationToken cancellationToken);
 
+    Task RemoveAllAsync(Guid userId, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

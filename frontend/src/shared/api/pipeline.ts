@@ -32,6 +32,10 @@ export function deleteJobPipelineEntry(id: string): Promise<void> {
   return deleteRequest(`/api/job-application/pipeline/${id}`);
 }
 
+export function deleteAllJobPipelineEntries(): Promise<void> {
+  return deleteRequest("/api/job-application/pipeline");
+}
+
 export function applyJobPipelineEntry(id: string): Promise<JobPipelineUpdateResult> {
   return postJson<JobPipelineUpdateResult>(`/api/job-application/pipeline/${id}/update`, {});
 }
