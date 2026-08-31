@@ -6,7 +6,7 @@ Signed-in chrome had Home, Health, Users, display name, and Sign out in the AppB
 
 ## Decision
 
-The AppBar shows only the Flexis brand and an account avatar (`UserMenu`). The menu lists identity (name, email, role), then Settings, Help, and Sign out. Module navigation stays in the left nav. Admin user management lives on Settings. Help is a product route with the Gmail connect guide.
+The AppBar shows only the Flexis brand and an account avatar (`UserMenu`). The menu lists identity (name, email, role), then Settings, Help, and Sign out. Module navigation stays in the left nav. Admin user management lives on Settings. Help is a product route with tabbed guides, including Google setup.
 
 ## Consequences
 

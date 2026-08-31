@@ -2,7 +2,7 @@
 
 One-time Google Cloud work so Job Application **Connect Gmail** can run. Billing is not required. Use a Google account that you will connect in Flexis.
 
-The same steps are in the signed-in app at `/help`.
+The same steps are in the signed-in app at `/help` on the Google setup tab.
 
 Flexis redirect (must match the client exactly, no trailing slash):
 

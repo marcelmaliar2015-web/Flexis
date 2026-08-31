@@ -29,7 +29,7 @@ Path alias `@/` maps to `frontend/src/`.
 | `app` | Bootstrap, theme, query client, routes, layout, guards, account menu |
 | `features/home` | Home screen |
 | `features/health` | Health screen and query hook |
-| `features/help` | In-app Gmail connect guide |
+| `features/help` | Tabbed product guides (Overview, Google setup, Operations, Financial, Logs, Problems) |
 | `features/auth` | Sign-in screen |
 | `features/dashboard` | Empty Dashboard screen |
 | `features/jobApplication` | Job Application tabs, Pipeline table, pipeline entry detail, Financial, Logs, Settings (Gmail, default rates, profiles, sources, locations) |
