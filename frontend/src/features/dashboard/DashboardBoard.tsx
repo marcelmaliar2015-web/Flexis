@@ -15,6 +15,8 @@ import {
   activityByDay,
   attentionItems,
   formatCount,
+  formatOptionalCount,
+  formatOptionalPrice,
   formatPercent,
   formatPrice,
   formatRate,
@@ -43,6 +45,7 @@ import type { GoogleConnectionStatus } from "@/shared/types/google";
 import type { HealthStatusDto } from "@/shared/types/health";
 import type { JobPipelineBoard } from "@/shared/types/pipeline";
 import type { UserDto } from "@/shared/types/user";
+import { queryCount } from "@/shared/api/queryState";
 
 const categoryLabels: Record<string, string> = {
   pipeline: "Pipeline",
@@ -58,12 +61,16 @@ type DashboardBoardProps = {
   google: GoogleConnectionStatus | undefined;
   googleError: unknown;
   pipeline: JobPipelineBoard | undefined;
+  pipelineLoading: boolean;
   pipelineError: unknown;
   financial: JobFinancialBoard | undefined;
+  financialLoading: boolean;
   financialError: unknown;
   logs: JobApplicationLog[] | undefined;
+  logsLoading: boolean;
   logsError: unknown;
   users: UserDto[] | undefined;
+  usersLoading: boolean;
   usersError: unknown;
 };
 
@@ -79,11 +86,15 @@ export function DashboardBoard(props: DashboardBoardProps) {
     isAdmin: props.isAdmin,
   });
   const users = summarizeUsers(props.users);
-  const recent = (props.logs ?? []).slice(0, 8);
-  const profileCount = props.pipeline?.profiles.length ?? 0;
-  const sourceCount = props.pipeline?.sources.length ?? 0;
-  const locations = locationCount(props.pipeline);
-  const pipelineRows = props.pipeline?.entries.length ?? 0;
+  const recent = props.logsLoading ? [] : (props.logs ?? []).slice(0, 8);
+  const profileCount = queryCount(props.pipeline, props.pipelineLoading, props.pipeline?.profiles.length);
+  const sourceCount = queryCount(props.pipeline, props.pipelineLoading, props.pipeline?.sources.length);
+  const locations = props.pipelineLoading ? null : locationCount(props.pipeline);
+  const pipelineRows = queryCount(props.pipeline, props.pipelineLoading, props.pipeline?.entries.length);
+  const workspacePrice = queryCount(props.financial, props.financialLoading, props.financial?.allPrice);
+  const listingTotal = queryCount(props.financial, props.financialLoading, props.financial?.allTotal);
+  const appliedTotal = queryCount(props.financial, props.financialLoading, props.financial?.allApplied);
+  const interviewTotal = queryCount(props.financial, props.financialLoading, props.financial?.allInterviews);
 
   return (
     <Stack spacing={3}>
@@ -163,9 +174,21 @@ export function DashboardBoard(props: DashboardBoardProps) {
         <Grid size={{ xs: 12, md: 3 }}>
           <StatusCard
             label="Catalog"
-            value={`${formatCount(profileCount)} / ${formatCount(sourceCount)}`}
-            detail={`${formatCount(locations)} source locations · ${formatCount(pipelineRows)} pipeline rows. Profiles and sources are Google Sheets under Flexis / Job Application.`}
-            tone={profileCount > 0 && sourceCount > 0 ? "success" : "default"}
+            value={
+              profileCount === null || sourceCount === null
+                ? "Loading…"
+                : `${formatOptionalCount(profileCount)} / ${formatOptionalCount(sourceCount)}`
+            }
+            detail={
+              locations === null || pipelineRows === null
+                ? "Reading profiles, sources, and pipeline rows."
+                : `${formatOptionalCount(locations)} source locations · ${formatOptionalCount(pipelineRows)} pipeline rows. Profiles and sources are Google Sheets under Flexis / Job Application.`
+            }
+            tone={
+              profileCount !== null && sourceCount !== null && profileCount > 0 && sourceCount > 0
+                ? "success"
+                : "default"
+            }
             to={appPaths.jobApplication}
             action="Workspace"
           />
@@ -178,9 +201,11 @@ export function DashboardBoard(props: DashboardBoardProps) {
             <Typography variant="overline" color="text.secondary">
               Workspace price
             </Typography>
-            <Typography variant="h4">{formatPrice(props.financial?.allPrice ?? 0)}</Typography>
+            <Typography variant="h4">{formatOptionalPrice(workspacePrice)}</Typography>
             <Typography variant="body2" color="text.secondary">
-              Applied times apply rate plus interviews times bonus rate, from each profile main tab.
+              {props.financialLoading
+                ? "Reading profile main tabs."
+                : "Applied times apply rate plus interviews times bonus rate, from each profile main tab."}
             </Typography>
           </KpiCard>
         </Grid>
@@ -189,9 +214,11 @@ export function DashboardBoard(props: DashboardBoardProps) {
             <Typography variant="overline" color="text.secondary">
               Listings
             </Typography>
-            <Typography variant="h4">{formatCount(props.financial?.allTotal ?? 0)}</Typography>
+            <Typography variant="h4">{formatOptionalCount(listingTotal)}</Typography>
             <Typography variant="body2" color="text.secondary">
-              Non-empty rows on named profile main tabs. Zero until Gmail can read those workbooks.
+              {props.financialLoading
+                ? "Reading profile main tabs."
+                : "Non-empty rows on named profile main tabs. Zero until Gmail can read those workbooks."}
             </Typography>
           </KpiCard>
         </Grid>
@@ -200,7 +227,7 @@ export function DashboardBoard(props: DashboardBoardProps) {
             <Typography variant="overline" color="text.secondary">
               Applied
             </Typography>
-            <Typography variant="h4">{formatCount(props.financial?.allApplied ?? 0)}</Typography>
+            <Typography variant="h4">{formatOptionalCount(appliedTotal)}</Typography>
             <Typography variant="body2" color="text.secondary">
               {formatPercent(mix.appliedShare)} of listings. Status Applied on the profile main tab.
             </Typography>
@@ -211,7 +238,7 @@ export function DashboardBoard(props: DashboardBoardProps) {
             <Typography variant="overline" color="text.secondary">
               Interviews
             </Typography>
-            <Typography variant="h4">{formatCount(props.financial?.allInterviews ?? 0)}</Typography>
+            <Typography variant="h4">{formatOptionalCount(interviewTotal)}</Typography>
             <Typography variant="body2" color="text.secondary">
               {formatPercent(mix.interviewShare)} of listings. Status Interview on the profile main tab.
             </Typography>
@@ -269,7 +296,11 @@ export function DashboardBoard(props: DashboardBoardProps) {
                   Highest priced profile and source pairs. Open a row to edit that pipeline entry.
                 </Typography>
               </Stack>
-              {prices.length === 0 ? (
+              {props.financialLoading ? (
+                <Typography variant="body2" color="text.secondary">
+                  Reading listing status from profile main tabs.
+                </Typography>
+              ) : prices.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
                   No pipeline rows to price yet.
                 </Typography>
@@ -359,7 +390,11 @@ export function DashboardBoard(props: DashboardBoardProps) {
                 ))}
               </DayChart>
               <Stack spacing={1}>
-                {recent.length === 0 ? (
+                {props.logsLoading ? (
+                  <Typography variant="body2" color="text.secondary">
+                    Loading activity…
+                  </Typography>
+                ) : recent.length === 0 ? (
                   <Typography variant="body2" color="text.secondary">
                     No activity recorded yet. Connect Gmail, edit catalog, or run Operations to start the log.
                   </Typography>
@@ -450,25 +485,33 @@ export function DashboardBoard(props: DashboardBoardProps) {
                 <Typography variant="overline" color="text.secondary">
                   Users
                 </Typography>
-                <Typography variant="h4">{formatCount(users.total)}</Typography>
+                <Typography variant="h4">
+                  {props.usersLoading ? "…" : formatCount(users.total)}
+                </Typography>
               </Grid>
               <Grid size={{ xs: 6, md: 3 }}>
                 <Typography variant="overline" color="text.secondary">
                   Active
                 </Typography>
-                <Typography variant="h4">{formatCount(users.active)}</Typography>
+                <Typography variant="h4">
+                  {props.usersLoading ? "…" : formatCount(users.active)}
+                </Typography>
               </Grid>
               <Grid size={{ xs: 6, md: 3 }}>
                 <Typography variant="overline" color="text.secondary">
                   Inactive
                 </Typography>
-                <Typography variant="h4">{formatCount(users.inactive)}</Typography>
+                <Typography variant="h4">
+                  {props.usersLoading ? "…" : formatCount(users.inactive)}
+                </Typography>
               </Grid>
               <Grid size={{ xs: 6, md: 3 }}>
                 <Typography variant="overline" color="text.secondary">
                   Admins
                 </Typography>
-                <Typography variant="h4">{formatCount(users.admins)}</Typography>
+                <Typography variant="h4">
+                  {props.usersLoading ? "…" : formatCount(users.admins)}
+                </Typography>
               </Grid>
             </Grid>
             <Link component={RouterLink} to={appPaths.settings} variant="body2">

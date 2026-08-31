@@ -1,5 +1,7 @@
 using Flexis.Application.Common;
 using Flexis.Application.Google;
+using Flexis.Application.MailCheck;
+using Flexis.Application.Microsoft;
 using Flexis.Domain.MailCheck;
 
 namespace Flexis.Application.MailCheck;
@@ -10,36 +12,58 @@ public sealed class MailAccessTokenService
 
     private readonly IMailConnectionRepository _connections;
     private readonly IGoogleTokenProtector _protector;
-    private readonly IGoogleOAuthGateway _oauth;
+    private readonly IGoogleOAuthGateway _googleOAuth;
+    private readonly IMicrosoftOAuthGateway _microsoftOAuth;
 
     public MailAccessTokenService(
         IMailConnectionRepository connections,
         IGoogleTokenProtector protector,
-        IGoogleOAuthGateway oauth)
+        IGoogleOAuthGateway googleOAuth,
+        IMicrosoftOAuthGateway microsoftOAuth)
     {
         _connections = connections;
         _protector = protector;
-        _oauth = oauth;
+        _googleOAuth = googleOAuth;
+        _microsoftOAuth = microsoftOAuth;
     }
 
-    public async Task<string> GetGmailAccessTokenAsync(Guid userId, CancellationToken cancellationToken)
+    public async Task<(MailProvider Provider, string AccessToken)> GetAccessAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
     {
         var connection = await _connections.GetByUserIdAsync(userId, cancellationToken)
             ?? throw new ValidationFailedException("Connect a mailbox on Mail Check Settings first.");
-        if (connection.Provider != MailProvider.Gmail)
-        {
-            throw new ValidationFailedException("Mail Check is connected to a mailbox this build cannot use yet.");
-        }
 
         if (connection.AccessTokenExpiresAt > DateTimeOffset.UtcNow.Add(RefreshSkew))
         {
-            return _protector.Unprotect(connection.AccessTokenProtected);
+            return (connection.Provider, _protector.Unprotect(connection.AccessTokenProtected));
         }
 
         var refreshToken = _protector.Unprotect(connection.RefreshTokenProtected);
-        var tokens = await _oauth.RefreshAsync(refreshToken, cancellationToken);
+        var tokens = connection.Provider switch
+        {
+            MailProvider.Gmail => await RefreshGoogleAsync(refreshToken, cancellationToken),
+            MailProvider.Outlook => await RefreshMicrosoftAsync(refreshToken, cancellationToken),
+            _ => throw new ValidationFailedException("Mail Check is connected to a mailbox this build cannot use yet."),
+        };
         connection.ReplaceAccessToken(_protector.Protect(tokens.AccessToken), tokens.AccessTokenExpiresAt);
         await _connections.SaveChangesAsync(cancellationToken);
-        return tokens.AccessToken;
+        return (connection.Provider, tokens.AccessToken);
+    }
+
+    private async Task<(string AccessToken, DateTimeOffset AccessTokenExpiresAt)> RefreshGoogleAsync(
+        string refreshToken,
+        CancellationToken cancellationToken)
+    {
+        var tokens = await _googleOAuth.RefreshAsync(refreshToken, cancellationToken);
+        return (tokens.AccessToken, tokens.AccessTokenExpiresAt);
+    }
+
+    private async Task<(string AccessToken, DateTimeOffset AccessTokenExpiresAt)> RefreshMicrosoftAsync(
+        string refreshToken,
+        CancellationToken cancellationToken)
+    {
+        var tokens = await _microsoftOAuth.RefreshAsync(refreshToken, cancellationToken);
+        return (tokens.AccessToken, tokens.AccessTokenExpiresAt);
     }
 }

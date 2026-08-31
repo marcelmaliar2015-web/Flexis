@@ -10,7 +10,7 @@ ASP.NET Core 10 (`net10.0`), EF Core with Npgsql, MongoDB.Driver, JWT Bearer. So
 
 ## Entry
 
-`backend/src/Flexis.Api/Program.cs`. Listens on `http://localhost:5080` in Development (`Properties/launchSettings.json`). Local dev: double-click `backend/run.bat` or run `dotnet watch --project backend/src/Flexis.Api` so file changes rebuild and restart the API; plain `dotnet run` keeps the old build until you stop it manually. Development applies EF migrations and seeds users before accepting requests.
+`backend/src/Flexis.Api/Program.cs`. Listens on `http://localhost:5080` in Development (`Properties/launchSettings.json`). Local dev: double-click `backend/run.bat`. It starts flexis-db PostgreSQL and MongoDB in `%LOCALAPPDATA%\flexis-db` when those binaries exist, otherwise Docker Compose, stops any stale API on port 5080, then runs `dotnet watch`. Falls back to `%LOCALAPPDATA%\dotnet-flexis\dotnet.exe` when `dotnet` is not on PATH. Development applies EF migrations and seeds users before accepting requests.
 
 ## Boundaries
 

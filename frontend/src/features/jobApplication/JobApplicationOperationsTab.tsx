@@ -22,6 +22,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
+import { isQueryLoading } from "@/shared/api/queryState";
 import {
   applyAllJobPipelineEntries,
   createJobPipelineEntry,
@@ -112,6 +113,7 @@ export function JobApplicationOperationsTab() {
   });
 
   const board = boardQuery.data;
+  const boardLoading = isQueryLoading(boardQuery.data, boardQuery.isPending);
   const entries = board?.entries ?? [];
   const actionsBusy = applyAllMutation.isPending || forwardAllMutation.isPending || deleteAllMutation.isPending;
   const sourceChoices = board ? sourceChoicesFromBoard(board) : [];
@@ -178,7 +180,24 @@ export function JobApplicationOperationsTab() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {entries.map((entry) => (
+              {boardLoading ? (
+                <TableRow>
+                  <TableCell colSpan={2}>
+                    <Typography variant="body2" color="text.secondary">
+                      Loading…
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : entries.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2}>
+                    <Typography variant="body2" color="text.secondary">
+                      No pipeline rows yet.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                entries.map((entry) => (
                 <ClickableRow
                   key={entry.id}
                   hover
@@ -191,7 +210,8 @@ export function JobApplicationOperationsTab() {
                       : entry.locationName}
                   </TableCell>
                 </ClickableRow>
-              ))}
+              ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>

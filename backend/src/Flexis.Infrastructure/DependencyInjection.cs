@@ -3,9 +3,12 @@ using Flexis.Application.Diagnostics;
 using Flexis.Application.Google;
 using Flexis.Application.JobApplication;
 using Flexis.Application.MailCheck;
+using Flexis.Application.Microsoft;
 using Flexis.Application.Users;
 using Flexis.Infrastructure.Diagnostics;
 using Flexis.Infrastructure.Google;
+using Flexis.Infrastructure.MailCheck;
+using Flexis.Infrastructure.Microsoft;
 using Flexis.Infrastructure.OpenAi;
 using Flexis.Infrastructure.Persistence.Mongo;
 using Flexis.Infrastructure.Persistence.Postgres;
@@ -58,6 +61,9 @@ public static class DependencyInjection
                 "Google:TokenProtectionKey must be at least 32 characters.")
             .ValidateOnStart();
 
+        services.AddOptions<MicrosoftOAuthSettings>()
+            .Bind(configuration.GetSection(MicrosoftOAuthSettings.SectionName));
+
         services.AddOptions<FrontendOriginSettings>()
             .Bind(configuration.GetSection(FrontendOriginSettings.SectionName))
             .Validate(settings => settings.Origins is { Length: > 0 }, "Frontend:Origins is required.")
@@ -65,13 +71,17 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
         services.AddHttpClient<IGoogleOAuthGateway, GoogleOAuthClient>();
+        services.AddHttpClient<IMicrosoftOAuthGateway, MicrosoftOAuthClient>();
         services.AddHttpClient<IGoogleSheetsWorkspace, GoogleSheetsClient>();
         services.AddHttpClient<IGoogleDriveGateway, GoogleDriveClient>();
-        services.AddHttpClient<IGmailMailbox, GmailMailboxClient>();
+        services.AddHttpClient<GmailMailboxClient>();
+        services.AddHttpClient<OutlookMailboxClient>();
+        services.AddScoped<IMailMailboxGateway, MailMailboxGateway>();
         services.AddHttpClient<IOpenAiGateway, OpenAiClient>();
         services.AddSingleton<IGoogleTokenProtector, AesGoogleTokenProtector>();
         services.AddSingleton<IIssueLog, FileIssueLog>();
         services.AddSingleton<IGoogleOAuthStateStore, MemoryGoogleOAuthStateStore>();
+        services.AddSingleton<IMicrosoftOAuthStateStore, MemoryMicrosoftOAuthStateStore>();
         services.AddSingleton<IFrontendOrigins, ConfigurationFrontendOrigins>();
         services.AddScoped<IGoogleConnectionRepository, GoogleConnectionRepository>();
         services.AddScoped<IGoogleClientCredentialStore, GoogleClientCredentialStore>();

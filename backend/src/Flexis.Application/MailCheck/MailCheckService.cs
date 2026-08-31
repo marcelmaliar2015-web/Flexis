@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Flexis.Application.Common;
 using Flexis.Application.Google;
+using Flexis.Application.Microsoft;
 using Flexis.Domain.MailCheck;
 
 namespace Flexis.Application.MailCheck;
@@ -24,8 +25,9 @@ public sealed class MailCheckService
     private readonly IMailCheckProcessedMessageRepository _processed;
     private readonly IMailConnectionRepository _mailConnections;
     private readonly MailAccessTokenService _mailTokens;
+    private readonly IMailMailboxGateway _mailboxes;
+    private readonly IMicrosoftOAuthGateway _microsoftOAuth;
     private readonly IGoogleTokenProtector _protector;
-    private readonly IGmailMailbox _gmail;
     private readonly IOpenAiGateway _openAi;
 
     public MailCheckService(
@@ -33,16 +35,18 @@ public sealed class MailCheckService
         IMailCheckProcessedMessageRepository processed,
         IMailConnectionRepository mailConnections,
         MailAccessTokenService mailTokens,
+        IMailMailboxGateway mailboxes,
+        IMicrosoftOAuthGateway microsoftOAuth,
         IGoogleTokenProtector protector,
-        IGmailMailbox gmail,
         IOpenAiGateway openAi)
     {
         _settings = settings;
         _processed = processed;
         _mailConnections = mailConnections;
         _mailTokens = mailTokens;
+        _mailboxes = mailboxes;
+        _microsoftOAuth = microsoftOAuth;
         _protector = protector;
-        _gmail = gmail;
         _openAi = openAi;
     }
 
@@ -86,8 +90,8 @@ public sealed class MailCheckService
             var connection = await _mailConnections.GetByUserIdAsync(userId, cancellationToken);
             if (connection is not null)
             {
-                var token = await _mailTokens.GetGmailAccessTokenAsync(userId, cancellationToken);
-                await _gmail.EnsureLabelsAsync(token, cancellationToken);
+                var access = await _mailTokens.GetAccessAsync(userId, cancellationToken);
+                await _mailboxes.Resolve(access.Provider).EnsureLabelsAsync(access.AccessToken, cancellationToken);
             }
         }
 
@@ -141,16 +145,12 @@ public sealed class MailCheckService
         string? labelSlug,
         CancellationToken cancellationToken)
     {
-        var connection = await _mailConnections.GetByUserIdAsync(userId, cancellationToken);
-        if (connection is null)
-        {
-            throw new ValidationFailedException("Connect a mailbox on Mail Check Settings first.");
-        }
-
-        var token = await _mailTokens.GetGmailAccessTokenAsync(userId, cancellationToken);
-        var labels = await _gmail.EnsureLabelsAsync(token, cancellationToken);
+        var connection = await RequireConnectionAsync(userId, cancellationToken);
+        var access = await _mailTokens.GetAccessAsync(userId, cancellationToken);
+        var mailbox = _mailboxes.Resolve(access.Provider);
+        var labels = await mailbox.EnsureLabelsAsync(access.AccessToken, cancellationToken);
         var filter = MailCheckLabels.KeepFromSlug(labelSlug);
-        var listed = await _gmail.ListLabeledAsync(token, labels, filter, cancellationToken);
+        var listed = await mailbox.ListLabeledAsync(access.AccessToken, labels, filter, cancellationToken);
         var items = listed
             .Select(item => new MailCheckInboxItemDto(
                 item.Id,
@@ -176,15 +176,11 @@ public sealed class MailCheckService
             throw new ValidationFailedException("Save an OpenAI API key on Mail Check Settings.");
         }
 
-        var connection = await _mailConnections.GetByUserIdAsync(userId, cancellationToken);
-        if (connection is null)
-        {
-            throw new ValidationFailedException("Connect a mailbox on Mail Check Settings first.");
-        }
-
-        var token = await _mailTokens.GetGmailAccessTokenAsync(userId, cancellationToken);
+        await RequireConnectionAsync(userId, cancellationToken);
+        var access = await _mailTokens.GetAccessAsync(userId, cancellationToken);
+        var mailbox = _mailboxes.Resolve(access.Provider);
         var apiKey = _protector.Unprotect(settings.ApiKeyProtected!);
-        var labels = await _gmail.EnsureLabelsAsync(token, cancellationToken);
+        var labels = await mailbox.EnsureLabelsAsync(access.AccessToken, cancellationToken);
         var ourLabelIds = labels.Values.ToHashSet(StringComparer.Ordinal);
         var items = new List<MailCheckRunItemDto>();
         var labeled = 0;
@@ -199,7 +195,7 @@ public sealed class MailCheckService
         {
             for (var page = 0; page < MaxListPages && processed < BatchSize; page++)
             {
-                var batch = await _gmail.ListCandidatesAsync(token, pageToken, cancellationToken);
+                var batch = await mailbox.ListCandidatesAsync(access.AccessToken, pageToken, cancellationToken);
                 pageToken = batch.NextPageToken;
                 if (batch.Messages.Count == 0)
                 {
@@ -222,7 +218,7 @@ public sealed class MailCheckService
 
                     try
                     {
-                        var message = await _gmail.GetMessageAsync(token, candidate.Id, cancellationToken);
+                        var message = await mailbox.GetMessageAsync(access.AccessToken, candidate.Id, cancellationToken);
                         if (message.LabelIds.Any(ourLabelIds.Contains))
                         {
                             await _processed.AddAsync(
@@ -240,7 +236,8 @@ public sealed class MailCheckService
                             cancellationToken);
                         await ApplyAsync(
                             userId,
-                            token,
+                            mailbox,
+                            access.AccessToken,
                             message,
                             labels,
                             classification,
@@ -282,7 +279,7 @@ public sealed class MailCheckService
 
             settings.RecordRun(labeled, trashed, skipped, processed, errors, hasMore, string.Empty);
         }
-        catch (Exception exception) when (exception is ValidationFailedException or GoogleOAuthException)
+        catch (Exception exception) when (exception is ValidationFailedException or GoogleOAuthException or MicrosoftOAuthException)
         {
             settings.RecordRun(labeled, trashed, skipped, processed, errors + 1, hasMore, exception.Message);
             await _processed.SaveChangesAsync(cancellationToken);
@@ -297,8 +294,9 @@ public sealed class MailCheckService
 
     private async Task ApplyAsync(
         Guid userId,
+        IMailMailbox mailbox,
         string token,
-        GmailMessageContent message,
+        MailMessageContent message,
         IReadOnlyDictionary<MailCheckDecision, string> labels,
         MailCheckClassification classification,
         List<MailCheckRunItemDto> items,
@@ -306,7 +304,7 @@ public sealed class MailCheckService
     {
         if (classification.Decision == MailCheckDecision.Discard)
         {
-            await _gmail.TrashAsync(token, message.Id, cancellationToken);
+            await mailbox.TrashAsync(token, message.Id, cancellationToken);
         }
         else if (classification.Decision != MailCheckDecision.Skip)
         {
@@ -315,7 +313,7 @@ public sealed class MailCheckService
                 throw new ValidationFailedException("Mail Check labels are missing.");
             }
 
-            await _gmail.ApplyLabelAndPinAsync(token, message.Id, labelId, message.LabelIds, cancellationToken);
+            await mailbox.ApplyLabelAndPinAsync(token, message.Id, labelId, message.LabelIds, cancellationToken);
         }
 
         await _processed.AddAsync(
@@ -328,6 +326,12 @@ public sealed class MailCheckService
             MailCheckLabels.SlugFor(classification.Decision),
             classification.Reason,
             MailCheckLabels.NameFor(classification.Decision)));
+    }
+
+    private async Task<MailConnection> RequireConnectionAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        return await _mailConnections.GetByUserIdAsync(userId, cancellationToken)
+            ?? throw new ValidationFailedException("Connect a mailbox on Mail Check Settings first.");
     }
 
     private async Task<MailCheckSettings> GetOrCreateSettingsAsync(Guid userId, CancellationToken cancellationToken)
@@ -361,6 +365,7 @@ public sealed class MailCheckService
         CancellationToken cancellationToken)
     {
         var connection = await _mailConnections.GetByUserIdAsync(userId, cancellationToken);
+        var outlookAvailable = await _microsoftOAuth.IsConfiguredAsync(cancellationToken);
         return new MailCheckSettingsDto(
             settings.HasApiKey,
             settings.Model,
@@ -377,7 +382,7 @@ public sealed class MailCheckService
             connection is not null,
             connection?.Email,
             connection is null ? null : connection.Provider == MailProvider.Gmail ? "gmail" : "outlook",
-            OutlookAvailable: false);
+            outlookAvailable);
     }
 
     private static MailCheckRunDto EmptyRun(bool busy, bool hasMore)
@@ -385,7 +390,7 @@ public sealed class MailCheckService
         return new MailCheckRunDto(busy, 0, 0, 0, 0, 0, hasMore, []);
     }
 
-    private static string FormatMail(GmailMessageContent message)
+    private static string FormatMail(MailMessageContent message)
     {
         return $"From: {message.From}\nDate: {message.Date}\nSubject: {message.Subject}\n\n{message.Body}";
     }

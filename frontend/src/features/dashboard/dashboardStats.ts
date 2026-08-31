@@ -62,6 +62,14 @@ export function formatCount(value: number): string {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value);
 }
 
+export function formatOptionalCount(value: number | null): string {
+  return value === null ? "…" : formatCount(value);
+}
+
+export function formatOptionalPrice(value: number | null): string {
+  return value === null ? "…" : formatPrice(value);
+}
+
 export function formatPercent(value: number): string {
   if (!Number.isFinite(value)) {
     return "—";

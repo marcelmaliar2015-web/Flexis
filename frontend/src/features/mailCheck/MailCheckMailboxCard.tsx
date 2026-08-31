@@ -15,6 +15,7 @@ import {
   mailCheckMailboxQueryKey,
   mailCheckSettingsQueryKey,
   startMailCheckGmail,
+  startMailCheckOutlook,
 } from "@/shared/api/mailCheck";
 import { appPaths } from "@/shared/config/paths";
 
@@ -61,8 +62,15 @@ export function MailCheckMailboxCard() {
     navigate(appPaths.mailCheck, { replace: true });
   }, [navigate, queryClient, searchParams]);
 
-  const connectMutation = useMutation({
+  const connectGmailMutation = useMutation({
     mutationFn: () => startMailCheckGmail(`${window.location.origin}${appPaths.mailCheck}`),
+    onSuccess: (result) => {
+      window.location.assign(result.authorizationUrl);
+    },
+  });
+
+  const connectOutlookMutation = useMutation({
+    mutationFn: () => startMailCheckOutlook(`${window.location.origin}${appPaths.mailCheck}`),
     onSuccess: (result) => {
       window.location.assign(result.authorizationUrl);
     },
@@ -130,9 +138,9 @@ export function MailCheckMailboxCard() {
                 </Button>
               ) : (
                 <Button
-                  disabled={connectMutation.isPending || (connected && mailbox?.provider !== "gmail")}
-                  loading={connectMutation.isPending}
-                  onClick={() => connectMutation.mutate()}
+                  disabled={connectGmailMutation.isPending || (connected && mailbox?.provider !== "gmail")}
+                  loading={connectGmailMutation.isPending}
+                  onClick={() => connectGmailMutation.mutate()}
                 >
                   Connect Gmail
                 </Button>
@@ -141,13 +149,40 @@ export function MailCheckMailboxCard() {
           </ProviderCard>
           <ProviderCard sx={{ flex: 1, opacity: mailbox?.outlookAvailable ? 1 : 0.72 }}>
             <Stack spacing={1.5}>
-              <Typography variant="subtitle1">Outlook</Typography>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+                <Typography variant="subtitle1">Outlook</Typography>
+                {mailbox?.provider === "outlook" && connected ? (
+                  <Chip size="small" color="success" label="Active" />
+                ) : null}
+              </Stack>
               <Typography variant="body2" color="text.secondary">
-                Microsoft 365 and Outlook.com support is planned next.
+                {mailbox?.outlookAvailable
+                  ? "Uses Outlook categories and flags. Works with Microsoft 365 and Outlook.com."
+                  : "An admin must set Microsoft ClientId, ClientSecret, and RedirectUri in backend appsettings."}
               </Typography>
-              <Button variant="outlined" disabled>
-                Connect Outlook
-              </Button>
+              {mailbox?.provider === "outlook" && connected ? (
+                <Button
+                  variant="outlined"
+                  disabled={disconnectMutation.isPending}
+                  loading={disconnectMutation.isPending}
+                  onClick={() => disconnectMutation.mutate()}
+                >
+                  Disconnect Outlook
+                </Button>
+              ) : (
+                <Button
+                  variant="outlined"
+                  disabled={
+                    !mailbox?.outlookAvailable
+                    || connectOutlookMutation.isPending
+                    || (connected && mailbox?.provider !== "outlook")
+                  }
+                  loading={connectOutlookMutation.isPending}
+                  onClick={() => connectOutlookMutation.mutate()}
+                >
+                  Connect Outlook
+                </Button>
+              )}
             </Stack>
           </ProviderCard>
         </Stack>

@@ -6,13 +6,13 @@ Job seekers need interview mail kept and application receipts discarded. Mail Ch
 
 ## Decision
 
-Mail Check is a signed-in module under `/mail-check` with Inbox, Check, and Settings tabs. It stores a per-user mailbox connection in `mail_connections`. Gmail connect and disconnect live on Mail Check Settings. Job Application Gmail stays on Job Application Settings for Sheets and Drive.
+Mail Check is a signed-in module under `/mail-check` with Inbox, Check, and Settings tabs. It stores a per-user mailbox connection in `mail_connections`. Gmail and Outlook connect and disconnect live on Mail Check Settings. Job Application Gmail stays on Job Application Settings for Sheets and Drive.
 
-Gmail OAuth uses `openid`, `userinfo.email`, and `gmail.modify` only. Outlook is planned; the API returns `outlookAvailable: false` until implemented.
+Gmail OAuth uses `openid`, `userinfo.email`, and `gmail.modify`. Outlook OAuth uses Microsoft identity with `Mail.ReadWrite` and `MailboxSettings.ReadWrite` through Microsoft Graph. Outlook requires `Microsoft:ClientId`, `Microsoft:ClientSecret`, and `Microsoft:RedirectUri` in appsettings. The API returns `outlookAvailable: true` when those values are set.
 
-On first use Flexis creates four Gmail labels: Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others. A check reads inbox, spam, promotions, updates, forums, and social. The user's OpenAI key classifies each new message. Keepers are labeled and starred (Gmail pin). Spam keepers are moved to the inbox. Application noise is moved to trash. Personal mail is skipped and not modified. Processed Gmail ids are stored so Flexis does not pay to classify them again.
+Gmail uses labels and stars. Outlook uses master categories and flagged messages. Both create the same four keep groups: Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others.
 
-The OpenAI key is AES-GCM protected with `Google:TokenProtectionKey`. The key is never returned. The user picks any chat or reasoning model; the API client adapts `max_tokens` / `max_completion_tokens`, temperature, JSON format, system vs user messages, and falls back from Chat Completions to Responses.
+On first use Flexis creates those groups on the connected mailbox. A check reads inbox and junk (Outlook) or inbox, spam, and category tabs (Gmail). The user's OpenAI key classifies each new message. Keepers are labeled or categorized and pinned. Junk or spam keepers are moved to the inbox. Application noise is moved to trash. Personal mail is skipped and not modified. Processed message ids are stored so Flexis does not pay to classify them again.
 
 Auto-check runs about every two minutes while the browser tab is visible, only when a mailbox is connected and a key is saved.
 

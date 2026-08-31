@@ -9,7 +9,7 @@ using Flexis.Domain.MailCheck;
 
 namespace Flexis.Infrastructure.Google;
 
-internal sealed class GmailMailboxClient : IGmailMailbox
+internal sealed class GmailMailboxClient : IMailMailbox
 {
     private const string Base = "https://gmail.googleapis.com/gmail/v1/users/me";
     private const int CandidatePageSize = 25;
@@ -86,7 +86,7 @@ internal sealed class GmailMailboxClient : IGmailMailbox
         return map;
     }
 
-    public async Task<GmailCandidatePage> ListCandidatesAsync(
+    public async Task<MailCandidatePage> ListCandidatesAsync(
         string accessToken,
         string? pageToken,
         CancellationToken cancellationToken)
@@ -100,12 +100,12 @@ internal sealed class GmailMailboxClient : IGmailMailbox
         var listed = await SendJson<MessageList>(accessToken, HttpMethod.Get, url, null, cancellationToken);
         var messages = (listed.Messages ?? [])
             .Where(item => !string.IsNullOrWhiteSpace(item.Id))
-            .Select(item => new GmailMessageRef(item.Id!))
+            .Select(item => new MailMessageRef(item.Id!))
             .ToList();
-        return new GmailCandidatePage(messages, listed.NextPageToken);
+        return new MailCandidatePage(messages, listed.NextPageToken);
     }
 
-    public async Task<GmailMessageContent> GetMessageAsync(
+    public async Task<MailMessageContent> GetMessageAsync(
         string accessToken,
         string messageId,
         CancellationToken cancellationToken)
@@ -155,7 +155,7 @@ internal sealed class GmailMailboxClient : IGmailMailbox
             cancellationToken);
     }
 
-    public async Task<IReadOnlyList<GmailLabeledMessage>> ListLabeledAsync(
+    public async Task<IReadOnlyList<MailLabeledMessage>> ListLabeledAsync(
         string accessToken,
         IReadOnlyDictionary<MailCheckDecision, string> labels,
         MailCheckDecision? filter,
@@ -164,7 +164,7 @@ internal sealed class GmailMailboxClient : IGmailMailbox
         var wanted = filter is MailCheckDecision one
             ? new[] { one }
             : MailCheckLabels.KeepDecisions.ToArray();
-        var results = new List<GmailLabeledMessage>();
+        var results = new List<MailLabeledMessage>();
         foreach (var decision in wanted)
         {
             if (!labels.TryGetValue(decision, out var labelId))
@@ -188,7 +188,7 @@ internal sealed class GmailMailboxClient : IGmailMailbox
                     null,
                     cancellationToken);
                 var content = ToContent(payload);
-                results.Add(new GmailLabeledMessage(
+                results.Add(new MailLabeledMessage(
                     content.Id,
                     content.ThreadId,
                     content.Subject,
@@ -235,7 +235,7 @@ internal sealed class GmailMailboxClient : IGmailMailbox
             ?? throw new GoogleOAuthException("Gmail returned an empty payload.");
     }
 
-    private static GmailMessageContent ToContent(GmailMessage payload)
+    private static MailMessageContent ToContent(GmailMessage payload)
     {
         var headers = payload.Payload?.Headers ?? [];
         var subject = Header(headers, "Subject");
@@ -257,7 +257,7 @@ internal sealed class GmailMailboxClient : IGmailMailbox
             body = body[..BodyLimit];
         }
 
-        return new GmailMessageContent(
+        return new MailMessageContent(
             payload.Id ?? string.Empty,
             payload.ThreadId ?? string.Empty,
             subject,

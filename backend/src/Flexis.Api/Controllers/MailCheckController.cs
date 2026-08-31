@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Flexis.Application.Common;
 using Flexis.Application.MailCheck;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Flexis.Api.Controllers;
@@ -24,6 +25,28 @@ public sealed class MailCheckController : ControllerBase
         CancellationToken cancellationToken)
     {
         return mailbox.StartGmailConnectAsync(CurrentUserId(), request, cancellationToken);
+    }
+
+    [HttpPost("mailbox/outlook/start")]
+    public Task<MailConnectStartDto> StartOutlookMailbox(
+        [FromBody] MailConnectStartRequest request,
+        [FromServices] MailConnectionService mailbox,
+        CancellationToken cancellationToken)
+    {
+        return mailbox.StartOutlookConnectAsync(CurrentUserId(), request, cancellationToken);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("mailbox/outlook/callback")]
+    public async Task<IActionResult> CompleteOutlookMailbox(
+        [FromQuery] string? code,
+        [FromQuery] string? state,
+        [FromQuery] string? error,
+        [FromServices] MailConnectionService mailbox,
+        CancellationToken cancellationToken)
+    {
+        var redirectUrl = await mailbox.CompleteOutlookCallbackAsync(code, state, error, cancellationToken);
+        return Redirect(redirectUrl);
     }
 
     [HttpDelete("mailbox")]

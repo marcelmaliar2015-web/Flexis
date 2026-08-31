@@ -46,36 +46,6 @@ public sealed class JobPipelineService
 
         var profiles = await _items.ListAsync(userId, JobCatalogKind.Profile, cancellationToken);
         var sources = await _items.ListAsync(userId, JobCatalogKind.Source, cancellationToken);
-        if (access is not null)
-        {
-            foreach (var item in profiles.Concat(sources))
-            {
-                if (string.IsNullOrWhiteSpace(item.SpreadsheetId))
-                {
-                    continue;
-                }
-
-                if (item.Kind == JobCatalogKind.Source)
-                {
-                    await _sheets.RemoveStatusColumnAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
-                }
-                else
-                {
-                    await _sheets.EnsureProfileStatusDropdownAsync(
-                        access.AccessToken,
-                        item.SpreadsheetId,
-                        cancellationToken);
-                }
-
-                await _sheets.SetFixedRowHeightAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
-                await _sheets.ProtectWorkbookAsync(
-                    access.AccessToken,
-                    item.SpreadsheetId,
-                    access.OwnerEmail,
-                    item.Kind == JobCatalogKind.Profile ? JobWorkbookKind.Profile : JobWorkbookKind.Source,
-                    cancellationToken);
-            }
-        }
 
         var sourceOptions = new List<JobPipelineSourceOptionDto>(sources.Count);
         foreach (var source in sources)

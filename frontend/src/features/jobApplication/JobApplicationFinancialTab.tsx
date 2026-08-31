@@ -14,6 +14,7 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { isQueryLoading } from "@/shared/api/queryState";
 import { getJobFinancialBoard, jobFinancialQueryKey, updateJobFinancialRates } from "@/shared/api/financial";
 import { formatCount, formatPrice, formatRate, parseRate } from "@/features/jobApplication/financialUi";
 import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
@@ -51,6 +52,7 @@ export function JobApplicationFinancialTab() {
   const [selected, setSelected] = useState<string[]>([]);
 
   const rows = boardQuery.data?.rows ?? [];
+  const boardLoading = isQueryLoading(boardQuery.data, boardQuery.isPending);
   const selectedSet = useMemo(() => new Set(selected.filter((id) => rows.some((row) => row.entryId === id))), [rows, selected]);
   const selectedRows = rows.filter((row) => selectedSet.has(row.entryId));
   const selectedPrice = selectedRows.reduce((sum, row) => sum + row.price, 0);
@@ -100,10 +102,13 @@ export function JobApplicationFinancialTab() {
           <Typography variant="overline" color="text.secondary">
             All sheets
           </Typography>
-          <Typography variant="h4">{formatPrice(boardQuery.data?.allPrice ?? 0)}</Typography>
+          <Typography variant="h4">
+            {boardLoading ? "…" : formatPrice(boardQuery.data?.allPrice ?? 0)}
+          </Typography>
           <Typography variant="body2" color="text.secondary">
-            {formatCount(boardQuery.data?.allTotal ?? 0)} listings · {formatCount(boardQuery.data?.allApplied ?? 0)}{" "}
-            applied · {formatCount(boardQuery.data?.allInterviews ?? 0)} interviews
+            {boardLoading
+              ? "Reading profile main tabs."
+              : `${formatCount(boardQuery.data?.allTotal ?? 0)} listings · ${formatCount(boardQuery.data?.allApplied ?? 0)} applied · ${formatCount(boardQuery.data?.allInterviews ?? 0)} interviews`}
           </Typography>
         </SummaryCard>
         <SummaryCard>
@@ -143,7 +148,15 @@ export function JobApplicationFinancialTab() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.length === 0 ? (
+              {boardLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9}>
+                    <Typography variant="body2" color="text.secondary">
+                      Loading…
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9}>
                     <Typography variant="body2" color="text.secondary">

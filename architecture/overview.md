@@ -34,11 +34,10 @@ docker-compose.yml
 
 ## Local run
 
-Requires .NET 10 SDK, Node.js, and Docker Desktop (or PostgreSQL 16 and MongoDB 7 on the same ports).
+Requires .NET 10 SDK and Node.js. Databases: `backend\run.bat` starts portable servers in `%LOCALAPPDATA%\flexis-db` when present, otherwise Docker Compose.
 
-1. `docker compose up -d` (PostgreSQL `localhost:5432`, MongoDB `localhost:27017`)
-2. `backend\run.bat` or `dotnet watch --project backend/src/Flexis.Api` (API `http://localhost:5080`; rebuilds and restarts when backend code changes)
-3. `frontend\run.bat` or `npm run dev` in `frontend/` (app `http://127.0.0.1:5173`)
+1. `backend\run.bat` (starts flexis-db or Docker databases, stops stale API on 5080, then `dotnet watch` on `http://localhost:5080`)
+2. `frontend\run.bat` (`npm.cmd run dev` on `http://127.0.0.1:5173`; runs `npm install` when dependencies are missing)
 
 ## Related
 

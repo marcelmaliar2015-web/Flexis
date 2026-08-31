@@ -26,6 +26,7 @@ import {
   listJobCatalogItems,
   updateJobCatalogItem,
 } from "@/shared/api/jobCatalog";
+import { isQueryLoading } from "@/shared/api/queryState";
 import { jobPipelineQueryKey } from "@/shared/api/pipeline";
 import type { JobCatalogItem, JobCatalogKind } from "@/shared/types/jobCatalog";
 import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
@@ -117,6 +118,9 @@ export function CatalogItemsPanel({
     },
   });
 
+  const items = itemsQuery.data ?? [];
+  const itemsLoading = isQueryLoading(itemsQuery.data, itemsQuery.isPending);
+
   return (
     <Stack spacing={2}>
       <Stack
@@ -149,7 +153,24 @@ export function CatalogItemsPanel({
               </TableRow>
             </TableHead>
             <TableBody>
-              {(itemsQuery.data ?? []).map((item) => (
+              {itemsLoading ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <Typography variant="body2" color="text.secondary">
+                      Loading…
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : items.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <Typography variant="body2" color="text.secondary">
+                      {`No ${itemLabel}s yet.`}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                items.map((item) => (
                 <TableRow key={item.id} hover>
                   <TableCell>{item.title}</TableCell>
                   <TableCell>{formatCreatedAt(item.createdAt)}</TableCell>
@@ -178,7 +199,8 @@ export function CatalogItemsPanel({
                     </Stack>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>

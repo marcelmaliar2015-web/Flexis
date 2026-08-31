@@ -309,27 +309,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             });
             if (rowCount > 1)
             {
-                requests.Add(new
-                {
-                    repeatCell = new
-                    {
-                        range = new { sheetId, startRowIndex = 1, endRowIndex = rowCount },
-                        cell = new
-                        {
-                            userEnteredFormat = new
-                            {
-                                wrapStrategy = "WRAP",
-                                textFormat = new
-                                {
-                                    foregroundColor = new Color(0, 0, 0),
-                                    fontFamily = "Calibri",
-                                    fontSize = 11
-                                }
-                            }
-                        },
-                        fields = "userEnteredFormat.wrapStrategy,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.fontFamily,userEnteredFormat.textFormat.fontSize"
-                    }
-                });
+                requests.Add(BodyCellFormatRequest(sheetId, 1, rowCount));
             }
         }
 
@@ -410,6 +390,32 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             return;
         }
 
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            try
+            {
+                await ApplyWorkbookProtectionAsync(
+                    accessToken,
+                    spreadsheetId,
+                    ownerEmail,
+                    kind,
+                    cancellationToken);
+                return;
+            }
+            catch (GoogleOAuthException exception)
+                when (attempt < 2 && IsStaleProtectedRangeError(exception.Message))
+            {
+            }
+        }
+    }
+
+    private async Task ApplyWorkbookProtectionAsync(
+        string accessToken,
+        string spreadsheetId,
+        string ownerEmail,
+        JobWorkbookKind kind,
+        CancellationToken cancellationToken)
+    {
         var payload = await SendJson<SpreadsheetList>(
             accessToken,
             HttpMethod.Get,
@@ -417,7 +423,8 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             null,
             cancellationToken);
 
-        var requests = new List<object>();
+        var deleteRequests = new List<object>();
+        var addRequests = new List<object>();
         foreach (var sheet in payload.Sheets ?? [])
         {
             if (sheet.Properties is null)
@@ -434,7 +441,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                     continue;
                 }
 
-                requests.Add(new { deleteProtectedRange = new { protectedRangeId = range.ProtectedRangeId } });
+                deleteRequests.Add(new { deleteProtectedRange = new { protectedRangeId = range.ProtectedRangeId } });
             }
 
             object? unprotectedRanges = invitedColumns.Length == 0
@@ -448,7 +455,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                     })
                     .ToArray();
 
-            requests.Add(new
+            addRequests.Add(new
             {
                 addProtectedRange = new
                 {
@@ -468,17 +475,35 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             });
         }
 
-        if (requests.Count == 0)
+        if (deleteRequests.Count == 0 && addRequests.Count == 0)
         {
             return;
         }
 
-        await SendJson<object>(
-            accessToken,
-            HttpMethod.Post,
-            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
-            new { requests },
-            cancellationToken);
+        if (deleteRequests.Count > 0)
+        {
+            await SendJson<object>(
+                accessToken,
+                HttpMethod.Post,
+                $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+                new { requests = deleteRequests },
+                cancellationToken);
+        }
+
+        if (addRequests.Count > 0)
+        {
+            await SendJson<object>(
+                accessToken,
+                HttpMethod.Post,
+                $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+                new { requests = addRequests },
+                cancellationToken);
+        }
+    }
+
+    private static bool IsStaleProtectedRangeError(string message)
+    {
+        return message.Contains("No protected range with id", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<IReadOnlyList<JobListingRow>> ReadListingsAsync(
@@ -578,7 +603,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             cancellationToken);
     }
 
-    public Task AppendListingsAsync(
+    public async Task AppendListingsAsync(
         string accessToken,
         string spreadsheetId,
         string sheetName,
@@ -587,16 +612,46 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
     {
         if (rows.Count == 0)
         {
-            return Task.CompletedTask;
+            return;
         }
 
-        return SendJson<object>(
+        var appendResult = await SendJson<ValuesAppendResponse>(
             accessToken,
             HttpMethod.Post,
             $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(sheetName, "A2:D")}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS",
             new
             {
                 values = rows.Select(row => new[] { row.CompanyName, row.Position, row.Link, row.Jd }).ToArray()
+            },
+            cancellationToken);
+
+        if (!TryParseAppendedRowRange(appendResult.Updates?.UpdatedRange, out var startRow, out var endRow))
+        {
+            return;
+        }
+
+        var sheets = await ListSheetsAsync(accessToken, spreadsheetId, cancellationToken);
+        var sheet = sheets.FirstOrDefault(item => string.Equals(item.Name, sheetName, StringComparison.Ordinal));
+        if (sheet is null)
+        {
+            return;
+        }
+
+        var columnCount = ColumnsFor(JobWorkbookKind.Profile).Length;
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new
+            {
+                requests = new[]
+                {
+                    BodyCellFormatRequest(
+                        sheet.SheetId,
+                        startRow - 1,
+                        endRow,
+                        columnCount)
+                }
             },
             cancellationToken);
     }
@@ -705,6 +760,82 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         return new { userEnteredValue = new { stringValue = column.Name } };
     }
 
+    private static object BodyCellFormatRequest(
+        int sheetId,
+        int startRowIndex,
+        int endRowIndex,
+        int? endColumnIndex = null)
+    {
+        object range = endColumnIndex is int columnCount
+            ? new
+            {
+                sheetId,
+                startRowIndex,
+                endRowIndex,
+                startColumnIndex = 0,
+                endColumnIndex = columnCount
+            }
+            : new
+            {
+                sheetId,
+                startRowIndex,
+                endRowIndex
+            };
+
+        return new
+        {
+            repeatCell = new
+            {
+                range,
+                cell = new
+                {
+                    userEnteredFormat = new
+                    {
+                        wrapStrategy = "WRAP",
+                        textFormat = new
+                        {
+                            foregroundColor = new Color(0, 0, 0),
+                            fontFamily = "Calibri",
+                            fontSize = 11
+                        }
+                    }
+                },
+                fields = "userEnteredFormat.wrapStrategy,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.fontFamily,userEnteredFormat.textFormat.fontSize"
+            }
+        };
+    }
+
+    private static bool TryParseAppendedRowRange(string? updatedRange, out int startRow, out int endRow)
+    {
+        startRow = 0;
+        endRow = 0;
+        if (string.IsNullOrWhiteSpace(updatedRange))
+        {
+            return false;
+        }
+
+        var separator = updatedRange.LastIndexOf('!');
+        if (separator < 0 || separator >= updatedRange.Length - 1)
+        {
+            return false;
+        }
+
+        var cells = updatedRange[(separator + 1)..].Split(':');
+        if (cells.Length != 2)
+        {
+            return false;
+        }
+
+        return TryParseSheetRow(cells[0], out startRow) && TryParseSheetRow(cells[1], out endRow);
+    }
+
+    private static bool TryParseSheetRow(string cellReference, out int row)
+    {
+        row = 0;
+        var digits = new string(cellReference.Where(char.IsDigit).ToArray());
+        return int.TryParse(digits, out row) && row > 0;
+    }
+
     private static object[] FormatRequests(int sheetId, Column[] columns)
     {
         var statusIndex = Array.FindIndex(columns, column => column.Name == "Status");
@@ -751,34 +882,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                     fields = "pixelSize"
                 }
             },
-            new
-            {
-                repeatCell = new
-                {
-                    range = new
-                    {
-                        sheetId,
-                        startRowIndex = 1,
-                        endRowIndex = 200,
-                        startColumnIndex = 0,
-                        endColumnIndex = columns.Length
-                    },
-                    cell = new
-                    {
-                        userEnteredFormat = new
-                        {
-                            wrapStrategy = "WRAP",
-                            textFormat = new
-                            {
-                                foregroundColor = new Color(0, 0, 0),
-                                fontFamily = "Calibri",
-                                fontSize = 11
-                            }
-                        }
-                    },
-                    fields = "userEnteredFormat.wrapStrategy,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.fontFamily,userEnteredFormat.textFormat.fontSize"
-                }
-            },
+            BodyCellFormatRequest(sheetId, 1, 200, columns.Length),
             new
             {
                 addBanding = new
@@ -977,6 +1081,16 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             JsonValueKind.False => "false",
             _ => string.Empty
         };
+    }
+
+    private sealed class ValuesAppendResponse
+    {
+        public ValuesAppendUpdates? Updates { get; set; }
+    }
+
+    private sealed class ValuesAppendUpdates
+    {
+        public string? UpdatedRange { get; set; }
     }
 
     private sealed record Column(string Name, int Width);

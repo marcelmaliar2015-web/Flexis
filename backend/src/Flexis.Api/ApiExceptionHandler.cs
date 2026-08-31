@@ -33,6 +33,7 @@ internal sealed class ApiExceptionHandler : IExceptionHandler
             ConflictException => (StatusCodes.Status409Conflict, exception.Message, false),
             DomainRuleException => (StatusCodes.Status409Conflict, exception.Message, false),
             GoogleOAuthException => (StatusCodes.Status400BadRequest, exception.Message, false),
+            MicrosoftOAuthException => (StatusCodes.Status400BadRequest, exception.Message, false),
             _ => (
                 StatusCodes.Status500InternalServerError,
                 _environment.IsDevelopment() ? exception.Message : "An unexpected error occurred.",

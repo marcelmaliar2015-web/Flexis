@@ -47,3 +47,11 @@ public sealed class GoogleOAuthException : Exception
     {
     }
 }
+
+public sealed class MicrosoftOAuthException : Exception
+{
+    public MicrosoftOAuthException(string message)
+        : base(message)
+    {
+    }
+}

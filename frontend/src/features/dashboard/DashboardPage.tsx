@@ -5,6 +5,7 @@ import Typography from "@mui/material/Typography";
 import { DashboardBoard } from "@/features/dashboard/DashboardBoard";
 import { AccentRule } from "@/features/dashboard/dashboardUi";
 import { useDashboardData } from "@/features/dashboard/useDashboardData";
+import { isQueryLoading } from "@/shared/api/queryState";
 
 export function DashboardPage() {
   const data = useDashboardData();
@@ -34,12 +35,16 @@ export function DashboardPage() {
             google={data.googleQuery.data}
             googleError={data.googleQuery.error}
             pipeline={data.pipelineQuery.data}
+            pipelineLoading={isQueryLoading(data.pipelineQuery.data, data.pipelineQuery.isPending)}
             pipelineError={data.pipelineQuery.error}
             financial={data.financialQuery.data}
+            financialLoading={isQueryLoading(data.financialQuery.data, data.financialQuery.isPending)}
             financialError={data.financialQuery.error}
             logs={data.logsQuery.data}
+            logsLoading={isQueryLoading(data.logsQuery.data, data.logsQuery.isPending)}
             logsError={data.logsQuery.error}
             users={data.usersQuery.data}
+            usersLoading={isQueryLoading(data.usersQuery.data, data.usersQuery.isPending)}
             usersError={data.usersQuery.error}
           />
         </Stack>

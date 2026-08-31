@@ -2,11 +2,11 @@ using Flexis.Domain.MailCheck;
 
 namespace Flexis.Application.MailCheck;
 
-public sealed record GmailMessageRef(string Id);
+public sealed record MailMessageRef(string Id);
 
-public sealed record GmailCandidatePage(IReadOnlyList<GmailMessageRef> Messages, string? NextPageToken);
+public sealed record MailCandidatePage(IReadOnlyList<MailMessageRef> Messages, string? NextPageToken);
 
-public sealed record GmailMessageContent(
+public sealed record MailMessageContent(
     string Id,
     string ThreadId,
     string Subject,
@@ -16,7 +16,7 @@ public sealed record GmailMessageContent(
     string Body,
     IReadOnlyList<string> LabelIds);
 
-public sealed record GmailLabeledMessage(
+public sealed record MailLabeledMessage(
     string Id,
     string ThreadId,
     string Subject,
@@ -26,18 +26,18 @@ public sealed record GmailLabeledMessage(
     MailCheckDecision Decision,
     bool Starred);
 
-public interface IGmailMailbox
+public interface IMailMailbox
 {
     Task<IReadOnlyDictionary<MailCheckDecision, string>> EnsureLabelsAsync(
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<GmailCandidatePage> ListCandidatesAsync(
+    Task<MailCandidatePage> ListCandidatesAsync(
         string accessToken,
         string? pageToken,
         CancellationToken cancellationToken);
 
-    Task<GmailMessageContent> GetMessageAsync(
+    Task<MailMessageContent> GetMessageAsync(
         string accessToken,
         string messageId,
         CancellationToken cancellationToken);
@@ -51,7 +51,7 @@ public interface IGmailMailbox
 
     Task TrashAsync(string accessToken, string messageId, CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<GmailLabeledMessage>> ListLabeledAsync(
+    Task<IReadOnlyList<MailLabeledMessage>> ListLabeledAsync(
         string accessToken,
         IReadOnlyDictionary<MailCheckDecision, string> labels,
         MailCheckDecision? filter,

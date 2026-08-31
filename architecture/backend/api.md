@@ -22,11 +22,11 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | POST | `/api/google/connections/start` | Authenticated | `200` + `GoogleConnectStartDto` |
 | GET | `/api/google/connections/callback` | Anonymous | `302` to the Job Application return URL |
 | DELETE | `/api/google/connections` | Authenticated | `204` |
-| GET | `/api/job-application/profiles` | Authenticated | `200` + `JobCatalogItemDto[]` |
+| GET | `/api/job-application/profiles` | Authenticated | `200` + `JobCatalogItemDto[]` from PostgreSQL |
 | POST | `/api/job-application/profiles` | Authenticated | `201` + `JobCatalogItemDto` |
 | PUT | `/api/job-application/profiles/{id}` | Authenticated | `200` + `JobCatalogItemDto` |
 | DELETE | `/api/job-application/profiles/{id}` | Authenticated | `204` |
-| GET | `/api/job-application/sources` | Authenticated | `200` + `JobCatalogItemDto[]` |
+| GET | `/api/job-application/sources` | Authenticated | `200` + `JobCatalogItemDto[]` from PostgreSQL |
 | POST | `/api/job-application/sources` | Authenticated | `201` + `JobCatalogItemDto` |
 | PUT | `/api/job-application/sources/{id}` | Authenticated | `200` + `JobCatalogItemDto` |
 | DELETE | `/api/job-application/sources/{id}` | Authenticated | `204` |
@@ -57,6 +57,11 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | GET | `/api/mail-check/models` | Authenticated | `200` + `MailCheckModelsDto` |
 | POST | `/api/mail-check/run` | Authenticated | `200` + `MailCheckRunDto` |
 | GET | `/api/mail-check/inbox` | Authenticated | `200` + `MailCheckInboxDto` |
+| GET | `/api/mail-check/mailbox` | Authenticated | `200` + `MailMailboxStatusDto` |
+| POST | `/api/mail-check/mailbox/gmail/start` | Authenticated | `200` + `MailConnectStartDto` |
+| POST | `/api/mail-check/mailbox/outlook/start` | Authenticated | `200` + `MailConnectStartDto` |
+| GET | `/api/mail-check/mailbox/outlook/callback` | Anonymous | Redirect to Mail Check with `?mailbox=` |
+| DELETE | `/api/mail-check/mailbox` | Authenticated | `204` |
 | POST | `/api/diagnostics/events` | Authenticated | `204` |
 
 `UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`. `PUT /api/auth/me` body: `displayName`, `password` (omit or blank to keep the current password). Email, role, and active cannot change on that path. Admin user PUT body: `displayName`, `role`, `isActive`, `password` (optional).

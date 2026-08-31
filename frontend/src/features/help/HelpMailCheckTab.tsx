@@ -19,9 +19,8 @@ export function HelpMailCheckTab() {
           Mail Check
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Auto-triage Gmail for interview work. Connect Gmail on Mail Check Settings. Outlook support
-          is planned next. The only cost is your OpenAI API key, which you paste on Mail Check
-          Settings.
+          Auto-triage Gmail or Outlook for interview work. Connect a mailbox on Mail Check Settings.
+          The only cost is your OpenAI API key, which you paste on Mail Check Settings.
         </Typography>
       </Stack>
       <Panel>

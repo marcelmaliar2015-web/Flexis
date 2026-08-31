@@ -34,7 +34,6 @@ public sealed class JobCatalogService
         JobCatalogKind kind,
         CancellationToken cancellationToken)
     {
-        await TryPlaceCatalogAsync(userId, cancellationToken);
         var items = await _items.ListAsync(userId, kind, cancellationToken);
         return items.Select(ToDto).ToArray();
     }
@@ -281,47 +280,6 @@ public sealed class JobCatalogService
             $"Deleted location {locationName} from {item.Title}",
             $"Removed the {locationName} tab from source {item.Title}. Pipeline rows that used that location were not changed here.",
             cancellationToken);
-    }
-
-    private async Task TryPlaceCatalogAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
-            await _driveLayout.EnsureAsync(userId, access.AccessToken, cancellationToken);
-            var items = (await _items.ListAsync(userId, JobCatalogKind.Profile, cancellationToken))
-                .Concat(await _items.ListAsync(userId, JobCatalogKind.Source, cancellationToken));
-            foreach (var item in items)
-            {
-                if (!HasSpreadsheet(item))
-                {
-                    continue;
-                }
-
-                if (item.Kind == JobCatalogKind.Source)
-                {
-                    await _sheets.RemoveStatusColumnAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
-                }
-                else
-                {
-                    await _sheets.EnsureProfileStatusDropdownAsync(
-                        access.AccessToken,
-                        item.SpreadsheetId,
-                        cancellationToken);
-                }
-
-                await _sheets.SetFixedRowHeightAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
-                await _sheets.ProtectWorkbookAsync(
-                    access.AccessToken,
-                    item.SpreadsheetId,
-                    access.OwnerEmail,
-                    item.Kind == JobCatalogKind.Profile ? JobWorkbookKind.Profile : JobWorkbookKind.Source,
-                    cancellationToken);
-            }
-        }
-        catch (ValidationFailedException)
-        {
-        }
     }
 
     private async Task<JobCatalogItem> RequireItem(Guid userId, Guid id, CancellationToken cancellationToken)

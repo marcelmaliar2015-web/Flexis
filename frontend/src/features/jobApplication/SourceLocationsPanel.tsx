@@ -19,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { SheetUrl } from "@/features/jobApplication/CatalogItemsPanel";
 import { userFacingError } from "@/shared/api/errors";
+import { isQueryLoading } from "@/shared/api/queryState";
 import {
   createSourceLocation,
   deleteSourceLocation,
@@ -56,18 +57,25 @@ export function SourceLocationsPanel({ actionsEnabled }: { actionsEnabled: boole
     queryFn: () => listJobCatalogItems("sources"),
   });
 
+  const sources = sourcesQuery.data ?? [];
+  const sourcesLoading = isQueryLoading(sourcesQuery.data, sourcesQuery.isPending);
+
   return (
     <Stack spacing={2}>
       <Typography variant="h6" component="h2">
         Locations
       </Typography>
-      {sourcesQuery.isSuccess && (sourcesQuery.data ?? []).length === 0 ? (
+      {sourcesLoading ? (
+        <Typography variant="body2" color="text.secondary">
+          Loading…
+        </Typography>
+      ) : sources.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           Create a source first. Each source workbook starts with a US tab. Add more locations here.
         </Typography>
       ) : (
         <Stack spacing={2}>
-          {(sourcesQuery.data ?? []).map((item) => (
+          {sources.map((item) => (
             <SourceLocationCard key={item.id} item={item} actionsEnabled={actionsEnabled} />
           ))}
         </Stack>

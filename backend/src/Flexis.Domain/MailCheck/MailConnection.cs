@@ -73,6 +73,48 @@ public sealed class MailConnection
         ConnectedAt = DateTimeOffset.UtcNow;
     }
 
+    public static MailConnection CreateOutlook(
+        Guid userId,
+        string externalSubject,
+        string email,
+        string refreshTokenProtected,
+        string accessTokenProtected,
+        DateTimeOffset accessTokenExpiresAt,
+        string grantedScopes)
+    {
+        return new MailConnection
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Provider = MailProvider.Outlook,
+            ExternalSubject = externalSubject,
+            Email = email,
+            RefreshTokenProtected = refreshTokenProtected,
+            AccessTokenProtected = accessTokenProtected,
+            AccessTokenExpiresAt = accessTokenExpiresAt,
+            GrantedScopes = grantedScopes,
+            ConnectedAt = DateTimeOffset.UtcNow,
+        };
+    }
+
+    public void ReplaceOutlookCredentials(
+        string externalSubject,
+        string email,
+        string refreshTokenProtected,
+        string accessTokenProtected,
+        DateTimeOffset accessTokenExpiresAt,
+        string grantedScopes)
+    {
+        Provider = MailProvider.Outlook;
+        ExternalSubject = externalSubject;
+        Email = email;
+        RefreshTokenProtected = refreshTokenProtected;
+        AccessTokenProtected = accessTokenProtected;
+        AccessTokenExpiresAt = accessTokenExpiresAt;
+        GrantedScopes = grantedScopes;
+        ConnectedAt = DateTimeOffset.UtcNow;
+    }
+
     public void ReplaceAccessToken(string accessTokenProtected, DateTimeOffset accessTokenExpiresAt)
     {
         AccessTokenProtected = accessTokenProtected;

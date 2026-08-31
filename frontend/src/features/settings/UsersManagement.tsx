@@ -25,6 +25,7 @@ import { styled } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { userFacingError } from "@/shared/api/errors";
+import { isQueryLoading } from "@/shared/api/queryState";
 import {
   createUser,
   deleteUser,
@@ -93,6 +94,7 @@ export function UsersManagement() {
   });
 
   const others = (usersQuery.data ?? []).filter((user) => user.id !== auth.user?.id);
+  const usersLoading = isQueryLoading(usersQuery.data, usersQuery.isPending);
 
   return (
     <Stack spacing={2}>
@@ -131,7 +133,15 @@ export function UsersManagement() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {others.length === 0 ? (
+              {usersLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <Typography variant="body2" color="text.secondary">
+                      Loading…
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : others.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5}>
                     <Typography variant="body2" color="text.secondary">
