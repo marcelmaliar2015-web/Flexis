@@ -147,6 +147,7 @@ public sealed class JobPipelineService
         var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
         var main = RequireMainProfileSheet(profileSheets, profile.Title);
 
+        var bans = await _entries.ListBannedAsync(entry.Id, cancellationToken);
         var incoming = await _sheets.ReadListingsAsync(
             access.AccessToken,
             source.SpreadsheetId,
@@ -160,10 +161,17 @@ public sealed class JobPipelineService
         var seen = new HashSet<string>(existing.Select(ListingKey), StringComparer.Ordinal);
         var fresh = new List<JobListingRow>();
         var skipped = 0;
+        var banned = 0;
         foreach (var listing in incoming)
         {
             if (listing.IsEmpty)
             {
+                continue;
+            }
+
+            if (MatchingBan(listing.CompanyName, bans) is not null)
+            {
+                banned++;
                 continue;
             }
 
@@ -199,7 +207,7 @@ public sealed class JobPipelineService
             JobWorkbookKind.Source,
             cancellationToken);
 
-        return new JobPipelineUpdateResultDto(fresh.Count, skipped);
+        return new JobPipelineUpdateResultDto(fresh.Count, skipped, banned);
     }
 
     public async Task<JobPipelineUpdateResultDto> ApplyAllAsync(Guid userId, CancellationToken cancellationToken)
@@ -207,14 +215,16 @@ public sealed class JobPipelineService
         var entries = await _entries.ListAsync(userId, cancellationToken);
         var added = 0;
         var skipped = 0;
+        var banned = 0;
         foreach (var entry in entries)
         {
             var result = await ApplyAsync(userId, entry.Id, cancellationToken);
             added += result.Added;
             skipped += result.Skipped;
+            banned += result.Banned;
         }
 
-        return new JobPipelineUpdateResultDto(added, skipped);
+        return new JobPipelineUpdateResultDto(added, skipped, banned);
     }
 
     public async Task<JobPipelineForwardResultDto> ForwardAsync(
@@ -267,6 +277,108 @@ public sealed class JobPipelineService
         }
 
         return new JobPipelineBatchForwardResultDto(forwardedProfiles.Count);
+    }
+
+    public async Task<IReadOnlyList<JobPipelineBannedCompanyDto>> ListBannedAsync(
+        Guid userId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await RequireEntry(userId, id, cancellationToken);
+        var items = await _entries.ListBannedAsync(id, cancellationToken);
+        return items.Select(ToBannedDto).ToArray();
+    }
+
+    public async Task<JobPipelineBannedCompanyDto> CreateBannedAsync(
+        Guid userId,
+        Guid id,
+        JobPipelineBannedCompanyWriteRequest request,
+        CancellationToken cancellationToken)
+    {
+        await RequireEntry(userId, id, cancellationToken);
+        var companyName = JobCatalogRules.NormalizeCompanyName(request.CompanyName);
+        var matchKey = CompanyNameMatcher.MatchKey(companyName);
+        if (await _entries.BannedMatchKeyExistsAsync(id, matchKey, null, cancellationToken))
+        {
+            throw new ConflictException("That company is already banned on this pipeline entry.");
+        }
+
+        var created = JobPipelineBannedCompany.Create(id, companyName, matchKey);
+        await _entries.AddBannedAsync(created, cancellationToken);
+        await _entries.SaveChangesAsync(cancellationToken);
+        return ToBannedDto(created);
+    }
+
+    public async Task<JobPipelineBannedCompanyDto> UpdateBannedAsync(
+        Guid userId,
+        Guid id,
+        Guid companyId,
+        JobPipelineBannedCompanyWriteRequest request,
+        CancellationToken cancellationToken)
+    {
+        await RequireEntry(userId, id, cancellationToken);
+        var item = await _entries.GetBannedAsync(id, companyId, cancellationToken)
+            ?? throw new NotFoundException("Banned company was not found.");
+        var companyName = JobCatalogRules.NormalizeCompanyName(request.CompanyName);
+        var matchKey = CompanyNameMatcher.MatchKey(companyName);
+        if (await _entries.BannedMatchKeyExistsAsync(id, matchKey, companyId, cancellationToken))
+        {
+            throw new ConflictException("That company is already banned on this pipeline entry.");
+        }
+
+        item.Replace(companyName, matchKey);
+        await _entries.SaveChangesAsync(cancellationToken);
+        return ToBannedDto(item);
+    }
+
+    public async Task DeleteBannedAsync(Guid userId, Guid id, Guid companyId, CancellationToken cancellationToken)
+    {
+        await RequireEntry(userId, id, cancellationToken);
+        var item = await _entries.GetBannedAsync(id, companyId, cancellationToken)
+            ?? throw new NotFoundException("Banned company was not found.");
+        _entries.RemoveBanned(item);
+        await _entries.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<JobPipelineBannedMatchesDto> ListBannedMatchesAsync(
+        Guid userId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var entry = await RequireEntry(userId, id, cancellationToken);
+        var bans = await _entries.ListBannedAsync(id, cancellationToken);
+        if (bans.Count == 0)
+        {
+            return new JobPipelineBannedMatchesDto([], []);
+        }
+
+        var profile = await RequireCatalog(userId, entry.ProfileId, JobCatalogKind.Profile, cancellationToken);
+        var source = await RequireCatalog(userId, entry.SourceId, JobCatalogKind.Source, cancellationToken);
+        if (string.IsNullOrWhiteSpace(profile.SpreadsheetId) || string.IsNullOrWhiteSpace(source.SpreadsheetId))
+        {
+            throw new ValidationFailedException("Profile and source must have a Google Sheet.");
+        }
+
+        var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+        var sourceSheets = await _sheets.ListSheetsAsync(access.AccessToken, source.SpreadsheetId, cancellationToken);
+        var location = sourceSheets.FirstOrDefault(sheet => sheet.SheetId == entry.LocationSheetId)
+            ?? throw new NotFoundException("Source location was not found.");
+        var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
+        var main = RequireMainProfileSheet(profileSheets, profile.Title);
+        var sourceRows = await _sheets.ReadListingsAsync(
+            access.AccessToken,
+            source.SpreadsheetId,
+            location.Name,
+            cancellationToken);
+        var profileRows = await _sheets.ReadListingsAsync(
+            access.AccessToken,
+            profile.SpreadsheetId,
+            main.Name,
+            cancellationToken);
+
+        return new JobPipelineBannedMatchesDto(
+            CollectMatches("source", sourceRows, bans),
+            CollectMatches("profile", profileRows, bans));
     }
 
     private async Task<JobPipelineEntry> ResolveAsync(
@@ -349,6 +461,49 @@ public sealed class JobPipelineService
             entry.LocationSheetId,
             entry.LocationName,
             entry.CreatedAt);
+    }
+
+    private static JobPipelineBannedCompanyDto ToBannedDto(JobPipelineBannedCompany item)
+    {
+        return new JobPipelineBannedCompanyDto(item.Id, item.CompanyName, item.CreatedAt);
+    }
+
+    private static IReadOnlyList<JobPipelineBannedMatchDto> CollectMatches(
+        string sheet,
+        IReadOnlyList<JobListingRow> rows,
+        IReadOnlyList<JobPipelineBannedCompany> bans)
+    {
+        var matches = new List<JobPipelineBannedMatchDto>();
+        foreach (var row in rows)
+        {
+            if (row.IsEmpty)
+            {
+                continue;
+            }
+
+            var ban = MatchingBan(row.CompanyName, bans);
+            if (ban is null)
+            {
+                continue;
+            }
+
+            matches.Add(new JobPipelineBannedMatchDto(sheet, row.CompanyName, row.Position, row.Link, ban));
+        }
+
+        return matches;
+    }
+
+    private static string? MatchingBan(string companyName, IReadOnlyList<JobPipelineBannedCompany> bans)
+    {
+        foreach (var ban in bans)
+        {
+            if (CompanyNameMatcher.IsMatch(companyName, ban.CompanyName))
+            {
+                return ban.CompanyName;
+            }
+        }
+
+        return null;
     }
 
     private static string ListingKey(JobListingRow listing)

@@ -41,6 +41,11 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | POST | `/api/job-application/pipeline/forward-all` | Authenticated | `200` + `JobPipelineBatchForwardResultDto` |
 | POST | `/api/job-application/pipeline/{id}/update` | Authenticated | `200` + `JobPipelineUpdateResultDto` |
 | POST | `/api/job-application/pipeline/{id}/forward` | Authenticated | `200` + `JobPipelineForwardResultDto` |
+| GET | `/api/job-application/pipeline/{id}/banned-companies` | Authenticated | `200` + `JobPipelineBannedCompanyDto[]` |
+| POST | `/api/job-application/pipeline/{id}/banned-companies` | Authenticated | `201` + `JobPipelineBannedCompanyDto` |
+| PUT | `/api/job-application/pipeline/{id}/banned-companies/{companyId}` | Authenticated | `200` + `JobPipelineBannedCompanyDto` |
+| DELETE | `/api/job-application/pipeline/{id}/banned-companies/{companyId}` | Authenticated | `204` |
+| GET | `/api/job-application/pipeline/{id}/banned-matches` | Authenticated | `200` + `JobPipelineBannedMatchesDto` |
 
 `UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`.
 
@@ -52,7 +57,9 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 
 `SourceLocationDto`: `sheetId`, `name`. Write body: `name`. Locations are source spreadsheet tabs. Duplicate name: `409`. Last location cannot be deleted: `409`.
 
-`JobPipelineBoardDto`: `entries`, `profiles`, `sources` (each source includes `locations`). `JobPipelineEntryDto`: `id`, `profileId`, `sourceId`, `locationSheetId`, `locationName`, `createdAt`. Write body: `profileId`, `sourceId`, `locationSheetId`. Duplicate profile and source location: `409`. Update copies Company Name, Position, Link, and JD from that source tab onto the named profile main tab and skips rows already present (`added`, `skipped`). Update All does that for every pipeline entry. Forward renames the current main tab to the next unused number (`1`, `2`, `3`, …) and creates a new empty main tab with the original name (`archivedSheetName`, `mainSheetName`). Forward All does that once per distinct profile (`forwarded`). Then it reapplies owner lock; invited editors can still edit Status and Issue only on the named main tab. Numbered log tabs stay owner-only.
+`JobPipelineBoardDto`: `entries`, `profiles`, `sources` (each source includes `locations`). `JobPipelineEntryDto`: `id`, `profileId`, `sourceId`, `locationSheetId`, `locationName`, `createdAt`. Write body: `profileId`, `sourceId`, `locationSheetId`. Duplicate profile and source location: `409`. Update copies Company Name, Position, Link, and JD from that source tab onto the named profile main tab and skips rows already present (`added`, `skipped`) or banned (`banned`). Update All does that for every pipeline entry. Forward renames the current main tab to the next unused number (`1`, `2`, `3`, …) and creates a new empty main tab with the original name (`archivedSheetName`, `mainSheetName`). Forward All does that once per distinct profile (`forwarded`). Then it reapplies owner lock; invited editors can still edit Status and Issue only on the named main tab. Numbered log tabs stay owner-only.
+
+`JobPipelineBannedCompanyDto`: `id`, `companyName`, `createdAt`. Write body: `companyName`. Duplicate after name folding: `409`. Too-generic name: `400`. `JobPipelineBannedMatchesDto`: `source` and `profile` arrays of `sheet`, `companyName`, `position`, `link`, `matchedBan`. Matches are scanned from that entry's source location tab and profile main tab. See [012-pipeline-banned-companies.md](../decisions/012-pipeline-banned-companies.md).
 
 ## Contracts and errors
 
@@ -67,3 +74,4 @@ Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. L
 - [../decisions/008-job-catalog-google-sheets.md](../decisions/008-job-catalog-google-sheets.md)
 - [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)
 - [../decisions/010-job-application-pipeline.md](../decisions/010-job-application-pipeline.md)
+- [../decisions/012-pipeline-banned-companies.md](../decisions/012-pipeline-banned-companies.md)

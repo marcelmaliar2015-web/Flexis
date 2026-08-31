@@ -181,6 +181,36 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("job_pipeline_entries", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineBannedCompany", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MatchKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("PipelineEntryId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PipelineEntryId", "MatchKey")
+                        .IsUnique();
+
+                    b.ToTable("job_pipeline_banned_companies", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -244,6 +274,15 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineBannedCompany", b =>
+                {
+                    b.HasOne("Flexis.Domain.JobApplication.JobPipelineEntry", null)
+                        .WithMany()
+                        .HasForeignKey("PipelineEntryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

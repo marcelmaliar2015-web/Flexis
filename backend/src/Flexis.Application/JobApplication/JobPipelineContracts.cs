@@ -22,7 +22,22 @@ public sealed record JobPipelineBoardDto(
 
 public sealed record JobPipelineWriteRequest(Guid ProfileId, Guid SourceId, int LocationSheetId);
 
-public sealed record JobPipelineUpdateResultDto(int Added, int Skipped);
+public sealed record JobPipelineBannedCompanyDto(Guid Id, string CompanyName, DateTimeOffset CreatedAt);
+
+public sealed record JobPipelineBannedCompanyWriteRequest(string CompanyName);
+
+public sealed record JobPipelineBannedMatchDto(
+    string Sheet,
+    string CompanyName,
+    string Position,
+    string Link,
+    string MatchedBan);
+
+public sealed record JobPipelineBannedMatchesDto(
+    IReadOnlyList<JobPipelineBannedMatchDto> Source,
+    IReadOnlyList<JobPipelineBannedMatchDto> Profile);
+
+public sealed record JobPipelineUpdateResultDto(int Added, int Skipped, int Banned);
 
 public sealed record JobPipelineForwardResultDto(string ArchivedSheetName, string MainSheetName);
 

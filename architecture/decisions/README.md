@@ -31,3 +31,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [009](009-google-client-in-settings.md) | Google Cloud client in Settings |
 | [010](010-job-application-pipeline.md) | Job application pipeline |
 | [011](011-google-drive-folder-layout.md) | Google Drive folder layout |
+| [012](012-pipeline-banned-companies.md) | Pipeline banned companies |

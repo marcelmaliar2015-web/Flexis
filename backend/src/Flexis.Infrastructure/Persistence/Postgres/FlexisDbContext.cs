@@ -22,6 +22,8 @@ public sealed class FlexisDbContext : DbContext
 
     public DbSet<JobPipelineEntry> JobPipelineEntries => Set<JobPipelineEntry>();
 
+    public DbSet<JobPipelineBannedCompany> JobPipelineBannedCompanies => Set<JobPipelineBannedCompany>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FlexisDbContext).Assembly);

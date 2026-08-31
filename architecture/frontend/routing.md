@@ -10,6 +10,7 @@ React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. L
 | `/sign-in` | `SignInPage` | Public |
 | `/dashboard` | `DashboardPage` | Authenticated |
 | `/job-application` | `JobApplicationPage` | Authenticated |
+| `/job-application/pipeline/:entryId` | `JobApplicationPipelineEntryPage` | Authenticated |
 | `/settings` | `SettingsPage` | Authenticated |
 | `/help` | `HelpPage` | Authenticated |
 | `/health` | `HealthPage` | Authenticated |
@@ -29,3 +30,5 @@ Sign-in and already-signed-in visits to `/sign-in` go to `/dashboard`. Unauthent
 - [../decisions/007-account-menu.md](../decisions/007-account-menu.md)
 - [../decisions/006-google-oauth-job-application.md](../decisions/006-google-oauth-job-application.md)
 - [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)
+- [../decisions/010-job-application-pipeline.md](../decisions/010-job-application-pipeline.md)
+- [../decisions/012-pipeline-banned-companies.md](../decisions/012-pipeline-banned-companies.md)

@@ -30,6 +30,22 @@ internal static class JobCatalogRules
         return trimmed;
     }
 
+    public static string NormalizeCompanyName(string? name)
+    {
+        var trimmed = name?.Trim() ?? string.Empty;
+        if (trimmed.Length is 0 or > 200)
+        {
+            throw new ValidationFailedException("Company name is required and must be at most 200 characters.");
+        }
+
+        if (string.IsNullOrEmpty(CompanyNameMatcher.MatchKey(trimmed)))
+        {
+            throw new ValidationFailedException("Company name is too generic after removing legal suffixes.");
+        }
+
+        return trimmed;
+    }
+
     public static string SheetTabName(string title)
     {
         return title.Length <= 100 ? title : title[..100].TrimEnd();
