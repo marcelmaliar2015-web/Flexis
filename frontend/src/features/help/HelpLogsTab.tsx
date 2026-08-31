@@ -20,7 +20,8 @@ export function HelpLogsTab() {
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Logs is a dated record of Job Application work for this account. Newest events appear first.
-          Flexis keeps the latest 200.
+          Flexis keeps the latest 200. Dashboard shows a seven-day chart and the newest events; this
+          tab is the full feed.
         </Typography>
       </Stack>
       <Panel>

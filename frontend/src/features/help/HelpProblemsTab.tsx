@@ -19,7 +19,8 @@ export function HelpProblemsTab() {
           Problems
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Start here when Connect Gmail, sheets, or pricing does not match what you expect.
+          Start here when Connect Gmail, sheets, pricing, Dashboard, or Settings does not match what
+          you expect.
         </Typography>
       </Stack>
       <Panel>
@@ -110,6 +111,30 @@ export function HelpProblemsTab() {
               <ListItemText
                 primary="Cannot delete an admin"
                 secondary="The last active admin cannot be demoted, deactivated, or deleted."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="I am not in the users table"
+                secondary="Your profile is Your account at the top of product Settings. The table lists other people only. Edit display name and password there. Email and role stay as assigned."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Password save is rejected"
+                secondary="A new password must be at least 8 characters and include a letter and a digit. Leave the field blank to keep the current password."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Dashboard numbers stay at zero"
+                secondary="Connect Gmail, run Update on Operations, then set Status to Applied or Interview on the named profile main tab. Attention cards on Dashboard name the missing step. Header Google sync refreshes those sheet counts every 3 minutes while this tab is visible."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Sync lamps stay red"
+                secondary="Click the header Google sync control to run a full refresh now. Confirm Gmail is connected. Red means the last successful sync is older than 8 minutes or a refresh failed."
               />
             </ListItem>
           </List>

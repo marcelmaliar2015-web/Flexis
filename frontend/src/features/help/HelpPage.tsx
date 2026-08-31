@@ -12,6 +12,7 @@ import { HelpLogsTab } from "@/features/help/HelpLogsTab";
 import { HelpOperationsTab } from "@/features/help/HelpOperationsTab";
 import { HelpOverviewTab } from "@/features/help/HelpOverviewTab";
 import { HelpProblemsTab } from "@/features/help/HelpProblemsTab";
+import { helpTabItems, type HelpTabValue } from "@/features/help/helpTabs";
 
 const AccentRule = styled("span")(({ theme }) => ({
   display: "block",
@@ -21,10 +22,8 @@ const AccentRule = styled("span")(({ theme }) => ({
   backgroundColor: theme.palette.secondary.main,
 }));
 
-type HelpTab = "overview" | "google" | "operations" | "financial" | "logs" | "problems";
-
 export function HelpPage() {
-  const [tab, setTab] = useState<HelpTab>("overview");
+  const [tab, setTab] = useState<HelpTabValue>("overview");
   const [visited, setVisited] = useState({
     google: false,
     operations: false,
@@ -32,6 +31,13 @@ export function HelpPage() {
     logs: false,
     problems: false,
   });
+
+  function openTab(value: HelpTabValue) {
+    setTab(value);
+    if (value !== "overview") {
+      setVisited((current) => ({ ...current, [value]: true }));
+    }
+  }
 
   return (
     <Box sx={{ py: { xs: 4, md: 6 } }}>
@@ -46,30 +52,23 @@ export function HelpPage() {
             </Typography>
             <AccentRule />
             <Typography variant="body2" color="text.secondary">
-              Structured guides for the workspace, Google connect, Operations, Financial, Logs, and
-              common problems.
+              Start on Overview for a map of Flexis. Then open the tab that matches the work.
             </Typography>
           </Stack>
           <Tabs
             value={tab}
-            onChange={(_event, value: HelpTab) => {
-              setTab(value);
-              if (value !== "overview") {
-                setVisited((current) => ({ ...current, [value]: true }));
-              }
+            onChange={(_event, value: HelpTabValue) => {
+              openTab(value);
             }}
             variant="scrollable"
             allowScrollButtonsMobile
           >
-            <Tab label="Overview" value="overview" />
-            <Tab label="Google setup" value="google" />
-            <Tab label="Operations" value="operations" />
-            <Tab label="Financial" value="financial" />
-            <Tab label="Logs" value="logs" />
-            <Tab label="Problems" value="problems" />
+            {helpTabItems.map((item) => (
+              <Tab key={item.value} label={item.label} value={item.value} />
+            ))}
           </Tabs>
           <Box role="tabpanel" hidden={tab !== "overview"}>
-            <HelpOverviewTab />
+            <HelpOverviewTab onOpenTab={openTab} />
           </Box>
           {tab === "google" || visited.google ? (
             <Box role="tabpanel" hidden={tab !== "google"}>

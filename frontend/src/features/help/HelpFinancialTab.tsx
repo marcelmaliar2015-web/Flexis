@@ -21,7 +21,8 @@ export function HelpFinancialTab() {
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Financial prices each Operations row from the profile main tab. Open it after listings have
-          a Status of Applied or Interview.
+          a Status of Applied or Interview. Dashboard repeats workspace price, listing mix, and
+          pipeline contribution from the same counts.
         </Typography>
       </Stack>
       <Panel>
