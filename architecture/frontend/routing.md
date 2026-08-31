@@ -11,6 +11,7 @@ React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. L
 | `/dashboard` | `DashboardPage` | Authenticated |
 | `/job-application` | `JobApplicationPage` | Authenticated |
 | `/job-application/pipeline/:entryId` | `JobApplicationPipelineEntryPage` | Authenticated |
+| `/mail-check` | `MailCheckPage` | Authenticated |
 | `/settings` | `SettingsPage` | Authenticated |
 | `/help` | `HelpPage` | Authenticated |
 | `/health` | `HealthPage` | Authenticated |
@@ -35,3 +36,4 @@ Signed-in visits to `/` or `/sign-in` go to `/dashboard`, or to `state.from` whe
 - [../decisions/016-dashboard-workspace-status.md](../decisions/016-dashboard-workspace-status.md)
 - [../decisions/017-signed-in-account-profile.md](../decisions/017-signed-in-account-profile.md)
 - [../decisions/018-guest-only-public-routes.md](../decisions/018-guest-only-public-routes.md)
+- [../decisions/019-mail-check.md](../decisions/019-mail-check.md)

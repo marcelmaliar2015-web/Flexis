@@ -1,5 +1,6 @@
 using Flexis.Domain.Google;
 using Flexis.Domain.JobApplication;
+using Flexis.Domain.MailCheck;
 using Flexis.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,6 +28,10 @@ public sealed class FlexisDbContext : DbContext
     public DbSet<JobFinancialSettings> JobFinancialSettings => Set<JobFinancialSettings>();
 
     public DbSet<JobApplicationLog> JobApplicationLogs => Set<JobApplicationLog>();
+
+    public DbSet<MailCheckSettings> MailCheckSettings => Set<MailCheckSettings>();
+
+    public DbSet<MailCheckProcessedMessage> MailCheckProcessedMessages => Set<MailCheckProcessedMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

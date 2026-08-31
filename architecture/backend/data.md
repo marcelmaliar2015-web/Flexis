@@ -6,7 +6,7 @@ Two stores, registered in `Flexis.Infrastructure.DependencyInjection`.
 
 | Store | Use | Access |
 | --- | --- | --- |
-| PostgreSQL | Relational data, users, Google connections, Google Cloud client, job catalog items, pipeline entries, banned companies, financial settings, activity logs | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
+| PostgreSQL | Relational data, users, Google connections, Google Cloud client, job catalog items, pipeline entries, banned companies, financial settings, activity logs, Mail Check settings and processed messages | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
 | MongoDB | Document data | `IMongoClient` singleton, `IMongoDatabase` named `Mongo:Database` |
 
 Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, database `flexis`).
@@ -28,6 +28,10 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 `JobFinancialSettings` in `Flexis.Domain.JobApplication`. Table `job_financial_settings`. Unique `UserId`, cascade from `users`. Default apply rate 0.06 and bonus rate 1.5. EF configuration: `Persistence/Postgres/JobApplication/JobFinancialSettingsConfiguration.cs`.
 
 `JobApplicationLog` in `Flexis.Domain.JobApplication`. Table `job_application_logs`. Cascade from `users`. Newest 200 rows are listed per user. EF configuration: `Persistence/Postgres/JobApplication/JobApplicationLogConfiguration.cs`.
+
+`MailCheckSettings` in `Flexis.Domain.MailCheck`. Table `mail_check_settings`. Unique `UserId`, cascade from `users`. OpenAI key stored protected. Default model `gpt-4o-mini`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckSettingsConfiguration.cs`.
+
+`MailCheckProcessedMessage` in `Flexis.Domain.MailCheck`. Table `mail_check_processed_messages`. Unique (`UserId`, `GmailMessageId`), cascade from `users`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckProcessedMessageConfiguration.cs`.
 
 ## Migrations
 

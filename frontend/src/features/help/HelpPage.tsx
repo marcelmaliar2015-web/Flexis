@@ -9,6 +9,7 @@ import { useState } from "react";
 import { HelpFinancialTab } from "@/features/help/HelpFinancialTab";
 import { HelpGoogleTab } from "@/features/help/HelpGoogleTab";
 import { HelpLogsTab } from "@/features/help/HelpLogsTab";
+import { HelpMailCheckTab } from "@/features/help/HelpMailCheckTab";
 import { HelpOperationsTab } from "@/features/help/HelpOperationsTab";
 import { HelpOverviewTab } from "@/features/help/HelpOverviewTab";
 import { HelpProblemsTab } from "@/features/help/HelpProblemsTab";
@@ -29,6 +30,7 @@ export function HelpPage() {
     operations: false,
     financial: false,
     logs: false,
+    mailCheck: false,
     problems: false,
   });
 
@@ -88,6 +90,11 @@ export function HelpPage() {
           {tab === "logs" || visited.logs ? (
             <Box role="tabpanel" hidden={tab !== "logs"}>
               <HelpLogsTab />
+            </Box>
+          ) : null}
+          {tab === "mailCheck" || visited.mailCheck ? (
+            <Box role="tabpanel" hidden={tab !== "mailCheck"}>
+              <HelpMailCheckTab />
             </Box>
           ) : null}
           {tab === "problems" || visited.problems ? (

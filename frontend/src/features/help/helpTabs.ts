@@ -25,6 +25,11 @@ export const helpTabItems = [
     summary: "Dated activity for pipeline, catalog, financial, and Gmail.",
   },
   {
+    value: "mailCheck",
+    label: "Mail Check",
+    summary: "Gmail labels, OpenAI key, auto check, pin, and trash.",
+  },
+  {
     value: "problems",
     label: "Problems",
     summary: "Fixes when connect, sheets, or price do not match what you expect.",

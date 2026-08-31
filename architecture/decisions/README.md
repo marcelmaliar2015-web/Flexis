@@ -38,3 +38,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [016](016-dashboard-workspace-status.md) | Dashboard workspace status |
 | [017](017-signed-in-account-profile.md) | Signed-in account profile |
 | [018](018-guest-only-public-routes.md) | Guest-only landing and sign-in |
+| [019](019-mail-check.md) | Mail Check Gmail and OpenAI |

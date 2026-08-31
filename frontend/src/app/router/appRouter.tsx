@@ -9,6 +9,7 @@ import { HelpPage } from "@/features/help/HelpPage";
 import { HomePage } from "@/features/home/HomePage";
 import { JobApplicationPage } from "@/features/jobApplication/JobApplicationPage";
 import { JobApplicationPipelineEntryPage } from "@/features/jobApplication/JobApplicationPipelineEntryPage";
+import { MailCheckPage } from "@/features/mailCheck/MailCheckPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { appPaths } from "@/shared/config/paths";
 
@@ -47,6 +48,10 @@ export const appRouter = createBrowserRouter([
               {
                 path: "job-application/pipeline/:entryId",
                 element: <JobApplicationPipelineEntryPage />,
+              },
+              {
+                path: "mail-check",
+                element: <MailCheckPage />,
               },
               {
                 path: "settings",

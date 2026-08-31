@@ -283,6 +283,93 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("job_application_logs", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ApiKeyProtected")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("LastRunAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("LastLabeled")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LastTrashed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LastSkipped")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LastProcessed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LastErrors")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("LastHasMore")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("TotalLabeled")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalTrashed")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("mail_check_settings", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckProcessedMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("GmailMessageId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "GmailMessageId")
+                        .IsUnique();
+
+                    b.ToTable("mail_check_processed_messages", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -369,6 +456,24 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                 });
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobApplicationLog", b =>
+                {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckSettings", b =>
+                {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckProcessedMessage", b =>
                 {
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { queryClient } from "@/app/providers/queryClient";
 import { theme } from "@/app/providers/theme";
 import { GoogleSyncProvider } from "@/app/providers/GoogleSyncProvider";
+import { MailCheckProvider } from "@/app/providers/MailCheckProvider";
 import { AuthProvider } from "@/shared/auth/AuthProvider";
 
 type AppProvidersProps = {
@@ -17,7 +18,9 @@ export function AppProviders({ children }: AppProvidersProps) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <AuthProvider>
-          <GoogleSyncProvider>{children}</GoogleSyncProvider>
+          <GoogleSyncProvider>
+            <MailCheckProvider>{children}</MailCheckProvider>
+          </GoogleSyncProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

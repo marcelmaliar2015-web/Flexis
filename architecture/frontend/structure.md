@@ -12,6 +12,7 @@ frontend/src/
     auth/
     dashboard/
     jobApplication/
+    mailCheck/
     settings/
   shared/
     api/
@@ -26,13 +27,14 @@ Path alias `@/` maps to `frontend/src/`.
 
 | Module | Responsibility |
 | --- | --- |
-| `app` | Bootstrap, theme, query client, routes, layout, guards, account menu, header Gmail status, Google workspace sync |
+| `app` | Bootstrap, theme, query client, routes, layout, guards, account menu, header Gmail status, Google workspace sync, Mail Check auto-check |
 | `features/home` | Home screen |
 | `features/health` | Health screen and query hook |
-| `features/help` | Tabbed product guides. Overview is the product map; Google setup, Operations, Financial, Logs, and Problems are topic guides. |
+| `features/help` | Tabbed product guides. Overview is the product map; Google setup, Operations, Financial, Logs, Mail Check, and Problems are topic guides. |
 | `features/auth` | Sign-in screen |
 | `features/dashboard` | Workspace status board (health, Google, pipeline, financial, logs, Admin users) |
 | `features/jobApplication` | Job Application tabs, Pipeline table, pipeline entry detail, Financial, Logs, Settings (Gmail, default rates, profiles, sources, locations) |
+| `features/mailCheck` | Mail Check tabs: Inbox, Check, Settings (OpenAI key and model) |
 | `features/settings` | Settings screen; signed-in account profile; Admin Google Cloud client and other users |
 | `shared/api` | `fetch` wrapper and endpoint functions |
 | `shared/auth` | Session provider and token storage |

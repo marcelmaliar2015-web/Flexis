@@ -52,6 +52,11 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | PUT | `/api/job-application/financial/defaults` | Authenticated | `200` + `JobFinancialDefaultsDto` |
 | PUT | `/api/job-application/financial/rows/{entryId}/rates` | Authenticated | `200` + `JobFinancialRowDto` |
 | GET | `/api/job-application/logs` | Authenticated | `200` + `JobApplicationLogDto[]` |
+| GET | `/api/mail-check/settings` | Authenticated | `200` + `MailCheckSettingsDto` |
+| PUT | `/api/mail-check/settings` | Authenticated | `200` + `MailCheckSettingsDto` |
+| GET | `/api/mail-check/models` | Authenticated | `200` + `MailCheckModelsDto` |
+| POST | `/api/mail-check/run` | Authenticated | `200` + `MailCheckRunDto` |
+| GET | `/api/mail-check/inbox` | Authenticated | `200` + `MailCheckInboxDto` |
 
 `UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`. `PUT /api/auth/me` body: `displayName`, `password` (omit or blank to keep the current password). Email, role, and active cannot change on that path. Admin user PUT body: `displayName`, `role`, `isActive`, `password` (optional).
 
@@ -71,9 +76,11 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 
 `JobApplicationLogDto`: `id`, `occurredAt`, `category`, `action`, `summary`, `detail`. Newest 200 for that user. Categories: `pipeline`, `catalog`, `financial`, `account`.
 
+`MailCheckSettingsDto`: `hasApiKey`, `model`, last-run counts, `gmailConnected`, `googleEmail`. PUT body: `apiKey` (omit or blank to keep), `clearApiKey`, `model`. The key is never returned. `MailCheckModelsDto`: `models` (`id`, `recommended`) from OpenAI with the stored key. `MailCheckRunDto`: `busy`, `processed`, `labeled`, `trashed`, `skipped`, `errors`, `hasMore`, `items`. Run body: `force`. `MailCheckInboxDto`: labeled messages. Query `label` is `interviewScheduled`, `waitingForAnswer`, `needToSchedule`, or `others`. Gmail not connected or missing OpenAI key: `400`. See [019-mail-check.md](../decisions/019-mail-check.md).
+
 ## Contracts and errors
 
-Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. Last active admin cannot be demoted, deactivated, or deleted: `409`. Google start with a missing client or a bad return URL: `400`. Invalid catalog title or location: `400`. Sheets calls without a connected Gmail: `400`. Google Sheets errors: `400`. Health does not throw to the client; failed checks become unhealthy entries.
+Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. Last active admin cannot be demoted, deactivated, or deleted: `409`. Google start with a missing client or a bad return URL: `400`. Invalid catalog title or location: `400`. Sheets calls without a connected Gmail: `400`. Google Sheets errors: `400`. Mail Check without Gmail or an OpenAI key: `400`. OpenAI errors: `400`. Health does not throw to the client; failed checks become unhealthy entries.
 
 ## Related
 
@@ -87,3 +94,4 @@ Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. L
 - [../decisions/012-pipeline-banned-companies.md](../decisions/012-pipeline-banned-companies.md)
 - [../decisions/013-job-application-financial-logs.md](../decisions/013-job-application-financial-logs.md)
 - [../decisions/017-signed-in-account-profile.md](../decisions/017-signed-in-account-profile.md)
+- [../decisions/019-mail-check.md](../decisions/019-mail-check.md)

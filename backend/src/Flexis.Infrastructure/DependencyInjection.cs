@@ -1,12 +1,15 @@
 using Flexis.Application.Auth;
 using Flexis.Application.Google;
 using Flexis.Application.JobApplication;
+using Flexis.Application.MailCheck;
 using Flexis.Application.Users;
 using Flexis.Infrastructure.Google;
+using Flexis.Infrastructure.OpenAi;
 using Flexis.Infrastructure.Persistence.Mongo;
 using Flexis.Infrastructure.Persistence.Postgres;
 using Flexis.Infrastructure.Persistence.Postgres.Google;
 using Flexis.Infrastructure.Persistence.Postgres.JobApplication;
+using Flexis.Infrastructure.Persistence.Postgres.MailCheck;
 using Flexis.Infrastructure.Persistence.Postgres.Users;
 using Flexis.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -62,6 +65,8 @@ public static class DependencyInjection
         services.AddHttpClient<IGoogleOAuthGateway, GoogleOAuthClient>();
         services.AddHttpClient<IGoogleSheetsWorkspace, GoogleSheetsClient>();
         services.AddHttpClient<IGoogleDriveGateway, GoogleDriveClient>();
+        services.AddHttpClient<IGmailMailbox, GmailMailboxClient>();
+        services.AddHttpClient<IOpenAiGateway, OpenAiClient>();
         services.AddSingleton<IGoogleTokenProtector, AesGoogleTokenProtector>();
         services.AddSingleton<IGoogleOAuthStateStore, MemoryGoogleOAuthStateStore>();
         services.AddSingleton<IFrontendOrigins, ConfigurationFrontendOrigins>();
@@ -71,6 +76,8 @@ public static class DependencyInjection
         services.AddScoped<IJobPipelineRepository, JobPipelineRepository>();
         services.AddScoped<IJobFinancialSettingsRepository, JobFinancialSettingsRepository>();
         services.AddScoped<IJobApplicationLogRepository, JobApplicationLogRepository>();
+        services.AddScoped<IMailCheckSettingsRepository, MailCheckSettingsRepository>();
+        services.AddScoped<IMailCheckProcessedMessageRepository, MailCheckProcessedMessageRepository>();
 
         services.AddSingleton<IMongoClient>(serviceProvider =>
         {

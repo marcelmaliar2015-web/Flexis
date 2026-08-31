@@ -30,11 +30,11 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
         </Typography>
         <Typography variant="body2" color="text.secondary">
           After sign-in the shell is a header, a left nav, and a scrolling content pane. Job
-          Application is where listings, sheets, pricing, and Gmail live. Dashboard shows whether
-          that workspace is healthy and producing counts. Settings holds your account. This Help set
-          is the product map and the how-to guides. The landing page and Sign in are for visitors
-          who are not signed in. Opening them while signed in returns you to Dashboard, or to the
-          screen you were sent from.
+          Application is where listings, sheets, pricing, and Gmail live. Mail Check triages that
+          same Gmail for interview mail. Dashboard shows whether that workspace is healthy and
+          producing counts. Settings holds your account. This Help set is the product map and the
+          how-to guides. The landing page and Sign in are for visitors who are not signed in.
+          Opening them while signed in returns you to Dashboard, or to the screen you were sent from.
         </Typography>
       </Stack>
       <Panel>
@@ -80,7 +80,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             Left nav
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            The four product screens stay in view while content scrolls. Open a row to go there.
+            The five product screens stay in view while content scrolls. Open a row to go there.
           </Typography>
           <TableContainer>
             <Table size="small">
@@ -122,6 +122,22 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                   </TableCell>
                   <TableCell align="left">
                     <Link component={RouterLink} to={appPaths.jobApplication}>
+                      Open
+                    </Link>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell align="left">Mail Check</TableCell>
+                  <TableCell align="left">
+                    Inbox of labeled interview mail, Check now plus auto check, and Settings for the
+                    OpenAI key and model. Uses the Job Application Gmail connect.
+                  </TableCell>
+                  <TableCell align="left">
+                    After Gmail is connected, save an OpenAI key so Flexis can label, pin, and trash
+                    job mail.
+                  </TableCell>
+                  <TableCell align="left">
+                    <Link component={RouterLink} to={appPaths.mailCheck}>
                       Open
                     </Link>
                   </TableCell>
@@ -270,8 +286,8 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             Roles
           </Typography>
           <Typography variant="body2">
-            Every signed-in person uses the same Dashboard, Job Application, and Help screens. Your
-            account on product Settings is available to every role.
+            Every signed-in person uses the same Dashboard, Job Application, Mail Check, and Help
+            screens. Your account on product Settings is available to every role.
           </Typography>
           <List disablePadding>
             <ListItem disableGutters>
@@ -323,6 +339,12 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
               <ListItemText
                 primary="5. Set Status and read price"
                 secondary="On the named profile main tab, set Status to Applied or Interview. Financial prices those counts. Dashboard shows the same totals. Logs records the actions."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="6. Turn on Mail Check"
+                secondary="Mail Check, Settings tab. Paste an OpenAI API key and pick a model. Flexis creates the four Gmail labels and starts checking inbox, spam, and other categories."
               />
             </ListItem>
           </List>

@@ -19,8 +19,8 @@ export function HelpProblemsTab() {
           Problems
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Start here when Connect Gmail, sheets, pricing, Dashboard, or Settings does not match what
-          you expect.
+          Start here when Connect Gmail, sheets, pricing, Dashboard, Mail Check, or Settings does
+          not match what you expect.
         </Typography>
       </Stack>
       <Panel>
@@ -135,6 +135,39 @@ export function HelpProblemsTab() {
               <ListItemText
                 primary="Sync lamps stay red"
                 secondary="Click the header Google sync control to run a full refresh now. Confirm Gmail is connected. Red means the last successful sync is older than 8 minutes or a refresh failed."
+              />
+            </ListItem>
+          </List>
+        </Stack>
+      </Panel>
+      <Panel>
+        <Stack spacing={1.5}>
+          <Typography variant="h6" component="h2">
+            Mail Check
+          </Typography>
+          <List disablePadding>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Check now stays disabled"
+                secondary="Connect Gmail on Job Application Settings, then save an OpenAI API key on Mail Check Settings."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="OpenAI request failed"
+                secondary="Confirm the key is valid and the model id exists on that OpenAI account. Flexis retries token and format differences across chat and reasoning models."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Labels are missing in Gmail"
+                secondary="Save the OpenAI key while Gmail is connected, or run Check now. Flexis creates Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Personal mail was not moved"
+                secondary="Only job and interview receipts are trashed. Personal mail is skipped and left in place."
               />
             </ListItem>
           </List>
