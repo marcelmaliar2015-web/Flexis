@@ -26,7 +26,7 @@ Path alias `@/` maps to `frontend/src/`.
 
 | Module | Responsibility |
 | --- | --- |
-| `app` | Bootstrap, theme, query client, routes, layout, guards, account menu |
+| `app` | Bootstrap, theme, query client, routes, layout, guards, account menu, header Gmail status, Google workspace sync |
 | `features/home` | Home screen |
 | `features/health` | Health screen and query hook |
 | `features/help` | Tabbed product guides (Overview, Google setup, Operations, Financial, Logs, Problems) |

@@ -33,3 +33,5 @@ One file per significant architecture choice. Record a decision when you introdu
 | [011](011-google-drive-folder-layout.md) | Google Drive folder layout |
 | [012](012-pipeline-banned-companies.md) | Pipeline banned companies |
 | [013](013-job-application-financial-logs.md) | Job application financial and activity logs |
+| [014](014-header-google-status.md) | Header Google connect status |
+| [015](015-google-workspace-sync.md) | Google workspace sync |

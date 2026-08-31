@@ -11,6 +11,7 @@ const AuthenticatedRoot = styled(Box)({
   flex: 1,
   display: "flex",
   minHeight: 0,
+  overflow: "hidden",
 });
 
 const SidePanel = styled("nav")(({ theme }) => ({
@@ -19,7 +20,15 @@ const SidePanel = styled("nav")(({ theme }) => ({
   padding: theme.spacing(1),
   borderRight: `1px solid ${theme.palette.divider}`,
   backgroundColor: theme.palette.background.paper,
+  overflowY: "auto",
 }));
+
+const MainPane = styled("section")({
+  flex: 1,
+  minWidth: 0,
+  minHeight: 0,
+  overflow: "auto",
+});
 
 const appNavItems = [
   { label: "Dashboard", path: appPaths.dashboard },
@@ -52,9 +61,9 @@ export function AuthenticatedLayout() {
           ))}
         </List>
       </SidePanel>
-      <Box component="section" sx={{ flex: 1, minWidth: 0, overflow: "auto" }}>
+      <MainPane>
         <Outlet />
-      </Box>
+      </MainPane>
     </AuthenticatedRoot>
   );
 }

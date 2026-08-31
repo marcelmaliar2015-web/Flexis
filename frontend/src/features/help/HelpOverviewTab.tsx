@@ -35,6 +35,18 @@ export function HelpOverviewTab() {
             </ListItem>
             <ListItem disableGutters>
               <ListItemText
+                primary="Header Google sync"
+                secondary="Left of Gmail status. Shows Updated x mins ago with a red, amber, or green lamp bar. Click to refresh all sheets and Job Application configuration now. Auto refresh is every 3 minutes while this tab is visible."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Header Gmail status"
+                secondary="Right side of the app bar, left of the account avatar. Shows whether this account's Gmail is connected. Open it for a short status and a link to Job Application, Settings, or Help."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
                 primary="Account menu"
                 secondary="Initials avatar in the app bar. Shows display name, email, and role, then Settings, Help, and Sign out."
               />

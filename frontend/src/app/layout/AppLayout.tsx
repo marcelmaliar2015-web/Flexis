@@ -1,18 +1,22 @@
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { Link as RouterLink, Outlet } from "react-router-dom";
+import { GoogleConnectStatus } from "@/app/layout/GoogleConnectStatus";
+import { GoogleSyncStatus } from "@/app/layout/GoogleSyncStatus";
 import { UserMenu } from "@/app/layout/UserMenu";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { appPaths } from "@/shared/config/paths";
 
 const ShellRoot = styled(Box)({
-  minHeight: "100dvh",
+  height: "100dvh",
   display: "flex",
   flexDirection: "column",
+  overflow: "hidden",
 });
 
 const ShellBar = styled(AppBar)(({ theme }) => ({
@@ -35,7 +39,16 @@ const ShellMain = styled("main")({
   flex: 1,
   display: "flex",
   flexDirection: "column",
+  minHeight: 0,
+  overflow: "auto",
 });
+
+const HeaderRail = styled("span")(({ theme }) => ({
+  width: 1,
+  height: 22,
+  flexShrink: 0,
+  backgroundColor: theme.palette.divider,
+}));
 
 export function AppLayout() {
   const auth = useAuth();
@@ -63,7 +76,12 @@ export function AppLayout() {
             </Typography>
           </Box>
           {auth.user ? (
-            <UserMenu />
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexShrink: 0 }}>
+              <GoogleSyncStatus />
+              <GoogleConnectStatus />
+              <HeaderRail />
+              <UserMenu />
+            </Stack>
           ) : (
             <Button color="inherit" component={RouterLink} to={appPaths.signIn} variant="text">
               Sign in

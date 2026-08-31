@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { queryClient } from "@/app/providers/queryClient";
 import { theme } from "@/app/providers/theme";
+import { GoogleSyncProvider } from "@/app/providers/GoogleSyncProvider";
 import { AuthProvider } from "@/shared/auth/AuthProvider";
 
 type AppProvidersProps = {
@@ -15,7 +16,9 @@ export function AppProviders({ children }: AppProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <GoogleSyncProvider>{children}</GoogleSyncProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

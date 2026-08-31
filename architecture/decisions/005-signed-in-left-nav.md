@@ -6,7 +6,7 @@ Flexis is a multi-module product. After sign-in the user needs one place to swit
 
 ## Decision
 
-Authenticated product screens render in `AuthenticatedLayout` with a left panel of module buttons. The modules are Dashboard, Job Application, Settings, and Help. Sign-in lands on Dashboard. Public landing and sign-in stay outside this shell.
+Authenticated product screens render in `AuthenticatedLayout` with a left panel of module buttons. The modules are Dashboard, Job Application, Settings, and Help. Sign-in lands on Dashboard. Public landing and sign-in stay outside this shell. The left panel stays in view; only the module content pane scrolls.
 
 ## Consequences
 
