@@ -17,6 +17,8 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
 
     private static readonly string[] StatusValues = ["Applied", "Invalid", "Expired", "Other"];
 
+    private const string FlexisLockDescription = "Flexis owner lock";
+
     private static readonly (string Value, Color Bg, Color Fg)[] StatusColors =
     [
         ("Applied", new Color(0.902, 0.957, 0.925), new Color(0.106, 0.498, 0.306)),
@@ -268,6 +270,225 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         }
     }
 
+    public async Task SetFixedRowHeightAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        var payload = await SendJson<SpreadsheetList>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,gridProperties.rowCount)",
+            null,
+            cancellationToken);
+
+        var requests = new List<object>();
+        foreach (var sheet in payload.Sheets ?? [])
+        {
+            if (sheet.Properties is null)
+            {
+                continue;
+            }
+
+            var sheetId = sheet.Properties.SheetId;
+            var rowCount = sheet.Properties.GridProperties?.RowCount ?? 200;
+            if (rowCount < 1)
+            {
+                rowCount = 1;
+            }
+
+            requests.Add(new
+            {
+                updateDimensionProperties = new
+                {
+                    range = new { sheetId, dimension = "ROWS", startIndex = 0, endIndex = rowCount },
+                    properties = new { pixelSize = 21 },
+                    fields = "pixelSize"
+                }
+            });
+            requests.Add(new
+            {
+                repeatCell = new
+                {
+                    range = new { sheetId, startRowIndex = 0, endRowIndex = 1 },
+                    cell = new { userEnteredFormat = new { wrapStrategy = "WRAP" } },
+                    fields = "userEnteredFormat.wrapStrategy"
+                }
+            });
+            if (rowCount > 1)
+            {
+                requests.Add(new
+                {
+                    repeatCell = new
+                    {
+                        range = new { sheetId, startRowIndex = 1, endRowIndex = rowCount },
+                        cell = new
+                        {
+                            userEnteredFormat = new
+                            {
+                                wrapStrategy = "WRAP",
+                                textFormat = new
+                                {
+                                    foregroundColor = new Color(0, 0, 0),
+                                    fontFamily = "Calibri",
+                                    fontSize = 11
+                                }
+                            }
+                        },
+                        fields = "userEnteredFormat.wrapStrategy,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.fontFamily,userEnteredFormat.textFormat.fontSize"
+                    }
+                });
+            }
+        }
+
+        if (requests.Count == 0)
+        {
+            return;
+        }
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new { requests },
+            cancellationToken);
+    }
+
+    public async Task RemoveStatusColumnAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        var sheets = await ListSheetsAsync(accessToken, spreadsheetId, cancellationToken);
+        var requests = new List<object>();
+        foreach (var sheet in sheets)
+        {
+            var payload = await SendJson<SheetValues>(
+                accessToken,
+                HttpMethod.Get,
+                $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(sheet.Name, "1:1")}",
+                null,
+                cancellationToken);
+            var headers = payload.Values?.FirstOrDefault() ?? [];
+            for (var index = headers.Count - 1; index >= 0; index--)
+            {
+                if (!string.Equals(Cell(headers, index), "Status", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                requests.Add(new
+                {
+                    deleteDimension = new
+                    {
+                        range = new
+                        {
+                            sheetId = sheet.SheetId,
+                            dimension = "COLUMNS",
+                            startIndex = index,
+                            endIndex = index + 1
+                        }
+                    }
+                });
+            }
+        }
+
+        if (requests.Count == 0)
+        {
+            return;
+        }
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new { requests },
+            cancellationToken);
+    }
+
+    public async Task ProtectWorkbookAsync(
+        string accessToken,
+        string spreadsheetId,
+        string ownerEmail,
+        JobWorkbookKind kind,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(ownerEmail))
+        {
+            return;
+        }
+
+        var payload = await SendJson<SpreadsheetList>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets(properties(sheetId),protectedRanges(protectedRangeId,description))",
+            null,
+            cancellationToken);
+
+        var invitedColumns = InvitedEditColumnIndexes(kind);
+        var requests = new List<object>();
+        foreach (var sheet in payload.Sheets ?? [])
+        {
+            if (sheet.Properties is null)
+            {
+                continue;
+            }
+
+            var sheetId = sheet.Properties.SheetId;
+            foreach (var range in sheet.ProtectedRanges ?? [])
+            {
+                if (!string.Equals(range.Description, FlexisLockDescription, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                requests.Add(new { deleteProtectedRange = new { protectedRangeId = range.ProtectedRangeId } });
+            }
+
+            object? unprotectedRanges = invitedColumns.Length == 0
+                ? null
+                : invitedColumns
+                    .Select(index => new
+                    {
+                        sheetId,
+                        startColumnIndex = index,
+                        endColumnIndex = index + 1
+                    })
+                    .ToArray();
+
+            requests.Add(new
+            {
+                addProtectedRange = new
+                {
+                    protectedRange = new
+                    {
+                        range = new { sheetId },
+                        description = FlexisLockDescription,
+                        warningOnly = false,
+                        unprotectedRanges,
+                        editors = new
+                        {
+                            users = new[] { ownerEmail },
+                            domainUsersCanEdit = false
+                        }
+                    }
+                }
+            });
+        }
+
+        if (requests.Count == 0)
+        {
+            return;
+        }
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new { requests },
+            cancellationToken);
+    }
+
     public async Task<IReadOnlyList<JobListingRow>> ReadListingsAsync(
         string accessToken,
         string spreadsheetId,
@@ -327,9 +548,18 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                 new Column("Company Name", 200),
                 new Column("Position", 200),
                 new Column("Link", 240),
-                new Column("JD", 300),
-                new Column("Status", 130)
+                new Column("JD", 300)
             ];
+    }
+
+    private static int[] InvitedEditColumnIndexes(JobWorkbookKind kind)
+    {
+        var columns = ColumnsFor(kind);
+        return columns
+            .Select((column, index) => (column.Name, index))
+            .Where(column => column.Name is "Status" or "Issue")
+            .Select(column => column.index)
+            .ToArray();
     }
 
     private static object HeaderCell(Column column)
@@ -361,6 +591,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                             backgroundColor = new Color(0.055, 0.153, 0.267),
                             horizontalAlignment = "LEFT",
                             verticalAlignment = "MIDDLE",
+                            wrapStrategy = "WRAP",
                             textFormat = new
                             {
                                 foregroundColor = new Color(0.969, 0.957, 0.937),
@@ -370,16 +601,44 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                             }
                         }
                     },
-                    fields = "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment)"
+                    fields = "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)"
                 }
             },
             new
             {
                 updateDimensionProperties = new
                 {
-                    range = new { sheetId, dimension = "ROWS", startIndex = 0, endIndex = 1 },
-                    properties = new { pixelSize = 36 },
+                    range = new { sheetId, dimension = "ROWS", startIndex = 0, endIndex = 200 },
+                    properties = new { pixelSize = 21 },
                     fields = "pixelSize"
+                }
+            },
+            new
+            {
+                repeatCell = new
+                {
+                    range = new
+                    {
+                        sheetId,
+                        startRowIndex = 1,
+                        endRowIndex = 200,
+                        startColumnIndex = 0,
+                        endColumnIndex = columns.Length
+                    },
+                    cell = new
+                    {
+                        userEnteredFormat = new
+                        {
+                            wrapStrategy = "WRAP",
+                            textFormat = new
+                            {
+                                foregroundColor = new Color(0, 0, 0),
+                                fontFamily = "Calibri",
+                                fontSize = 11
+                            }
+                        }
+                    },
+                    fields = "userEnteredFormat.wrapStrategy,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.fontFamily,userEnteredFormat.textFormat.fontSize"
                 }
             },
             new
@@ -608,6 +867,15 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
     private sealed class SheetEnvelope
     {
         public SheetProps? Properties { get; set; }
+
+        public List<ProtectedRangeInfo>? ProtectedRanges { get; set; }
+    }
+
+    private sealed class ProtectedRangeInfo
+    {
+        public int ProtectedRangeId { get; set; }
+
+        public string? Description { get; set; }
     }
 
     private sealed class SheetProps
@@ -615,6 +883,13 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         public int SheetId { get; set; }
 
         public string? Title { get; set; }
+
+        public GridProps? GridProperties { get; set; }
+    }
+
+    private sealed class GridProps
+    {
+        public int RowCount { get; set; }
     }
 
     private sealed class SheetValues

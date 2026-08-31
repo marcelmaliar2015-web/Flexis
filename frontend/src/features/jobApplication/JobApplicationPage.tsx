@@ -21,6 +21,7 @@ type JobApplicationTab = "operations" | "settings";
 
 export function JobApplicationPage() {
   const [tab, setTab] = useState<JobApplicationTab>("operations");
+  const [settingsVisited, setSettingsVisited] = useState(false);
 
   return (
     <Box sx={{ py: { xs: 4, md: 6 } }}>
@@ -37,13 +38,24 @@ export function JobApplicationPage() {
           </Stack>
           <Tabs
             value={tab}
-            onChange={(_event, value: JobApplicationTab) => setTab(value)}
+            onChange={(_event, value: JobApplicationTab) => {
+              setTab(value);
+              if (value === "settings") {
+                setSettingsVisited(true);
+              }
+            }}
           >
             <Tab label="Operations" value="operations" />
             <Tab label="Settings" value="settings" />
           </Tabs>
-          {tab === "operations" ? <JobApplicationOperationsTab /> : null}
-          {tab === "settings" ? <JobApplicationSettingsTab /> : null}
+          <Box role="tabpanel" hidden={tab !== "operations"}>
+            <JobApplicationOperationsTab />
+          </Box>
+          {tab === "settings" || settingsVisited ? (
+            <Box role="tabpanel" hidden={tab !== "settings"}>
+              <JobApplicationSettingsTab />
+            </Box>
+          ) : null}
         </Stack>
       </Container>
     </Box>

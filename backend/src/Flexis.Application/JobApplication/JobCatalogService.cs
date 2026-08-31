@@ -48,15 +48,15 @@ public sealed class JobCatalogService
             throw new ConflictException($"A {KindLabel(kind)} with that title already exists.");
         }
 
-        var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
-        var folders = await _driveLayout.EnsureAsync(userId, accessToken, cancellationToken);
+        var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+        var folders = await _driveLayout.EnsureAsync(userId, access.AccessToken, cancellationToken);
         var firstSheet = kind == JobCatalogKind.Profile
             ? JobCatalogRules.SheetTabName(title)
             : JobCatalogRules.DefaultSourceLocation;
         var workbookKind = kind == JobCatalogKind.Profile ? JobWorkbookKind.Profile : JobWorkbookKind.Source;
         var folderId = kind == JobCatalogKind.Profile ? folders.ProfilesFolderId : folders.SourcesFolderId;
         var spreadsheet = await _sheets.CreateWorkbookAsync(
-            accessToken,
+            access.AccessToken,
             title,
             firstSheet,
             workbookKind,
@@ -65,7 +65,13 @@ public sealed class JobCatalogService
 
         try
         {
-            await _driveLayout.PlaceWorkbookAsync(accessToken, spreadsheet.SpreadsheetId, kind, folders, cancellationToken);
+            await _driveLayout.PlaceWorkbookAsync(access.AccessToken, spreadsheet.SpreadsheetId, kind, folders, cancellationToken);
+            await _sheets.ProtectWorkbookAsync(
+                access.AccessToken,
+                spreadsheet.SpreadsheetId,
+                access.OwnerEmail,
+                workbookKind,
+                cancellationToken);
             var item = JobCatalogItem.Create(userId, kind, title, spreadsheet.SpreadsheetUrl, spreadsheet.SpreadsheetId);
             await _items.AddAsync(item, cancellationToken);
             await _items.SaveChangesAsync(cancellationToken);
@@ -73,7 +79,7 @@ public sealed class JobCatalogService
         }
         catch
         {
-            await _sheets.DeleteFileAsync(accessToken, spreadsheet.SpreadsheetId, cancellationToken);
+            await _sheets.DeleteFileAsync(access.AccessToken, spreadsheet.SpreadsheetId, cancellationToken);
             throw;
         }
     }
@@ -148,14 +154,20 @@ public sealed class JobCatalogService
     {
         var name = JobCatalogRules.NormalizeLocationName(request.Name);
         var item = await RequireSource(userId, sourceId, cancellationToken);
-        var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
-        var sheets = await _sheets.ListSheetsAsync(accessToken, item.SpreadsheetId, cancellationToken);
+        var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+        var sheets = await _sheets.ListSheetsAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
         if (sheets.Any(sheet => string.Equals(sheet.Name, name, StringComparison.OrdinalIgnoreCase)))
         {
             throw new ConflictException("A location with that name already exists.");
         }
 
-        var created = await _sheets.AddSourceLocationSheetAsync(accessToken, item.SpreadsheetId, name, cancellationToken);
+        var created = await _sheets.AddSourceLocationSheetAsync(access.AccessToken, item.SpreadsheetId, name, cancellationToken);
+        await _sheets.ProtectWorkbookAsync(
+            access.AccessToken,
+            item.SpreadsheetId,
+            access.OwnerEmail,
+            JobWorkbookKind.Source,
+            cancellationToken);
         return new SourceLocationDto(created.SheetId, created.Name);
     }
 
@@ -211,8 +223,30 @@ public sealed class JobCatalogService
     {
         try
         {
-            var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
-            await _driveLayout.EnsureAsync(userId, accessToken, cancellationToken);
+            var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+            await _driveLayout.EnsureAsync(userId, access.AccessToken, cancellationToken);
+            var items = (await _items.ListAsync(userId, JobCatalogKind.Profile, cancellationToken))
+                .Concat(await _items.ListAsync(userId, JobCatalogKind.Source, cancellationToken));
+            foreach (var item in items)
+            {
+                if (!HasSpreadsheet(item))
+                {
+                    continue;
+                }
+
+                if (item.Kind == JobCatalogKind.Source)
+                {
+                    await _sheets.RemoveStatusColumnAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
+                }
+
+                await _sheets.SetFixedRowHeightAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
+                await _sheets.ProtectWorkbookAsync(
+                    access.AccessToken,
+                    item.SpreadsheetId,
+                    access.OwnerEmail,
+                    item.Kind == JobCatalogKind.Profile ? JobWorkbookKind.Profile : JobWorkbookKind.Source,
+                    cancellationToken);
+            }
         }
         catch (ValidationFailedException)
         {

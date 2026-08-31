@@ -67,7 +67,7 @@ export function SourceLocationsPanel({ actionsEnabled }: { actionsEnabled: boole
         Locations
       </Typography>
       {sourcesQuery.isError ? <Alert severity="error">{errorMessage(sourcesQuery.error)}</Alert> : null}
-      {(sourcesQuery.data ?? []).length === 0 ? (
+      {sourcesQuery.isSuccess && (sourcesQuery.data ?? []).length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           Create a source first. Each source workbook starts with a US tab. Add more locations here.
         </Typography>
@@ -172,15 +172,15 @@ function SourceLocationCard({
                 <TableHead>
                   <TableRow>
                     <TableCell>Location</TableCell>
-                    <TableCell align="right">Actions</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {(locationsQuery.data ?? []).map((location) => (
                     <TableRow key={location.sheetId} hover>
                       <TableCell>{location.name}</TableCell>
-                      <TableCell align="right">
-                        <Stack direction="row" spacing={0.5} sx={{ justifyContent: "flex-end" }}>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5} sx={{ justifyContent: "center" }}>
                           <Button
                             variant="text"
                             disabled={!actionsEnabled}

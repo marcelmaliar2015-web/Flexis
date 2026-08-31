@@ -151,7 +151,7 @@ export function CatalogItemsPanel({
                 <TableCell>Title</TableCell>
                 <TableCell>Created</TableCell>
                 <TableCell>URL</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -162,8 +162,8 @@ export function CatalogItemsPanel({
                   <TableCell>
                     {item.url ? <SheetUrl url={item.url} /> : "—"}
                   </TableCell>
-                  <TableCell align="right">
-                    <Stack direction="row" spacing={0.5} sx={{ justifyContent: "flex-end" }}>
+                  <TableCell>
+                    <Stack direction="row" spacing={0.5} sx={{ justifyContent: "center" }}>
                       <Button
                         variant="text"
                         disabled={!actionsEnabled}

@@ -175,7 +175,7 @@ export function JobApplicationOperationsTab() {
               <TableRow>
                 <TableCell>Profile</TableCell>
                 <TableCell>Source</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -239,8 +239,8 @@ export function JobApplicationOperationsTab() {
                       </Select>
                     </FormControl>
                   </TableCell>
-                  <TableCell align="right">
-                    <Stack direction="row" spacing={0.5} sx={{ justifyContent: "flex-end" }}>
+                  <TableCell>
+                    <Stack direction="row" spacing={0.5} sx={{ justifyContent: "center" }}>
                       <Button
                         disabled={!connected || applyMutation.isPending}
                         loading={applyMutation.isPending && applyMutation.variables === entry.id}

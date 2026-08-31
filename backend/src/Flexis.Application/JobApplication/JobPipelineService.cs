@@ -28,10 +28,11 @@ public sealed class JobPipelineService
 
     public async Task<JobPipelineBoardDto> GetBoardAsync(Guid userId, CancellationToken cancellationToken)
     {
+        GoogleSheetAccess? access = null;
         try
         {
-            var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
-            await _driveLayout.EnsureAsync(userId, accessToken, cancellationToken);
+            access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+            await _driveLayout.EnsureAsync(userId, access.AccessToken, cancellationToken);
         }
         catch (ValidationFailedException)
         {
@@ -39,6 +40,30 @@ public sealed class JobPipelineService
 
         var profiles = await _items.ListAsync(userId, JobCatalogKind.Profile, cancellationToken);
         var sources = await _items.ListAsync(userId, JobCatalogKind.Source, cancellationToken);
+        if (access is not null)
+        {
+            foreach (var item in profiles.Concat(sources))
+            {
+                if (string.IsNullOrWhiteSpace(item.SpreadsheetId))
+                {
+                    continue;
+                }
+
+                if (item.Kind == JobCatalogKind.Source)
+                {
+                    await _sheets.RemoveStatusColumnAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
+                }
+
+                await _sheets.SetFixedRowHeightAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
+                await _sheets.ProtectWorkbookAsync(
+                    access.AccessToken,
+                    item.SpreadsheetId,
+                    access.OwnerEmail,
+                    item.Kind == JobCatalogKind.Profile ? JobWorkbookKind.Profile : JobWorkbookKind.Source,
+                    cancellationToken);
+            }
+        }
+
         var sourceOptions = new List<JobPipelineSourceOptionDto>(sources.Count);
         foreach (var source in sources)
         {
@@ -115,23 +140,23 @@ public sealed class JobPipelineService
             throw new ValidationFailedException("Profile and source must have a Google Sheet.");
         }
 
-        var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
-        var sourceSheets = await _sheets.ListSheetsAsync(accessToken, source.SpreadsheetId, cancellationToken);
+        var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+        var sourceSheets = await _sheets.ListSheetsAsync(access.AccessToken, source.SpreadsheetId, cancellationToken);
         var location = sourceSheets.FirstOrDefault(sheet => sheet.SheetId == entry.LocationSheetId)
             ?? throw new NotFoundException("Source location was not found.");
-        var profileSheets = await _sheets.ListSheetsAsync(accessToken, profile.SpreadsheetId, cancellationToken);
+        var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
         if (profileSheets.Count == 0)
         {
             throw new ValidationFailedException("This profile has no Google Sheet tab.");
         }
 
         var incoming = await _sheets.ReadListingsAsync(
-            accessToken,
+            access.AccessToken,
             source.SpreadsheetId,
             location.Name,
             cancellationToken);
         var existing = await _sheets.ReadListingsAsync(
-            accessToken,
+            access.AccessToken,
             profile.SpreadsheetId,
             profileSheets[0].Name,
             cancellationToken);
@@ -157,12 +182,25 @@ public sealed class JobPipelineService
         if (fresh.Count > 0)
         {
             await _sheets.AppendListingsAsync(
-                accessToken,
+                access.AccessToken,
                 profile.SpreadsheetId,
                 profileSheets[0].Name,
                 fresh,
                 cancellationToken);
         }
+
+        await _sheets.ProtectWorkbookAsync(
+            access.AccessToken,
+            profile.SpreadsheetId,
+            access.OwnerEmail,
+            JobWorkbookKind.Profile,
+            cancellationToken);
+        await _sheets.ProtectWorkbookAsync(
+            access.AccessToken,
+            source.SpreadsheetId,
+            access.OwnerEmail,
+            JobWorkbookKind.Source,
+            cancellationToken);
 
         return new JobPipelineUpdateResultDto(fresh.Count, skipped);
     }

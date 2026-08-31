@@ -61,6 +61,23 @@ public interface IGoogleSheetsWorkspace
 
     Task DeleteFileAsync(string accessToken, string spreadsheetId, CancellationToken cancellationToken);
 
+    Task SetFixedRowHeightAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken);
+
+    Task RemoveStatusColumnAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken);
+
+    Task ProtectWorkbookAsync(
+        string accessToken,
+        string spreadsheetId,
+        string ownerEmail,
+        JobWorkbookKind kind,
+        CancellationToken cancellationToken);
+
     Task<IReadOnlyList<JobListingRow>> ReadListingsAsync(
         string accessToken,
         string spreadsheetId,

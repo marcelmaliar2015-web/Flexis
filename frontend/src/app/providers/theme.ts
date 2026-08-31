@@ -77,5 +77,18 @@ export const theme = createTheme({
         color: "inherit",
       },
     },
+    MuiTableCell: {
+      defaultProps: {
+        align: "center",
+      },
+      styleOverrides: {
+        root: {
+          verticalAlign: "middle",
+          "& .MuiSelect-select": {
+            textAlign: "center",
+          },
+        },
+      },
+    },
   },
 });

@@ -6,7 +6,7 @@ Operations needs one table to send listings from a source location tab into a pr
 
 ## Decision
 
-Operations is a Pipeline table. Each entry pairs a profile with a source location (`Source title · location`). Update copies Company Name, Position, Link, and JD from that source tab onto the profile sheet. A listing is skipped when company, position, and link already match a profile row. The same profile and source location cannot be added twice. Source location tabs are managed on Job Application Settings.
+Operations is a Pipeline table. Each entry pairs a profile with a source location (`Source title · location`). Update copies Company Name, Position, Link, and JD from that source tab onto the profile sheet. A listing is skipped when company, position, and link already match a profile row. The same profile and source location cannot be added twice. Source location tabs are managed on Job Application Settings. After Update, Flexis reapplies sheet protection: owner can edit all cells; invited editors can edit only Status and Issue on the profile.
 
 ## Consequences
 

@@ -126,7 +126,7 @@ export function UsersManagement() {
                 <TableCell>Email</TableCell>
                 <TableCell>Role</TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -142,8 +142,8 @@ export function UsersManagement() {
                       label={user.isActive ? "Active" : "Inactive"}
                     />
                   </TableCell>
-                  <TableCell align="right">
-                    <Stack direction="row" spacing={0.5} sx={{ justifyContent: "flex-end" }}>
+                  <TableCell>
+                    <Stack direction="row" spacing={0.5} sx={{ justifyContent: "center" }}>
                       <Button
                         variant="text"
                         onClick={() => {
