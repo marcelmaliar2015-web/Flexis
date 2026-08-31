@@ -28,6 +28,7 @@ import {
 } from "@/shared/api/jobCatalog";
 import { jobPipelineQueryKey } from "@/shared/api/pipeline";
 import type { JobCatalogItem, JobCatalogKind } from "@/shared/types/jobCatalog";
+import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -93,6 +94,7 @@ export function CatalogItemsPanel({
     onSuccess: async (item) => {
       await queryClient.invalidateQueries({ queryKey });
       await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+      await refreshJobApplicationWorkspace(queryClient);
       setFormError(null);
       setEditor({ mode: "created", item });
     },
@@ -105,6 +107,7 @@ export function CatalogItemsPanel({
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey });
       await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+      await refreshJobApplicationWorkspace(queryClient);
       setEditor(null);
     },
     onError: (error) => setFormError(errorMessage(error)),
@@ -115,6 +118,7 @@ export function CatalogItemsPanel({
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey });
       await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+      await refreshJobApplicationWorkspace(queryClient);
       setItemToDelete(null);
     },
   });

@@ -11,19 +11,22 @@ public sealed class JobCatalogService
     private readonly GoogleAccessTokenService _tokens;
     private readonly IGoogleSheetsWorkspace _sheets;
     private readonly GoogleDriveLayoutService _driveLayout;
+    private readonly JobApplicationActivity _activity;
 
     public JobCatalogService(
         IJobCatalogRepository items,
         IJobPipelineRepository pipeline,
         GoogleAccessTokenService tokens,
         IGoogleSheetsWorkspace sheets,
-        GoogleDriveLayoutService driveLayout)
+        GoogleDriveLayoutService driveLayout,
+        JobApplicationActivity activity)
     {
         _items = items;
         _pipeline = pipeline;
         _tokens = tokens;
         _sheets = sheets;
         _driveLayout = driveLayout;
+        _activity = activity;
     }
 
     public async Task<IReadOnlyList<JobCatalogItemDto>> ListAsync(
@@ -75,6 +78,17 @@ public sealed class JobCatalogService
             var item = JobCatalogItem.Create(userId, kind, title, spreadsheet.SpreadsheetUrl, spreadsheet.SpreadsheetId);
             await _items.AddAsync(item, cancellationToken);
             await _items.SaveChangesAsync(cancellationToken);
+            await _activity.WriteAsync(
+                userId,
+                "catalog",
+                kind == JobCatalogKind.Profile ? "create-profile" : "create-source",
+                kind == JobCatalogKind.Profile
+                    ? $"Created profile {title}"
+                    : $"Created source {title}",
+                kind == JobCatalogKind.Profile
+                    ? $"Opened a profile Google Sheet named {title} with a main tab of the same name. Spreadsheet {spreadsheet.SpreadsheetId}."
+                    : $"Opened a source Google Sheet named {title} with a first location tab {JobCatalogRules.DefaultSourceLocation}. Spreadsheet {spreadsheet.SpreadsheetId}.",
+                cancellationToken);
             return ToDto(item);
         }
         catch
@@ -116,14 +130,30 @@ public sealed class JobCatalogService
             }
         }
 
+        var previousTitle = item.Title;
         item.SetTitle(title);
         await _items.SaveChangesAsync(cancellationToken);
+        if (!string.Equals(previousTitle, title, StringComparison.Ordinal))
+        {
+            await _activity.WriteAsync(
+                userId,
+                "catalog",
+                item.Kind == JobCatalogKind.Profile ? "rename-profile" : "rename-source",
+                item.Kind == JobCatalogKind.Profile
+                    ? $"Renamed profile to {title}"
+                    : $"Renamed source to {title}",
+                $"Previous title was {previousTitle}. The Google Sheet file name was updated to match.",
+                cancellationToken);
+        }
+
         return ToDto(item);
     }
 
     public async Task DeleteAsync(Guid userId, Guid id, CancellationToken cancellationToken)
     {
         var item = await RequireItem(userId, id, cancellationToken);
+        var title = item.Title;
+        var kind = item.Kind;
         if (HasSpreadsheet(item))
         {
             var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
@@ -133,6 +163,17 @@ public sealed class JobCatalogService
         await _pipeline.RemoveByCatalogItemIdAsync(userId, id, cancellationToken);
         _items.Remove(item);
         await _items.SaveChangesAsync(cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "catalog",
+            kind == JobCatalogKind.Profile ? "delete-profile" : "delete-source",
+            kind == JobCatalogKind.Profile
+                ? $"Deleted profile {title}"
+                : $"Deleted source {title}",
+            kind == JobCatalogKind.Profile
+                ? $"Removed profile {title}, its Google Sheet, and any pipeline rows that used it."
+                : $"Removed source {title}, its Google Sheet, and any pipeline rows that used it.",
+            cancellationToken);
     }
 
     public async Task<IReadOnlyList<SourceLocationDto>> ListLocationsAsync(
@@ -168,6 +209,13 @@ public sealed class JobCatalogService
             access.OwnerEmail,
             JobWorkbookKind.Source,
             cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "catalog",
+            "add-location",
+            $"Added location {name} to {item.Title}",
+            $"Created a new source tab named {name} on {item.Title}.",
+            cancellationToken);
         return new SourceLocationDto(created.SheetId, created.Name);
     }
 
@@ -193,7 +241,15 @@ public sealed class JobCatalogService
             throw new ConflictException("A location with that name already exists.");
         }
 
+        var previous = sheets.First(sheet => sheet.SheetId == sheetId).Name;
         await _sheets.RenameSheetAsync(accessToken, item.SpreadsheetId, sheetId, name, cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "catalog",
+            "rename-location",
+            $"Renamed location to {name} on {item.Title}",
+            $"Source {item.Title} location {previous} is now {name}.",
+            cancellationToken);
         return new SourceLocationDto(sheetId, name);
     }
 
@@ -216,7 +272,15 @@ public sealed class JobCatalogService
             throw new DomainRuleException("A source must keep at least one location.");
         }
 
+        var locationName = sheets.First(sheet => sheet.SheetId == sheetId).Name;
         await _sheets.DeleteSheetAsync(accessToken, item.SpreadsheetId, sheetId, cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "catalog",
+            "delete-location",
+            $"Deleted location {locationName} from {item.Title}",
+            $"Removed the {locationName} tab from source {item.Title}. Pipeline rows that used that location were not changed here.",
+            cancellationToken);
     }
 
     private async Task TryPlaceCatalogAsync(Guid userId, CancellationToken cancellationToken)
@@ -237,6 +301,13 @@ public sealed class JobCatalogService
                 if (item.Kind == JobCatalogKind.Source)
                 {
                     await _sheets.RemoveStatusColumnAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
+                }
+                else
+                {
+                    await _sheets.EnsureProfileStatusDropdownAsync(
+                        access.AccessToken,
+                        item.SpreadsheetId,
+                        cancellationToken);
                 }
 
                 await _sheets.SetFixedRowHeightAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);

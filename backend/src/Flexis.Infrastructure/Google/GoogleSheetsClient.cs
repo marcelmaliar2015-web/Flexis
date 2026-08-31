@@ -15,13 +15,14 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private static readonly string[] StatusValues = ["Applied", "Invalid", "Expired", "Other"];
+    private static readonly string[] StatusValues = ["Applied", "Interview", "Invalid", "Expired", "Other"];
 
     private const string FlexisLockDescription = "Flexis owner lock";
 
     private static readonly (string Value, Color Bg, Color Fg)[] StatusColors =
     [
         ("Applied", new Color(0.902, 0.957, 0.925), new Color(0.106, 0.498, 0.306)),
+        ("Interview", new Color(0.910, 0.851, 0.980), new Color(0.404, 0.176, 0.620)),
         ("Invalid", new Color(0.988, 0.910, 0.902), new Color(0.706, 0.137, 0.094)),
         ("Expired", new Color(0.996, 0.941, 0.780), new Color(0.710, 0.278, 0.031)),
         ("Other", new Color(0.820, 0.914, 1.0), new Color(0.090, 0.361, 0.827))
@@ -498,6 +499,85 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             .ToArray();
     }
 
+    public async Task<IReadOnlyList<JobListingRow>> ReadProfileListingsAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        CancellationToken cancellationToken)
+    {
+        var payload = await SendJson<SheetValues>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(sheetName, "A2:F")}",
+            null,
+            cancellationToken);
+
+        return (payload.Values ?? [])
+            .Select(ToListing)
+            .ToArray();
+    }
+
+    public async Task EnsureProfileStatusDropdownAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        var payload = await SendJson<SpreadsheetList>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,title)",
+            null,
+            cancellationToken);
+
+        var requests = new List<object>();
+        foreach (var sheet in payload.Sheets ?? [])
+        {
+            if (sheet.Properties is null)
+            {
+                continue;
+            }
+
+            var sheetId = sheet.Properties.SheetId;
+            var statusIndex = Array.FindIndex(ColumnsFor(JobWorkbookKind.Profile), column => column.Name == "Status");
+            requests.Add(new
+            {
+                setDataValidation = new
+                {
+                    range = new
+                    {
+                        sheetId,
+                        startRowIndex = 1,
+                        endRowIndex = 200,
+                        startColumnIndex = statusIndex,
+                        endColumnIndex = statusIndex + 1
+                    },
+                    rule = new
+                    {
+                        condition = new
+                        {
+                            type = "ONE_OF_LIST",
+                            values = StatusValues.Select(value => new { userEnteredValue = value }).ToArray()
+                        },
+                        showCustomUi = true,
+                        strict = false
+                    }
+                }
+            });
+        }
+
+        if (requests.Count == 0)
+        {
+            return;
+        }
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new { requests },
+            cancellationToken);
+    }
+
     public Task AppendListingsAsync(
         string accessToken,
         string spreadsheetId,
@@ -878,7 +958,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
 
     private static JobListingRow ToListing(List<JsonElement> row)
     {
-        return new JobListingRow(Cell(row, 0), Cell(row, 1), Cell(row, 2), Cell(row, 3));
+        return new JobListingRow(Cell(row, 0), Cell(row, 1), Cell(row, 2), Cell(row, 3), Cell(row, 5));
     }
 
     private static string Cell(List<JsonElement> row, int index)

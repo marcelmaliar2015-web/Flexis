@@ -40,6 +40,7 @@ import {
   sourceChoicesFromBoard,
   sourceLabel,
 } from "@/features/jobApplication/pipelineUi";
+import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -74,6 +75,7 @@ export function JobApplicationOperationsTab() {
     mutationFn: (request: JobPipelineWriteRequest) => createJobPipelineEntry(request),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+      await refreshJobApplicationWorkspace(queryClient);
       setCreating(false);
       setFormError(null);
     },
@@ -82,23 +84,29 @@ export function JobApplicationOperationsTab() {
 
   const applyAllMutation = useMutation({
     mutationFn: applyAllJobPipelineEntries,
-    onSuccess: (result) => setNotice(listingsNotice(result, true)),
+    onSuccess: async (result) => {
+      setNotice(listingsNotice(result, true));
+      await refreshJobApplicationWorkspace(queryClient);
+    },
   });
 
   const forwardAllMutation = useMutation({
     mutationFn: forwardAllJobPipelineEntries,
-    onSuccess: (result) =>
+    onSuccess: async (result) => {
       setNotice(
         result.forwarded === 1
           ? "Forwarded 1 profile sheet."
           : `Forwarded ${result.forwarded} profile sheets.`,
-      ),
+      );
+      await refreshJobApplicationWorkspace(queryClient);
+    },
   });
 
   const deleteAllMutation = useMutation({
     mutationFn: deleteAllJobPipelineEntries,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+      await refreshJobApplicationWorkspace(queryClient);
       setDeleteAllOpen(false);
     },
   });

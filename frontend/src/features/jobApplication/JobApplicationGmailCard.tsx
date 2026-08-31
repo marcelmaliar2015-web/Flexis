@@ -21,6 +21,7 @@ import {
 } from "@/shared/api/google";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { appPaths } from "@/shared/config/paths";
+import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -85,6 +86,7 @@ export function JobApplicationGmailCard() {
 
     setNotice(nextNotice);
     void queryClient.invalidateQueries({ queryKey: googleConnectionQueryKey });
+    void refreshJobApplicationWorkspace(queryClient);
     navigate(appPaths.jobApplication, { replace: true });
   }, [navigate, queryClient, searchParams]);
 
@@ -110,6 +112,7 @@ export function JobApplicationGmailCard() {
     onSuccess: async () => {
       setNotice(null);
       await queryClient.invalidateQueries({ queryKey: googleConnectionQueryKey });
+      await refreshJobApplicationWorkspace(queryClient);
     },
   });
 

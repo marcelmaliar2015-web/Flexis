@@ -53,6 +53,7 @@ import {
   sourceChoiceValue,
   sourceChoicesFromBoard,
 } from "@/features/jobApplication/pipelineUi";
+import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
 
 const AccentRule = styled("span")(({ theme }) => ({
   display: "block",
@@ -112,6 +113,7 @@ export function JobApplicationPipelineEntryPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
       await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
+      await refreshJobApplicationWorkspace(queryClient);
     },
   });
 
@@ -120,6 +122,7 @@ export function JobApplicationPipelineEntryPage() {
     onSuccess: async (result) => {
       setNotice(listingsNotice(result, false));
       await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
+      await refreshJobApplicationWorkspace(queryClient);
     },
   });
 
@@ -128,6 +131,7 @@ export function JobApplicationPipelineEntryPage() {
     onSuccess: async (result) => {
       setNotice(forwardNotice(result));
       await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
+      await refreshJobApplicationWorkspace(queryClient);
     },
   });
 
@@ -135,6 +139,7 @@ export function JobApplicationPipelineEntryPage() {
     mutationFn: () => deleteJobPipelineEntry(entryId ?? ""),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+      await refreshJobApplicationWorkspace(queryClient);
       navigate(appPaths.jobApplication);
     },
   });
@@ -147,6 +152,7 @@ export function JobApplicationPipelineEntryPage() {
       await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
       setBanEditor(null);
       setBanError(null);
+      await refreshJobApplicationWorkspace(queryClient);
     },
     onError: (error) => setBanError(errorMessage(error)),
   });
@@ -159,6 +165,7 @@ export function JobApplicationPipelineEntryPage() {
       await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
       setBanEditor(null);
       setBanError(null);
+      await refreshJobApplicationWorkspace(queryClient);
     },
     onError: (error) => setBanError(errorMessage(error)),
   });
@@ -169,6 +176,7 @@ export function JobApplicationPipelineEntryPage() {
       await queryClient.invalidateQueries({ queryKey: jobPipelineBannedQueryKey(entryId ?? "") });
       await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
       setBanToDelete(null);
+      await refreshJobApplicationWorkspace(queryClient);
     },
   });
 

@@ -2,6 +2,7 @@ import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import { useQuery } from "@tanstack/react-query";
 import { CatalogItemsPanel } from "@/features/jobApplication/CatalogItemsPanel";
+import { JobApplicationFinancialDefaultsCard } from "@/features/jobApplication/JobApplicationFinancialDefaultsCard";
 import { JobApplicationGmailCard } from "@/features/jobApplication/JobApplicationGmailCard";
 import { SourceLocationsPanel } from "@/features/jobApplication/SourceLocationsPanel";
 import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
@@ -16,6 +17,7 @@ export function JobApplicationSettingsTab() {
   return (
     <Stack spacing={4}>
       <JobApplicationGmailCard />
+      <JobApplicationFinancialDefaultsCard />
       {!connected ? (
         <Alert severity="info">Connect Gmail to create, edit, or delete profiles and sources.</Alert>
       ) : null}

@@ -69,6 +69,8 @@ public static class DependencyInjection
         services.AddScoped<IGoogleClientCredentialStore, GoogleClientCredentialStore>();
         services.AddScoped<IJobCatalogRepository, JobCatalogRepository>();
         services.AddScoped<IJobPipelineRepository, JobPipelineRepository>();
+        services.AddScoped<IJobFinancialSettingsRepository, JobFinancialSettingsRepository>();
+        services.AddScoped<IJobApplicationLogRepository, JobApplicationLogRepository>();
 
         services.AddSingleton<IMongoClient>(serviceProvider =>
         {

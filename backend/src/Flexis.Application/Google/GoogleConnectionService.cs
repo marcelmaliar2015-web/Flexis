@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Flexis.Application.Common;
+using Flexis.Application.JobApplication;
 using Flexis.Domain.Google;
 
 namespace Flexis.Application.Google;
@@ -15,6 +16,7 @@ public sealed class GoogleConnectionService
     private readonly IGoogleConnectionRepository _connections;
     private readonly IFrontendOrigins _frontendOrigins;
     private readonly GoogleDriveLayoutService _driveLayout;
+    private readonly JobApplicationActivity _activity;
 
     public GoogleConnectionService(
         IGoogleOAuthGateway oauth,
@@ -22,7 +24,8 @@ public sealed class GoogleConnectionService
         IGoogleTokenProtector protector,
         IGoogleConnectionRepository connections,
         IFrontendOrigins frontendOrigins,
-        GoogleDriveLayoutService driveLayout)
+        GoogleDriveLayoutService driveLayout,
+        JobApplicationActivity activity)
     {
         _oauth = oauth;
         _states = states;
@@ -30,6 +33,7 @@ public sealed class GoogleConnectionService
         _connections = connections;
         _frontendOrigins = frontendOrigins;
         _driveLayout = driveLayout;
+        _activity = activity;
     }
 
     public async Task<GoogleConnectionStatusDto> GetStatusAsync(
@@ -123,6 +127,13 @@ public sealed class GoogleConnectionService
 
             await _connections.SaveChangesAsync(cancellationToken);
             await TryEnsureDriveLayoutAsync(pending.UserId, tokens.AccessToken, cancellationToken);
+            await _activity.WriteAsync(
+                pending.UserId,
+                "account",
+                "gmail-connect",
+                "Connected Gmail",
+                $"Google account {profile.Email} is connected. Flexis can read and write Job Application sheets and Gmail for this user.",
+                cancellationToken);
             return AppendResult(pending.ReturnUrl, "connected");
         }
         catch (GoogleOAuthException)
@@ -139,10 +150,20 @@ public sealed class GoogleConnectionService
             return;
         }
 
+        var email = connection.GoogleEmail;
         var refreshToken = _protector.Unprotect(connection.RefreshTokenProtected);
         await _oauth.RevokeAsync(refreshToken, cancellationToken);
         _connections.Remove(connection);
         await _connections.SaveChangesAsync(cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "account",
+            "gmail-disconnect",
+            "Disconnected Gmail",
+            string.IsNullOrWhiteSpace(email)
+                ? "Google access was revoked. Job Application sheet actions stay disabled until Gmail is connected again."
+                : $"Google account {email} was disconnected. Job Application sheet actions stay disabled until Gmail is connected again.",
+            cancellationToken);
     }
 
     private async Task TryEnsureDriveLayoutAsync(

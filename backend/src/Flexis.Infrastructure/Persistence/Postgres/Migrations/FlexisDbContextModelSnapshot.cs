@@ -153,6 +153,14 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<decimal>("ApplyRate")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)");
+
+                    b.Property<decimal>("BonusRate")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -209,6 +217,70 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .IsUnique();
 
                     b.ToTable("job_pipeline_banned_companies", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("ApplyRate")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)");
+
+                    b.Property<decimal>("BonusRate")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("job_financial_settings", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobApplicationLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Detail")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(240)
+                        .HasColumnType("character varying(240)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "OccurredAt");
+
+                    b.ToTable("job_application_logs", (string)null);
                 });
 
             modelBuilder.Entity("Flexis.Domain.Users.User", b =>
@@ -283,6 +355,24 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.HasOne("Flexis.Domain.JobApplication.JobPipelineEntry", null)
                         .WithMany()
                         .HasForeignKey("PipelineEntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSettings", b =>
+                {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobApplicationLog", b =>
+                {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

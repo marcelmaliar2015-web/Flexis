@@ -20,3 +20,4 @@ Gmail must be connected. Pipeline entries live in `job_pipeline_entries`. Deleti
 
 - [008-job-catalog-google-sheets.md](008-job-catalog-google-sheets.md)
 - [012-pipeline-banned-companies.md](012-pipeline-banned-companies.md)
+- [013-job-application-financial-logs.md](013-job-application-financial-logs.md)

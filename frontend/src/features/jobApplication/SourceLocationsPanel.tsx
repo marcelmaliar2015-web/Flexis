@@ -30,6 +30,7 @@ import {
 } from "@/shared/api/jobCatalog";
 import { jobPipelineQueryKey } from "@/shared/api/pipeline";
 import type { JobCatalogItem, SourceLocation } from "@/shared/types/jobCatalog";
+import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -104,6 +105,7 @@ function SourceLocationCard({
   async function refreshLocations() {
     await queryClient.invalidateQueries({ queryKey: sourceLocationsQueryKey(item.id) });
     await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+    await refreshJobApplicationWorkspace(queryClient);
   }
 
   const createMutation = useMutation({

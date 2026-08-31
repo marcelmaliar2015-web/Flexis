@@ -10,7 +10,12 @@ public sealed record CreatedSpreadsheet(string SpreadsheetId, string Spreadsheet
 
 public sealed record SpreadsheetSheet(int SheetId, string Name);
 
-public sealed record JobListingRow(string CompanyName, string Position, string Link, string Jd)
+public sealed record JobListingRow(
+    string CompanyName,
+    string Position,
+    string Link,
+    string Jd,
+    string Status = "")
 {
     public bool IsEmpty =>
         string.IsNullOrWhiteSpace(CompanyName)
@@ -90,6 +95,17 @@ public interface IGoogleSheetsWorkspace
         string accessToken,
         string spreadsheetId,
         string sheetName,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<JobListingRow>> ReadProfileListingsAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        CancellationToken cancellationToken);
+
+    Task EnsureProfileStatusDropdownAsync(
+        string accessToken,
+        string spreadsheetId,
         CancellationToken cancellationToken);
 
     Task AppendListingsAsync(

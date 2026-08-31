@@ -47,6 +47,10 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 | PUT | `/api/job-application/pipeline/{id}/banned-companies/{companyId}` | Authenticated | `200` + `JobPipelineBannedCompanyDto` |
 | DELETE | `/api/job-application/pipeline/{id}/banned-companies/{companyId}` | Authenticated | `204` |
 | GET | `/api/job-application/pipeline/{id}/banned-matches` | Authenticated | `200` + `JobPipelineBannedMatchesDto` |
+| GET | `/api/job-application/financial` | Authenticated | `200` + `JobFinancialBoardDto` |
+| PUT | `/api/job-application/financial/defaults` | Authenticated | `200` + `JobFinancialDefaultsDto` |
+| PUT | `/api/job-application/financial/rows/{entryId}/rates` | Authenticated | `200` + `JobFinancialRowDto` |
+| GET | `/api/job-application/logs` | Authenticated | `200` + `JobApplicationLogDto[]` |
 
 `UserDto`: `id`, `email`, `displayName`, `role`, `isActive`, `createdAt`. Role values: `Admin`, `User`, `Viewer`.
 
@@ -62,6 +66,10 @@ ASP.NET Core controllers. JSON camelCase. Enums as strings. Route prefix `api/`.
 
 `JobPipelineBannedCompanyDto`: `id`, `companyName`, `createdAt`. Write body: `companyName`. Duplicate after name folding: `409`. Too-generic name: `400`. `JobPipelineBannedMatchesDto`: `source` and `profile` arrays of `sheet`, `companyName`, `position`, `link`, `matchedBan`. Matches are scanned from that entry's source location tab and profile main tab. See [012-pipeline-banned-companies.md](../decisions/012-pipeline-banned-companies.md).
 
+`JobFinancialBoardDto`: `defaults` (`applyRate`, `bonusRate`), `rows`, `allPrice`, `allTotal`, `allApplied`, `allInterviews`. `JobFinancialRowDto`: `entryId`, `profileTitle`, `sourceLabel`, `total`, `applied`, `interviews`, `applyRate`, `bonusRate`, `price`. Counts are from the profile named main tab. Price is `applied * applyRate + interviews * bonusRate`. Defaults PUT and row rates PUT body: `applyRate`, `bonusRate` (0 to 10000). Missing pipeline row: `404`. See [013-job-application-financial-logs.md](../decisions/013-job-application-financial-logs.md).
+
+`JobApplicationLogDto`: `id`, `occurredAt`, `category`, `action`, `summary`, `detail`. Newest 200 for that user. Categories: `pipeline`, `catalog`, `financial`, `account`.
+
 ## Contracts and errors
 
 Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. Last active admin cannot be demoted, deactivated, or deleted: `409`. Google start with a missing client or a bad return URL: `400`. Invalid catalog title or location: `400`. Sheets calls without a connected Gmail: `400`. Google Sheets errors: `400`. Health does not throw to the client; failed checks become unhealthy entries.
@@ -76,3 +84,4 @@ Unknown routes: framework 404. Invalid sign-in: `401`. Duplicate email: `409`. L
 - [../decisions/009-google-client-in-settings.md](../decisions/009-google-client-in-settings.md)
 - [../decisions/010-job-application-pipeline.md](../decisions/010-job-application-pipeline.md)
 - [../decisions/012-pipeline-banned-companies.md](../decisions/012-pipeline-banned-companies.md)
+- [../decisions/013-job-application-financial-logs.md](../decisions/013-job-application-financial-logs.md)

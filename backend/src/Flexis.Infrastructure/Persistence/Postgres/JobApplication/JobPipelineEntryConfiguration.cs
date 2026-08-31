@@ -12,6 +12,8 @@ internal sealed class JobPipelineEntryConfiguration : IEntityTypeConfiguration<J
         builder.ToTable("job_pipeline_entries");
         builder.HasKey(entry => entry.Id);
         builder.Property(entry => entry.LocationName).HasMaxLength(100).IsRequired();
+        builder.Property(entry => entry.ApplyRate).HasPrecision(12, 4);
+        builder.Property(entry => entry.BonusRate).HasPrecision(12, 4);
         builder.HasIndex(entry => new { entry.UserId, entry.ProfileId, entry.SourceId, entry.LocationSheetId })
             .IsUnique();
         builder.HasOne<User>()

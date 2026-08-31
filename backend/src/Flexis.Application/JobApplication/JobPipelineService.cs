@@ -11,19 +11,25 @@ public sealed class JobPipelineService
     private readonly GoogleAccessTokenService _tokens;
     private readonly IGoogleSheetsWorkspace _sheets;
     private readonly GoogleDriveLayoutService _driveLayout;
+    private readonly JobFinancialService _financial;
+    private readonly JobApplicationActivity _activity;
 
     public JobPipelineService(
         IJobPipelineRepository entries,
         IJobCatalogRepository items,
         GoogleAccessTokenService tokens,
         IGoogleSheetsWorkspace sheets,
-        GoogleDriveLayoutService driveLayout)
+        GoogleDriveLayoutService driveLayout,
+        JobFinancialService financial,
+        JobApplicationActivity activity)
     {
         _entries = entries;
         _items = items;
         _tokens = tokens;
         _sheets = sheets;
         _driveLayout = driveLayout;
+        _financial = financial;
+        _activity = activity;
     }
 
     public async Task<JobPipelineBoardDto> GetBoardAsync(Guid userId, CancellationToken cancellationToken)
@@ -52,6 +58,13 @@ public sealed class JobPipelineService
                 if (item.Kind == JobCatalogKind.Source)
                 {
                     await _sheets.RemoveStatusColumnAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
+                }
+                else
+                {
+                    await _sheets.EnsureProfileStatusDropdownAsync(
+                        access.AccessToken,
+                        item.SpreadsheetId,
+                        cancellationToken);
                 }
 
                 await _sheets.SetFixedRowHeightAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
@@ -102,8 +115,18 @@ public sealed class JobPipelineService
         CancellationToken cancellationToken)
     {
         var resolved = await ResolveAsync(userId, request, null, cancellationToken);
+        var settings = await _financial.GetOrCreateSettingsAsync(userId, cancellationToken);
+        resolved.SetRates(settings.ApplyRate, settings.BonusRate);
         await _entries.AddAsync(resolved, cancellationToken);
         await _entries.SaveChangesAsync(cancellationToken);
+        var description = await DescribeAsync(resolved, cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "pipeline",
+            "create",
+            $"Added {description.ProfileTitle} to the pipeline",
+            $"{description.ProfileTitle} is paired with {description.SourceTitle} · {description.LocationName}. Apply rate {resolved.ApplyRate}, bonus rate {resolved.BonusRate}.",
+            cancellationToken);
         return ToDto(resolved);
     }
 
@@ -117,23 +140,102 @@ public sealed class JobPipelineService
         var resolved = await ResolveAsync(userId, request, id, cancellationToken);
         entry.Replace(resolved.ProfileId, resolved.SourceId, resolved.LocationSheetId, resolved.LocationName);
         await _entries.SaveChangesAsync(cancellationToken);
+        var description = await DescribeAsync(entry, cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "pipeline",
+            "update",
+            $"Changed pipeline pairing for {description.ProfileTitle}",
+            $"{description.ProfileTitle} now uses {description.SourceTitle} · {description.LocationName}.",
+            cancellationToken);
         return ToDto(entry);
     }
 
     public async Task DeleteAsync(Guid userId, Guid id, CancellationToken cancellationToken)
     {
         var entry = await RequireEntry(userId, id, cancellationToken);
+        var description = await DescribeAsync(entry, cancellationToken);
         _entries.Remove(entry);
         await _entries.SaveChangesAsync(cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "pipeline",
+            "delete",
+            $"Removed {description.ProfileTitle} from the pipeline",
+            $"{description.ProfileTitle} · {description.SourceTitle} · {description.LocationName} was removed. Listings already on the profile sheet were left in place.",
+            cancellationToken);
     }
 
     public async Task DeleteAllAsync(Guid userId, CancellationToken cancellationToken)
     {
+        var entries = await _entries.ListAsync(userId, cancellationToken);
         await _entries.RemoveAllAsync(userId, cancellationToken);
         await _entries.SaveChangesAsync(cancellationToken);
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        await _activity.WriteAsync(
+            userId,
+            "pipeline",
+            "delete-all",
+            entries.Count == 1
+                ? "Removed 1 pipeline entry"
+                : $"Removed {entries.Count} pipeline entries",
+            "Every pipeline pairing for this account was deleted. Profile sheets and listings were not deleted.",
+            cancellationToken);
     }
 
     public async Task<JobPipelineUpdateResultDto> ApplyAsync(
+        Guid userId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await ApplyCoreAsync(userId, id, cancellationToken);
+        var entry = await RequireEntry(userId, id, cancellationToken);
+        var description = await DescribeAsync(entry, cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "pipeline",
+            "update-listings",
+            $"Updated listings for {description.ProfileTitle}",
+            $"Copied {result.Added} listing(s) from {description.SourceTitle} · {description.LocationName} onto the {description.ProfileTitle} main tab. Skipped {result.Skipped} duplicate(s). Blocked {result.Banned} banned company match(es).",
+            cancellationToken);
+        return result;
+    }
+
+    public async Task<JobPipelineUpdateResultDto> ApplyAllAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var entries = await _entries.ListAsync(userId, cancellationToken);
+        var added = 0;
+        var skipped = 0;
+        var banned = 0;
+        foreach (var entry in entries)
+        {
+            var result = await ApplyCoreAsync(userId, entry.Id, cancellationToken);
+            added += result.Added;
+            skipped += result.Skipped;
+            banned += result.Banned;
+        }
+
+        if (entries.Count > 0)
+        {
+            await _activity.WriteAsync(
+                userId,
+                "pipeline",
+                "update-all",
+                entries.Count == 1
+                    ? "Ran Update All on 1 pipeline row"
+                    : $"Ran Update All on {entries.Count} pipeline rows",
+                $"Copied {added} listing(s) onto profile main tabs. Skipped {skipped} duplicate(s). Blocked {banned} banned company match(es).",
+                cancellationToken);
+        }
+
+        return new JobPipelineUpdateResultDto(added, skipped, banned);
+    }
+
+    private async Task<JobPipelineUpdateResultDto> ApplyCoreAsync(
         Guid userId,
         Guid id,
         CancellationToken cancellationToken)
@@ -216,24 +318,61 @@ public sealed class JobPipelineService
         return new JobPipelineUpdateResultDto(fresh.Count, skipped, banned);
     }
 
-    public async Task<JobPipelineUpdateResultDto> ApplyAllAsync(Guid userId, CancellationToken cancellationToken)
+    public async Task<JobPipelineForwardResultDto> ForwardAsync(
+        Guid userId,
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var entries = await _entries.ListAsync(userId, cancellationToken);
-        var added = 0;
-        var skipped = 0;
-        var banned = 0;
-        foreach (var entry in entries)
-        {
-            var result = await ApplyAsync(userId, entry.Id, cancellationToken);
-            added += result.Added;
-            skipped += result.Skipped;
-            banned += result.Banned;
-        }
-
-        return new JobPipelineUpdateResultDto(added, skipped, banned);
+        var result = await ForwardCoreAsync(userId, id, cancellationToken);
+        var entry = await RequireEntry(userId, id, cancellationToken);
+        var description = await DescribeAsync(entry, cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "pipeline",
+            "forward",
+            $"Forwarded {description.ProfileTitle}",
+            $"Archived the {description.ProfileTitle} main tab as {result.ArchivedSheetName} and created a new empty main tab named {result.MainSheetName}.",
+            cancellationToken);
+        return result;
     }
 
-    public async Task<JobPipelineForwardResultDto> ForwardAsync(
+    public async Task<JobPipelineBatchForwardResultDto> ForwardAllAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var entries = await _entries.ListAsync(userId, cancellationToken);
+        var forwardedProfiles = new HashSet<Guid>();
+        var archiveNames = new List<string>();
+        foreach (var entry in entries)
+        {
+            if (!forwardedProfiles.Add(entry.ProfileId))
+            {
+                continue;
+            }
+
+            var result = await ForwardCoreAsync(userId, entry.Id, cancellationToken);
+            archiveNames.Add(result.ArchivedSheetName);
+        }
+
+        if (forwardedProfiles.Count > 0)
+        {
+            await _activity.WriteAsync(
+                userId,
+                "pipeline",
+                "forward-all",
+                forwardedProfiles.Count == 1
+                    ? "Forwarded 1 profile sheet"
+                    : $"Forwarded {forwardedProfiles.Count} profile sheets",
+                forwardedProfiles.Count == 1
+                    ? $"Archived the current main tab as {archiveNames[0]} and opened a new empty main tab."
+                    : $"Archived main tabs as {string.Join(", ", archiveNames)} and opened a new empty main tab for each profile.",
+                cancellationToken);
+        }
+
+        return new JobPipelineBatchForwardResultDto(forwardedProfiles.Count);
+    }
+
+    private async Task<JobPipelineForwardResultDto> ForwardCoreAsync(
         Guid userId,
         Guid id,
         CancellationToken cancellationToken)
@@ -266,25 +405,6 @@ public sealed class JobPipelineService
         return new JobPipelineForwardResultDto(archiveName, main.Name);
     }
 
-    public async Task<JobPipelineBatchForwardResultDto> ForwardAllAsync(
-        Guid userId,
-        CancellationToken cancellationToken)
-    {
-        var entries = await _entries.ListAsync(userId, cancellationToken);
-        var forwardedProfiles = new HashSet<Guid>();
-        foreach (var entry in entries)
-        {
-            if (!forwardedProfiles.Add(entry.ProfileId))
-            {
-                continue;
-            }
-
-            await ForwardAsync(userId, entry.Id, cancellationToken);
-        }
-
-        return new JobPipelineBatchForwardResultDto(forwardedProfiles.Count);
-    }
-
     public async Task<IReadOnlyList<JobPipelineBannedCompanyDto>> ListBannedAsync(
         Guid userId,
         Guid id,
@@ -312,6 +432,14 @@ public sealed class JobPipelineService
         var created = JobPipelineBannedCompany.Create(id, companyName, matchKey);
         await _entries.AddBannedAsync(created, cancellationToken);
         await _entries.SaveChangesAsync(cancellationToken);
+        var description = await DescribeAsync(await RequireEntry(userId, id, cancellationToken), cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "pipeline",
+            "ban-add",
+            $"Banned {companyName} on {description.ProfileTitle}",
+            $"{companyName} is now excluded from Update for {description.ProfileTitle} · {description.SourceTitle} · {description.LocationName}. Matching listings will be blocked.",
+            cancellationToken);
         return ToBannedDto(created);
     }
 
@@ -334,6 +462,14 @@ public sealed class JobPipelineService
 
         item.Replace(companyName, matchKey);
         await _entries.SaveChangesAsync(cancellationToken);
+        var description = await DescribeAsync(await RequireEntry(userId, id, cancellationToken), cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "pipeline",
+            "ban-edit",
+            $"Renamed a banned company on {description.ProfileTitle}",
+            $"Banned company is now {companyName} for {description.ProfileTitle} · {description.SourceTitle} · {description.LocationName}.",
+            cancellationToken);
         return ToBannedDto(item);
     }
 
@@ -342,8 +478,17 @@ public sealed class JobPipelineService
         await RequireEntry(userId, id, cancellationToken);
         var item = await _entries.GetBannedAsync(id, companyId, cancellationToken)
             ?? throw new NotFoundException("Banned company was not found.");
+        var companyName = item.CompanyName;
+        var description = await DescribeAsync(await RequireEntry(userId, id, cancellationToken), cancellationToken);
         _entries.RemoveBanned(item);
         await _entries.SaveChangesAsync(cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "pipeline",
+            "ban-remove",
+            $"Unbanned {companyName} on {description.ProfileTitle}",
+            $"{companyName} can be copied onto {description.ProfileTitle} again from {description.SourceTitle} · {description.LocationName}.",
+            cancellationToken);
     }
 
     public async Task<JobPipelineBannedMatchesDto> ListBannedMatchesAsync(
@@ -447,6 +592,18 @@ public sealed class JobPipelineService
         }
 
         return item;
+    }
+
+    private async Task<(string ProfileTitle, string SourceTitle, string LocationName)> DescribeAsync(
+        JobPipelineEntry entry,
+        CancellationToken cancellationToken)
+    {
+        var profile = await _items.GetByIdAsync(entry.UserId, entry.ProfileId, cancellationToken);
+        var source = await _items.GetByIdAsync(entry.UserId, entry.SourceId, cancellationToken);
+        return (
+            profile?.Title ?? "Unknown profile",
+            source?.Title ?? "Unknown source",
+            entry.LocationName);
     }
 
     private static SpreadsheetSheet RequireMainProfileSheet(

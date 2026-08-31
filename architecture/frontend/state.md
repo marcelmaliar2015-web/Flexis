@@ -6,7 +6,7 @@ Session in `shared/auth/AuthProvider.tsx`. Access token in memory plus `localSto
 
 ## Server data
 
-TanStack Query. Query client is created in `frontend/src/app/providers/queryClient.ts`. Feature hooks live next to the screen (`useHealthStatus`). `HomePage` also reads `healthQueryKey` from `shared/api/health` so the landing preview shares the same cache. Users list uses `usersQueryKey`. Google connection uses `googleConnectionQueryKey`. Google Cloud client uses `googleClientQueryKey`. Job catalog lists use `jobCatalogQueryKey`. Source locations use `sourceLocationsQueryKey`. Pipeline uses `jobPipelineQueryKey`. Banned companies use `jobPipelineBannedQueryKey`. Sheet matches use `jobPipelineBannedMatchesQueryKey` and refetch every 10 seconds on the pipeline entry page.
+TanStack Query. Query client is created in `frontend/src/app/providers/queryClient.ts`. Feature hooks live next to the screen (`useHealthStatus`). `HomePage` also reads `healthQueryKey` from `shared/api/health` so the landing preview shares the same cache. Users list uses `usersQueryKey`. Google connection uses `googleConnectionQueryKey`. Google Cloud client uses `googleClientQueryKey`. Job catalog lists use `jobCatalogQueryKey`. Source locations use `sourceLocationsQueryKey`. Pipeline uses `jobPipelineQueryKey`. Banned companies use `jobPipelineBannedQueryKey`. Sheet matches use `jobPipelineBannedMatchesQueryKey` and refetch every 10 seconds on the pipeline entry page. Financial uses `jobFinancialQueryKey`. Activity logs use `jobApplicationLogsQueryKey`.
 
 ## Data flow
 

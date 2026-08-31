@@ -19,6 +19,10 @@ public sealed class JobPipelineEntry
 
     public string LocationName { get; private set; }
 
+    public decimal ApplyRate { get; private set; }
+
+    public decimal BonusRate { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public static JobPipelineEntry Create(
@@ -36,6 +40,8 @@ public sealed class JobPipelineEntry
             SourceId = sourceId,
             LocationSheetId = locationSheetId,
             LocationName = locationName,
+            ApplyRate = JobFinancialSettings.DefaultApplyRate,
+            BonusRate = JobFinancialSettings.DefaultBonusRate,
             CreatedAt = DateTimeOffset.UtcNow
         };
     }
@@ -46,5 +52,11 @@ public sealed class JobPipelineEntry
         SourceId = sourceId;
         LocationSheetId = locationSheetId;
         LocationName = locationName;
+    }
+
+    public void SetRates(decimal applyRate, decimal bonusRate)
+    {
+        ApplyRate = applyRate;
+        BonusRate = bonusRate;
     }
 }
