@@ -21,19 +21,37 @@ public sealed class GoogleDriveLayoutService
         _items = items;
     }
 
-    public async Task<FlexisDriveFolders> EnsureAsync(
+    public Task<FlexisDriveFolders> EnsureFoldersAsync(
         Guid userId,
         string accessToken,
+        CancellationToken cancellationToken)
+    {
+        return EnsureCoreAsync(userId, accessToken, placeCatalog: false, cancellationToken);
+    }
+
+    public Task<FlexisDriveFolders> EnsureAsync(
+        Guid userId,
+        string accessToken,
+        CancellationToken cancellationToken)
+    {
+        return EnsureCoreAsync(userId, accessToken, placeCatalog: true, cancellationToken);
+    }
+
+    private async Task<FlexisDriveFolders> EnsureCoreAsync(
+        Guid userId,
+        string accessToken,
+        bool placeCatalog,
         CancellationToken cancellationToken)
     {
         var connection = await _connections.GetByUserIdAsync(userId, cancellationToken)
             ?? throw new ValidationFailedException("Connect Gmail first.");
         var folders = await BuildFoldersAsync(accessToken, connection, cancellationToken);
-        if (!connection.HasDriveLayout
+        var layoutChanged = !connection.HasDriveLayout
             || connection.DriveRootFolderId != folders.RootFolderId
             || connection.DriveWorkspaceFolderId != folders.WorkspaceFolderId
             || connection.DriveProfilesFolderId != folders.ProfilesFolderId
-            || connection.DriveSourcesFolderId != folders.SourcesFolderId)
+            || connection.DriveSourcesFolderId != folders.SourcesFolderId;
+        if (layoutChanged)
         {
             connection.SetDriveLayout(
                 folders.RootFolderId,
@@ -43,7 +61,11 @@ public sealed class GoogleDriveLayoutService
             await _connections.SaveChangesAsync(cancellationToken);
         }
 
-        await PlaceCatalogAsync(userId, accessToken, folders, cancellationToken);
+        if (placeCatalog || layoutChanged)
+        {
+            await PlaceCatalogAsync(userId, accessToken, folders, cancellationToken);
+        }
+
         return folders;
     }
 

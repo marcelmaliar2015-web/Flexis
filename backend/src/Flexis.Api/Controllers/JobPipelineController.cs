@@ -90,57 +90,6 @@ public sealed class JobPipelineController : ControllerBase
         return pipeline.ForwardAsync(CurrentUserId(), id, cancellationToken);
     }
 
-    [HttpGet("{id:guid}/banned-companies")]
-    public Task<IReadOnlyList<JobPipelineBannedCompanyDto>> ListBanned(
-        Guid id,
-        [FromServices] JobPipelineService pipeline,
-        CancellationToken cancellationToken)
-    {
-        return pipeline.ListBannedAsync(CurrentUserId(), id, cancellationToken);
-    }
-
-    [HttpPost("{id:guid}/banned-companies")]
-    public async Task<ActionResult<JobPipelineBannedCompanyDto>> CreateBanned(
-        Guid id,
-        [FromBody] JobPipelineBannedCompanyWriteRequest request,
-        [FromServices] JobPipelineService pipeline,
-        CancellationToken cancellationToken)
-    {
-        var created = await pipeline.CreateBannedAsync(CurrentUserId(), id, request, cancellationToken);
-        return Created($"/api/job-application/pipeline/{id}/banned-companies/{created.Id}", created);
-    }
-
-    [HttpPut("{id:guid}/banned-companies/{companyId:guid}")]
-    public Task<JobPipelineBannedCompanyDto> UpdateBanned(
-        Guid id,
-        Guid companyId,
-        [FromBody] JobPipelineBannedCompanyWriteRequest request,
-        [FromServices] JobPipelineService pipeline,
-        CancellationToken cancellationToken)
-    {
-        return pipeline.UpdateBannedAsync(CurrentUserId(), id, companyId, request, cancellationToken);
-    }
-
-    [HttpDelete("{id:guid}/banned-companies/{companyId:guid}")]
-    public async Task<IActionResult> DeleteBanned(
-        Guid id,
-        Guid companyId,
-        [FromServices] JobPipelineService pipeline,
-        CancellationToken cancellationToken)
-    {
-        await pipeline.DeleteBannedAsync(CurrentUserId(), id, companyId, cancellationToken);
-        return NoContent();
-    }
-
-    [HttpGet("{id:guid}/banned-matches")]
-    public Task<JobPipelineBannedMatchesDto> ListBannedMatches(
-        Guid id,
-        [FromServices] JobPipelineService pipeline,
-        CancellationToken cancellationToken)
-    {
-        return pipeline.ListBannedMatchesAsync(CurrentUserId(), id, cancellationToken);
-    }
-
     private Guid CurrentUserId()
     {
         var subject = User.FindFirstValue(ClaimTypes.NameIdentifier)

@@ -28,12 +28,20 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         ("Other", new Color(0.820, 0.914, 1.0), new Color(0.090, 0.361, 0.827))
     ];
 
+    private static readonly Color ListingsHeaderBackground = new(0.055, 0.153, 0.267);
+
+    private static readonly Color ListingsHeaderForeground = new(0.969, 0.957, 0.937);
+
+    private static readonly Color ListingsFirstBandBackground = new(1.0, 0.988, 0.969);
+
+    private static readonly Color ListingsSecondBandBackground = new(0.957, 0.945, 0.922);
+
     private readonly HttpClient _http;
 
     public GoogleSheetsClient(HttpClient http)
     {
         _http = http;
-        _http.Timeout = TimeSpan.FromSeconds(30);
+        _http.Timeout = TimeSpan.FromSeconds(120);
     }
 
     public async Task<CreatedSpreadsheet> CreateWorkbookAsync(
@@ -561,7 +569,9 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             return;
         }
 
-        var requests = new List<object>();
+        var prepRequests = new List<object>();
+        var tableRequests = new List<object>();
+        var styleRequests = new List<object>();
         foreach (var sheet in payload.Sheets ?? [])
         {
             if (sheet.Properties is null || JobSheetNames.IsProfileInfoTab(sheet.Properties.Title))
@@ -577,39 +587,61 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             {
                 var statusColumn = existingTable.ColumnProperties?
                     .FirstOrDefault(column => column.ColumnIndex == statusIndex);
-                if (string.Equals(statusColumn?.ColumnType, "DROPDOWN", StringComparison.Ordinal))
+                if (!string.Equals(statusColumn?.ColumnType, "DROPDOWN", StringComparison.Ordinal))
                 {
-                    continue;
+                    tableRequests.Add(UpdateListingsTableStatusColumnRequest(tableId, statusIndex, columns[statusIndex].Name));
                 }
 
-                requests.Add(UpdateListingsTableStatusColumnRequest(tableId, statusIndex, columns[statusIndex].Name));
+                styleRequests.Add(UpdateListingsTableRowsPropertiesRequest(tableId));
+                styleRequests.AddRange(ListingsTableSurfaceFormatRequests(sheetId, columns.Length));
                 continue;
             }
 
             foreach (var banding in sheet.BandedRanges ?? [])
             {
-                if (banding.Range?.SheetId == sheetId)
-                {
-                    requests.Add(new { deleteBanding = new { bandedRangeId = banding.BandedRangeId } });
-                }
+                prepRequests.Add(new { deleteBanding = new { bandedRangeId = banding.BandedRangeId } });
             }
 
-            requests.Add(new { clearBasicFilter = new { sheetId } });
-            requests.Add(ClearStatusDataValidationRequest(sheetId, statusIndex));
-            requests.Add(AddListingsTableRequest(sheetId, columns));
+            prepRequests.Add(new { clearBasicFilter = new { sheetId } });
+            prepRequests.Add(ClearStatusDataValidationRequest(sheetId, statusIndex));
+            tableRequests.Add(AddListingsTableRequest(sheetId, columns));
+            styleRequests.AddRange(ListingsTableSurfaceFormatRequests(sheetId, columns.Length));
         }
 
-        if (requests.Count == 0)
+        if (prepRequests.Count == 0 && tableRequests.Count == 0 && styleRequests.Count == 0)
         {
             return;
         }
 
-        await SendJson<object>(
-            accessToken,
-            HttpMethod.Post,
-            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
-            new { requests },
-            cancellationToken);
+        if (prepRequests.Count > 0)
+        {
+            await SendJson<object>(
+                accessToken,
+                HttpMethod.Post,
+                $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+                new { requests = prepRequests },
+                cancellationToken);
+        }
+
+        if (tableRequests.Count > 0)
+        {
+            await SendJson<object>(
+                accessToken,
+                HttpMethod.Post,
+                $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+                new { requests = tableRequests },
+                cancellationToken);
+        }
+
+        if (styleRequests.Count > 0)
+        {
+            await SendJson<object>(
+                accessToken,
+                HttpMethod.Post,
+                $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+                new { requests = styleRequests },
+                cancellationToken);
+        }
     }
 
     public async Task AppendListingsAsync(
@@ -647,21 +679,16 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         }
 
         var columnCount = ColumnsFor(JobWorkbookKind.Profile).Length;
+        var requests = ListingsDataRowFormatRequests(
+            sheet.SheetId,
+            startRow - 1,
+            endRow,
+            columnCount);
         await SendJson<object>(
             accessToken,
             HttpMethod.Post,
             $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
-            new
-            {
-                requests = new[]
-                {
-                    BodyCellFormatRequest(
-                        sheet.SheetId,
-                        startRow - 1,
-                        endRow,
-                        columnCount)
-                }
-            },
+            new { requests },
             cancellationToken);
     }
 
@@ -1331,13 +1358,138 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         };
     }
 
+    private static object ListingsTableRowsProperties()
+    {
+        return new
+        {
+            headerColorStyle = RgbColorStyle(ListingsHeaderBackground),
+            firstBandColorStyle = RgbColorStyle(ListingsFirstBandBackground),
+            secondBandColorStyle = RgbColorStyle(ListingsSecondBandBackground)
+        };
+    }
+
+    private static object RgbColorStyle(Color color)
+    {
+        return new { rgbColor = new { red = color.Red, green = color.Green, blue = color.Blue } };
+    }
+
+    private static object UpdateListingsTableRowsPropertiesRequest(string tableId)
+    {
+        return new
+        {
+            updateTable = new
+            {
+                table = new
+                {
+                    tableId,
+                    rowsProperties = ListingsTableRowsProperties()
+                },
+                fields = "rowsProperties"
+            }
+        };
+    }
+
+    private static object ListingsHeaderFormatRequest(int sheetId, int columnCount)
+    {
+        return new
+        {
+            repeatCell = new
+            {
+                range = new
+                {
+                    sheetId,
+                    startRowIndex = 0,
+                    endRowIndex = 1,
+                    startColumnIndex = 0,
+                    endColumnIndex = columnCount
+                },
+                cell = new
+                {
+                    userEnteredFormat = new
+                    {
+                        backgroundColor = ListingsHeaderBackground,
+                        horizontalAlignment = "LEFT",
+                        verticalAlignment = "MIDDLE",
+                        wrapStrategy = "WRAP",
+                        textFormat = new
+                        {
+                            foregroundColor = ListingsHeaderForeground,
+                            fontFamily = "Calibri",
+                            fontSize = 11,
+                            bold = true
+                        }
+                    }
+                },
+                fields = "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)"
+            }
+        };
+    }
+
+    private static object ListingsDataRowFormatRequest(int sheetId, int rowIndex, int columnCount)
+    {
+        var background = rowIndex % 2 == 1
+            ? ListingsFirstBandBackground
+            : ListingsSecondBandBackground;
+        return new
+        {
+            repeatCell = new
+            {
+                range = new
+                {
+                    sheetId,
+                    startRowIndex = rowIndex,
+                    endRowIndex = rowIndex + 1,
+                    startColumnIndex = 0,
+                    endColumnIndex = columnCount
+                },
+                cell = new
+                {
+                    userEnteredFormat = new
+                    {
+                        backgroundColor = background,
+                        horizontalAlignment = "LEFT",
+                        verticalAlignment = "TOP",
+                        wrapStrategy = "WRAP",
+                        textFormat = new
+                        {
+                            foregroundColor = new Color(0, 0, 0),
+                            fontFamily = "Calibri",
+                            fontSize = 11
+                        }
+                    }
+                },
+                fields = "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)"
+            }
+        };
+    }
+
+    private static object[] ListingsDataRowFormatRequests(
+        int sheetId,
+        int startRowIndex,
+        int endRowIndex,
+        int columnCount)
+    {
+        var requests = new List<object>(Math.Max(endRowIndex - startRowIndex, 0));
+        for (var rowIndex = startRowIndex; rowIndex < endRowIndex; rowIndex++)
+        {
+            requests.Add(ListingsDataRowFormatRequest(sheetId, rowIndex, columnCount));
+        }
+
+        return requests.ToArray();
+    }
+
+    private static object[] ListingsTableSurfaceFormatRequests(int sheetId, int columnCount)
+    {
+        return [ListingsHeaderFormatRequest(sheetId, columnCount)];
+    }
+
     private static object[] ListingsTableColumnProperties(Column[] columns)
     {
         return columns.Select((column, index) =>
         {
             if (column.Name == "Status")
             {
-                return new
+                return (object)new
                 {
                     columnIndex = index,
                     columnName = column.Name,
@@ -1346,8 +1498,8 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                 };
             }
 
-            return new { columnIndex = index, columnName = column.Name };
-        }).ToArray<object>();
+            return (object)new { columnIndex = index, columnName = column.Name };
+        }).ToArray();
     }
 
     private static object AddListingsTableRequest(int sheetId, Column[] columns)
@@ -1368,7 +1520,8 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                         startColumnIndex = 0,
                         endColumnIndex = columns.Length
                     },
-                    columnProperties = ListingsTableColumnProperties(columns)
+                    columnProperties = ListingsTableColumnProperties(columns),
+                    rowsProperties = ListingsTableRowsProperties()
                 }
             }
         };
@@ -1423,38 +1576,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         var usesListingsTable = statusIndex >= 0;
         var requests = new List<object>
         {
-            new
-            {
-                repeatCell = new
-                {
-                    range = new
-                    {
-                        sheetId,
-                        startRowIndex = 0,
-                        endRowIndex = 1,
-                        startColumnIndex = 0,
-                        endColumnIndex = columns.Length
-                    },
-                    cell = new
-                    {
-                        userEnteredFormat = new
-                        {
-                            backgroundColor = new Color(0.055, 0.153, 0.267),
-                            horizontalAlignment = "LEFT",
-                            verticalAlignment = "MIDDLE",
-                            wrapStrategy = "WRAP",
-                            textFormat = new
-                            {
-                                foregroundColor = new Color(0.969, 0.957, 0.937),
-                                fontFamily = "Calibri",
-                                fontSize = 11,
-                                bold = true
-                            }
-                        }
-                    },
-                    fields = "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)"
-                }
-            },
+            ListingsHeaderFormatRequest(sheetId, columns.Length),
             new
             {
                 updateDimensionProperties = new
@@ -1485,9 +1607,9 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                         },
                         rowProperties = new
                         {
-                            headerColor = new Color(0.055, 0.153, 0.267),
-                            firstBandColor = new Color(1.0, 0.988, 0.969),
-                            secondBandColor = new Color(0.957, 0.945, 0.922)
+                            headerColor = ListingsHeaderBackground,
+                            firstBandColor = ListingsFirstBandBackground,
+                            secondBandColor = ListingsSecondBandBackground
                         }
                     }
                 }
@@ -1528,6 +1650,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         if (statusIndex >= 0)
         {
             requests.Add(AddListingsTableRequest(sheetId, columns));
+            requests.AddRange(ListingsTableSurfaceFormatRequests(sheetId, columns.Length));
 
             foreach (var status in StatusColors)
             {

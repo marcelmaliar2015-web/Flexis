@@ -20,25 +20,6 @@ public interface IJobPipelineRepository
 
     void Remove(JobPipelineEntry entry);
 
-    Task<IReadOnlyList<JobPipelineBannedCompany>> ListBannedAsync(
-        Guid pipelineEntryId,
-        CancellationToken cancellationToken);
-
-    Task<JobPipelineBannedCompany?> GetBannedAsync(
-        Guid pipelineEntryId,
-        Guid id,
-        CancellationToken cancellationToken);
-
-    Task<bool> BannedMatchKeyExistsAsync(
-        Guid pipelineEntryId,
-        string matchKey,
-        Guid? excludeId,
-        CancellationToken cancellationToken);
-
-    Task AddBannedAsync(JobPipelineBannedCompany company, CancellationToken cancellationToken);
-
-    void RemoveBanned(JobPipelineBannedCompany company);
-
     Task RemoveByCatalogItemIdAsync(Guid userId, Guid catalogItemId, CancellationToken cancellationToken);
 
     Task RemoveAllAsync(Guid userId, CancellationToken cancellationToken);

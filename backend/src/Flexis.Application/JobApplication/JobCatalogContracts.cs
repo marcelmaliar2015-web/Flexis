@@ -25,6 +25,18 @@ public sealed record ProfileInfoDto(
     string Race,
     string VeteranStatus);
 
+public sealed record ProfileBannedCompanyDto(Guid Id, string CompanyName, DateTimeOffset CreatedAt);
+
+public sealed record ProfileBannedCompanyWriteRequest(string CompanyName);
+
+public sealed record ProfileBannedMatchDto(
+    string CompanyName,
+    string Position,
+    string Link,
+    string MatchedBan);
+
+public sealed record ProfileBannedMatchesDto(IReadOnlyList<ProfileBannedMatchDto> Matches);
+
 public sealed record ProfileInfoWriteRequest(
     string? Name,
     string? Address,

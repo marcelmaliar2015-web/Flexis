@@ -26,7 +26,7 @@ public sealed class FlexisDbContext : DbContext
 
     public DbSet<JobPipelineEntry> JobPipelineEntries => Set<JobPipelineEntry>();
 
-    public DbSet<JobPipelineBannedCompany> JobPipelineBannedCompanies => Set<JobPipelineBannedCompany>();
+    public DbSet<JobProfileBannedCompany> JobProfileBannedCompanies => Set<JobProfileBannedCompany>();
 
     public DbSet<JobFinancialSettings> JobFinancialSettings => Set<JobFinancialSettings>();
 

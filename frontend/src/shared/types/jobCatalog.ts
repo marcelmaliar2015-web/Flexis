@@ -43,6 +43,27 @@ export type ProfileInfoWrite = {
   veteranStatus: string;
 };
 
+export type ProfileBannedCompany = {
+  id: string;
+  companyName: string;
+  createdAt: string;
+};
+
+export type ProfileBannedCompanyWrite = {
+  companyName: string;
+};
+
+export type ProfileBannedMatch = {
+  companyName: string;
+  position: string;
+  link: string;
+  matchedBan: string;
+};
+
+export type ProfileBannedMatches = {
+  matches: ProfileBannedMatch[];
+};
+
 export const emptyProfileInfo = (): ProfileInfo => ({
   name: "",
   address: "",

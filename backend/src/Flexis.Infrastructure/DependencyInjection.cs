@@ -91,6 +91,7 @@ public static class DependencyInjection
         services.AddScoped<IMicrosoftClientCredentialStore, MicrosoftClientCredentialStore>();
         services.AddScoped<IJobCatalogRepository, JobCatalogRepository>();
         services.AddScoped<IJobPipelineRepository, JobPipelineRepository>();
+        services.AddScoped<IJobProfileBannedRepository, JobProfileBannedRepository>();
         services.AddScoped<IJobFinancialSettingsRepository, JobFinancialSettingsRepository>();
         services.AddScoped<IJobResumeRepository, JobResumeRepository>();
         services.AddScoped<IJobApplicationLogRepository, JobApplicationLogRepository>();

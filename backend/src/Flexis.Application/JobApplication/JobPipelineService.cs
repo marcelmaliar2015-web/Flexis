@@ -8,6 +8,7 @@ public sealed class JobPipelineService
 {
     private readonly IJobPipelineRepository _entries;
     private readonly IJobCatalogRepository _items;
+    private readonly IJobProfileBannedRepository _banned;
     private readonly GoogleAccessTokenService _tokens;
     private readonly IGoogleSheetsWorkspace _sheets;
     private readonly GoogleDriveLayoutService _driveLayout;
@@ -17,6 +18,7 @@ public sealed class JobPipelineService
     public JobPipelineService(
         IJobPipelineRepository entries,
         IJobCatalogRepository items,
+        IJobProfileBannedRepository banned,
         GoogleAccessTokenService tokens,
         IGoogleSheetsWorkspace sheets,
         GoogleDriveLayoutService driveLayout,
@@ -25,6 +27,7 @@ public sealed class JobPipelineService
     {
         _entries = entries;
         _items = items;
+        _banned = banned;
         _tokens = tokens;
         _sheets = sheets;
         _driveLayout = driveLayout;
@@ -38,7 +41,7 @@ public sealed class JobPipelineService
         try
         {
             access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
-            await _driveLayout.EnsureAsync(userId, access.AccessToken, cancellationToken);
+            await _driveLayout.EnsureFoldersAsync(userId, access.AccessToken, cancellationToken);
         }
         catch (ValidationFailedException)
         {
@@ -225,7 +228,7 @@ public sealed class JobPipelineService
         var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
         var main = RequireMainProfileSheet(profileSheets, profile.Title);
 
-        var bans = await _entries.ListBannedAsync(entry.Id, cancellationToken);
+        var bans = await _banned.ListByProfileIdAsync(entry.ProfileId, cancellationToken);
         var incoming = await _sheets.ReadListingsAsync(
             access.AccessToken,
             source.SpreadsheetId,
@@ -375,133 +378,6 @@ public sealed class JobPipelineService
         return new JobPipelineForwardResultDto(archiveName, main.Name);
     }
 
-    public async Task<IReadOnlyList<JobPipelineBannedCompanyDto>> ListBannedAsync(
-        Guid userId,
-        Guid id,
-        CancellationToken cancellationToken)
-    {
-        await RequireEntry(userId, id, cancellationToken);
-        var items = await _entries.ListBannedAsync(id, cancellationToken);
-        return items.Select(ToBannedDto).ToArray();
-    }
-
-    public async Task<JobPipelineBannedCompanyDto> CreateBannedAsync(
-        Guid userId,
-        Guid id,
-        JobPipelineBannedCompanyWriteRequest request,
-        CancellationToken cancellationToken)
-    {
-        await RequireEntry(userId, id, cancellationToken);
-        var companyName = JobCatalogRules.NormalizeCompanyName(request.CompanyName);
-        var matchKey = CompanyNameMatcher.MatchKey(companyName);
-        if (await _entries.BannedMatchKeyExistsAsync(id, matchKey, null, cancellationToken))
-        {
-            throw new ConflictException("That company is already banned on this pipeline entry.");
-        }
-
-        var created = JobPipelineBannedCompany.Create(id, companyName, matchKey);
-        await _entries.AddBannedAsync(created, cancellationToken);
-        await _entries.SaveChangesAsync(cancellationToken);
-        var description = await DescribeAsync(await RequireEntry(userId, id, cancellationToken), cancellationToken);
-        await _activity.WriteAsync(
-            userId,
-            "pipeline",
-            "ban-add",
-            $"Banned {companyName} on {description.ProfileTitle}",
-            $"{companyName} is now excluded from Update for {description.ProfileTitle} · {description.SourceTitle} · {description.LocationName}. Matching listings will be blocked.",
-            cancellationToken);
-        return ToBannedDto(created);
-    }
-
-    public async Task<JobPipelineBannedCompanyDto> UpdateBannedAsync(
-        Guid userId,
-        Guid id,
-        Guid companyId,
-        JobPipelineBannedCompanyWriteRequest request,
-        CancellationToken cancellationToken)
-    {
-        await RequireEntry(userId, id, cancellationToken);
-        var item = await _entries.GetBannedAsync(id, companyId, cancellationToken)
-            ?? throw new NotFoundException("Banned company was not found.");
-        var companyName = JobCatalogRules.NormalizeCompanyName(request.CompanyName);
-        var matchKey = CompanyNameMatcher.MatchKey(companyName);
-        if (await _entries.BannedMatchKeyExistsAsync(id, matchKey, companyId, cancellationToken))
-        {
-            throw new ConflictException("That company is already banned on this pipeline entry.");
-        }
-
-        item.Replace(companyName, matchKey);
-        await _entries.SaveChangesAsync(cancellationToken);
-        var description = await DescribeAsync(await RequireEntry(userId, id, cancellationToken), cancellationToken);
-        await _activity.WriteAsync(
-            userId,
-            "pipeline",
-            "ban-edit",
-            $"Renamed a banned company on {description.ProfileTitle}",
-            $"Banned company is now {companyName} for {description.ProfileTitle} · {description.SourceTitle} · {description.LocationName}.",
-            cancellationToken);
-        return ToBannedDto(item);
-    }
-
-    public async Task DeleteBannedAsync(Guid userId, Guid id, Guid companyId, CancellationToken cancellationToken)
-    {
-        await RequireEntry(userId, id, cancellationToken);
-        var item = await _entries.GetBannedAsync(id, companyId, cancellationToken)
-            ?? throw new NotFoundException("Banned company was not found.");
-        var companyName = item.CompanyName;
-        var description = await DescribeAsync(await RequireEntry(userId, id, cancellationToken), cancellationToken);
-        _entries.RemoveBanned(item);
-        await _entries.SaveChangesAsync(cancellationToken);
-        await _activity.WriteAsync(
-            userId,
-            "pipeline",
-            "ban-remove",
-            $"Unbanned {companyName} on {description.ProfileTitle}",
-            $"{companyName} can be copied onto {description.ProfileTitle} again from {description.SourceTitle} · {description.LocationName}.",
-            cancellationToken);
-    }
-
-    public async Task<JobPipelineBannedMatchesDto> ListBannedMatchesAsync(
-        Guid userId,
-        Guid id,
-        CancellationToken cancellationToken)
-    {
-        var entry = await RequireEntry(userId, id, cancellationToken);
-        var bans = await _entries.ListBannedAsync(id, cancellationToken);
-        if (bans.Count == 0)
-        {
-            return new JobPipelineBannedMatchesDto([], []);
-        }
-
-        var profile = await RequireCatalog(userId, entry.ProfileId, JobCatalogKind.Profile, cancellationToken);
-        var source = await RequireCatalog(userId, entry.SourceId, JobCatalogKind.Source, cancellationToken);
-        if (string.IsNullOrWhiteSpace(profile.SpreadsheetId) || string.IsNullOrWhiteSpace(source.SpreadsheetId))
-        {
-            throw new ValidationFailedException("Profile and source must have a Google Sheet.");
-        }
-
-        var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
-        var sourceSheets = await _sheets.ListSheetsAsync(access.AccessToken, source.SpreadsheetId, cancellationToken);
-        var location = sourceSheets.FirstOrDefault(sheet => sheet.SheetId == entry.LocationSheetId)
-            ?? throw new NotFoundException("Source location was not found.");
-        var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
-        var main = RequireMainProfileSheet(profileSheets, profile.Title);
-        var sourceRows = await _sheets.ReadListingsAsync(
-            access.AccessToken,
-            source.SpreadsheetId,
-            location.Name,
-            cancellationToken);
-        var profileRows = await _sheets.ReadListingsAsync(
-            access.AccessToken,
-            profile.SpreadsheetId,
-            main.Name,
-            cancellationToken);
-
-        return new JobPipelineBannedMatchesDto(
-            CollectMatches("source", sourceRows, bans),
-            CollectMatches("profile", profileRows, bans));
-    }
-
     private async Task<JobPipelineEntry> ResolveAsync(
         Guid userId,
         JobPipelineWriteRequest request,
@@ -596,37 +472,7 @@ public sealed class JobPipelineService
             entry.CreatedAt);
     }
 
-    private static JobPipelineBannedCompanyDto ToBannedDto(JobPipelineBannedCompany item)
-    {
-        return new JobPipelineBannedCompanyDto(item.Id, item.CompanyName, item.CreatedAt);
-    }
-
-    private static IReadOnlyList<JobPipelineBannedMatchDto> CollectMatches(
-        string sheet,
-        IReadOnlyList<JobListingRow> rows,
-        IReadOnlyList<JobPipelineBannedCompany> bans)
-    {
-        var matches = new List<JobPipelineBannedMatchDto>();
-        foreach (var row in rows)
-        {
-            if (row.IsEmpty)
-            {
-                continue;
-            }
-
-            var ban = MatchingBan(row.CompanyName, bans);
-            if (ban is null)
-            {
-                continue;
-            }
-
-            matches.Add(new JobPipelineBannedMatchDto(sheet, row.CompanyName, row.Position, row.Link, ban));
-        }
-
-        return matches;
-    }
-
-    private static string? MatchingBan(string companyName, IReadOnlyList<JobPipelineBannedCompany> bans)
+    private static string? MatchingBan(string companyName, IReadOnlyList<JobProfileBannedCompany> bans)
     {
         foreach (var ban in bans)
         {

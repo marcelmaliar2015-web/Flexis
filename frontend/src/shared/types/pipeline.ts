@@ -44,26 +44,3 @@ export type JobPipelineForwardResult = {
 export type JobPipelineBatchForwardResult = {
   forwarded: number;
 };
-
-export type JobPipelineBannedCompany = {
-  id: string;
-  companyName: string;
-  createdAt: string;
-};
-
-export type JobPipelineBannedCompanyWriteRequest = {
-  companyName: string;
-};
-
-export type JobPipelineBannedMatch = {
-  sheet: "source" | "profile";
-  companyName: string;
-  position: string;
-  link: string;
-  matchedBan: string;
-};
-
-export type JobPipelineBannedMatches = {
-  source: JobPipelineBannedMatch[];
-  profile: JobPipelineBannedMatch[];
-};

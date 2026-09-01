@@ -76,7 +76,10 @@ export function HelpOperationsTab() {
               <ListItemText primary="Delete" secondary="Removes this pairing only. The Google Sheets stay." />
             </ListItem>
             <ListItem disableGutters>
-              <ListItemText primary="Banned companies" secondary="Per pipeline row. Update will not copy a listing whose company matches a ban. The page also lists live matches on that source location and the profile main tab, refreshed every 10 seconds." />
+              <ListItemText primary="Profile info" secondary="Edit the paired profile's Profile tab fields on the pipeline entry page." />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText primary="Banned companies" secondary="Per profile. Update will not copy a listing whose company matches a ban. The page lists live matches on the profile main tab, refreshed on the Google workspace sync interval (3 minutes)." />
             </ListItem>
           </List>
           <Alert severity="info">

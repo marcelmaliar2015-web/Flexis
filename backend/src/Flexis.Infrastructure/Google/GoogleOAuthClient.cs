@@ -26,7 +26,7 @@ internal sealed class GoogleOAuthClient : IGoogleOAuthGateway
         _http = http;
         _settings = options.Value;
         _clients = clients;
-        _http.Timeout = TimeSpan.FromSeconds(15);
+        _http.Timeout = TimeSpan.FromSeconds(60);
     }
 
     public async Task<bool> IsConfiguredAsync(CancellationToken cancellationToken)

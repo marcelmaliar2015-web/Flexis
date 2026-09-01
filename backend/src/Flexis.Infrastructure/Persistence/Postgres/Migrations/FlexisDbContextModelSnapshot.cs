@@ -269,7 +269,7 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("job_resume_settings", (string)null);
                 });
 
-            modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineBannedCompany", b =>
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobProfileBannedCompany", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -288,15 +288,15 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<Guid>("PipelineEntryId")
+                    b.Property<Guid>("ProfileId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PipelineEntryId", "MatchKey")
+                    b.HasIndex("ProfileId", "MatchKey")
                         .IsUnique();
 
-                    b.ToTable("job_pipeline_banned_companies", (string)null);
+                    b.ToTable("job_profile_banned_companies", (string)null);
                 });
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineEntry", b =>
@@ -607,11 +607,11 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineBannedCompany", b =>
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobProfileBannedCompany", b =>
                 {
-                    b.HasOne("Flexis.Domain.JobApplication.JobPipelineEntry", null)
+                    b.HasOne("Flexis.Domain.JobApplication.JobCatalogItem", null)
                         .WithMany()
-                        .HasForeignKey("PipelineEntryId")
+                        .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

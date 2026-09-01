@@ -37,21 +37,27 @@ const FieldGrid = styled(Box)(({ theme }) => ({
 
 type ProfileInfoPanelProps = {
   actionsEnabled: boolean;
+  profileId?: string;
 };
 
-export function ProfileInfoPanel({ actionsEnabled }: ProfileInfoPanelProps) {
+export function ProfileInfoPanel({ actionsEnabled, profileId: fixedProfileId }: ProfileInfoPanelProps) {
   const queryClient = useQueryClient();
   const profilesQuery = useQuery({
     queryKey: jobCatalogQueryKey("profiles"),
     queryFn: () => listJobCatalogItems("profiles"),
   });
   const profiles = profilesQuery.data ?? [];
-  const [profileId, setProfileId] = useState("");
+  const [profileId, setProfileId] = useState(fixedProfileId ?? "");
   const [form, setForm] = useState<ProfileInfo>(emptyProfileInfo());
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    if (fixedProfileId) {
+      setProfileId(fixedProfileId);
+      return;
+    }
+
     if (profiles.length === 0) {
       setProfileId("");
       return;
@@ -60,7 +66,7 @@ export function ProfileInfoPanel({ actionsEnabled }: ProfileInfoPanelProps) {
     if (!profiles.some((item) => item.id === profileId)) {
       setProfileId(profiles[0].id);
     }
-  }, [profileId, profiles]);
+  }, [fixedProfileId, profileId, profiles]);
 
   const infoQuery = useQuery({
     queryKey: profileInfoQueryKey(profileId),
@@ -126,29 +132,31 @@ export function ProfileInfoPanel({ actionsEnabled }: ProfileInfoPanelProps) {
         ) : null}
         {formError ? <Alert severity="error">{formError}</Alert> : null}
         {saved && !formError ? <Alert severity="success">Profile info saved to the Profile tab.</Alert> : null}
-        {profiles.length === 0 && actionsEnabled ? (
+        {!fixedProfileId && profiles.length === 0 && actionsEnabled ? (
           <Alert severity="info">Create a profile first, then fill in profile info here.</Alert>
         ) : null}
         <Box component="form" onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            <TextField
-              select
-              label="Profile"
-              value={profileId}
-              onChange={(event) => {
-                setProfileId(event.target.value);
-                setSaved(false);
-                setFormError(null);
-              }}
-              disabled={!actionsEnabled || profiles.length === 0 || saveMutation.isPending}
-              fullWidth
-            >
-              {profiles.map((item) => (
-                <MenuItem key={item.id} value={item.id}>
-                  {item.title}
-                </MenuItem>
-              ))}
-            </TextField>
+            {!fixedProfileId ? (
+              <TextField
+                select
+                label="Profile"
+                value={profileId}
+                onChange={(event) => {
+                  setProfileId(event.target.value);
+                  setSaved(false);
+                  setFormError(null);
+                }}
+                disabled={!actionsEnabled || profiles.length === 0 || saveMutation.isPending}
+                fullWidth
+              >
+                {profiles.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>
+                    {item.title}
+                  </MenuItem>
+                ))}
+              </TextField>
+            ) : null}
             <FieldGrid>
               <TextField
                 label="Name"

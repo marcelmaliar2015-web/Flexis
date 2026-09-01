@@ -1,8 +1,8 @@
 namespace Flexis.Domain.JobApplication;
 
-public sealed class JobPipelineBannedCompany
+public sealed class JobProfileBannedCompany
 {
-    private JobPipelineBannedCompany()
+    private JobProfileBannedCompany()
     {
         CompanyName = string.Empty;
         MatchKey = string.Empty;
@@ -10,7 +10,7 @@ public sealed class JobPipelineBannedCompany
 
     public Guid Id { get; private set; }
 
-    public Guid PipelineEntryId { get; private set; }
+    public Guid ProfileId { get; private set; }
 
     public string CompanyName { get; private set; }
 
@@ -18,12 +18,12 @@ public sealed class JobPipelineBannedCompany
 
     public DateTimeOffset CreatedAt { get; private set; }
 
-    public static JobPipelineBannedCompany Create(Guid pipelineEntryId, string companyName, string matchKey)
+    public static JobProfileBannedCompany Create(Guid profileId, string companyName, string matchKey)
     {
-        return new JobPipelineBannedCompany
+        return new JobProfileBannedCompany
         {
             Id = Guid.NewGuid(),
-            PipelineEntryId = pipelineEntryId,
+            ProfileId = profileId,
             CompanyName = companyName,
             MatchKey = matchKey,
             CreatedAt = DateTimeOffset.UtcNow

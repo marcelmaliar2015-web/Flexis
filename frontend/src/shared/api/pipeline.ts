@@ -1,8 +1,5 @@
 import { deleteRequest, getJson, postJson, putJson } from "@/shared/api/client";
 import type {
-  JobPipelineBannedCompany,
-  JobPipelineBannedCompanyWriteRequest,
-  JobPipelineBannedMatches,
   JobPipelineBoard,
   JobPipelineEntry,
   JobPipelineForwardResult,
@@ -50,42 +47,4 @@ export function forwardJobPipelineEntry(id: string): Promise<JobPipelineForwardR
 
 export function forwardAllJobPipelineEntries(): Promise<JobPipelineBatchForwardResult> {
   return postJson<JobPipelineBatchForwardResult>("/api/job-application/pipeline/forward-all", {});
-}
-
-export function jobPipelineBannedQueryKey(id: string) {
-  return ["job-pipeline", id, "banned-companies"] as const;
-}
-
-export function jobPipelineBannedMatchesQueryKey(id: string) {
-  return ["job-pipeline", id, "banned-matches"] as const;
-}
-
-export function listJobPipelineBannedCompanies(id: string): Promise<JobPipelineBannedCompany[]> {
-  return getJson<JobPipelineBannedCompany[]>(`/api/job-application/pipeline/${id}/banned-companies`);
-}
-
-export function createJobPipelineBannedCompany(
-  id: string,
-  request: JobPipelineBannedCompanyWriteRequest,
-): Promise<JobPipelineBannedCompany> {
-  return postJson<JobPipelineBannedCompany>(`/api/job-application/pipeline/${id}/banned-companies`, request);
-}
-
-export function updateJobPipelineBannedCompany(
-  id: string,
-  companyId: string,
-  request: JobPipelineBannedCompanyWriteRequest,
-): Promise<JobPipelineBannedCompany> {
-  return putJson<JobPipelineBannedCompany>(
-    `/api/job-application/pipeline/${id}/banned-companies/${companyId}`,
-    request,
-  );
-}
-
-export function deleteJobPipelineBannedCompany(id: string, companyId: string): Promise<void> {
-  return deleteRequest(`/api/job-application/pipeline/${id}/banned-companies/${companyId}`);
-}
-
-export function getJobPipelineBannedMatches(id: string): Promise<JobPipelineBannedMatches> {
-  return getJson<JobPipelineBannedMatches>(`/api/job-application/pipeline/${id}/banned-matches`);
 }

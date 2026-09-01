@@ -21,7 +21,7 @@ internal sealed class GoogleDriveClient : IGoogleDriveGateway
     public GoogleDriveClient(HttpClient http)
     {
         _http = http;
-        _http.Timeout = TimeSpan.FromSeconds(15);
+        _http.Timeout = TimeSpan.FromSeconds(60);
     }
 
     public async Task<bool> FolderIsActiveAsync(

@@ -8,6 +8,7 @@ public sealed class JobCatalogService
 {
     private readonly IJobCatalogRepository _items;
     private readonly IJobPipelineRepository _pipeline;
+    private readonly IJobProfileBannedRepository _banned;
     private readonly GoogleAccessTokenService _tokens;
     private readonly IGoogleSheetsWorkspace _sheets;
     private readonly GoogleDriveLayoutService _driveLayout;
@@ -17,6 +18,7 @@ public sealed class JobCatalogService
     public JobCatalogService(
         IJobCatalogRepository items,
         IJobPipelineRepository pipeline,
+        IJobProfileBannedRepository banned,
         GoogleAccessTokenService tokens,
         IGoogleSheetsWorkspace sheets,
         GoogleDriveLayoutService driveLayout,
@@ -25,6 +27,7 @@ public sealed class JobCatalogService
     {
         _items = items;
         _pipeline = pipeline;
+        _banned = banned;
         _tokens = tokens;
         _sheets = sheets;
         _driveLayout = driveLayout;
@@ -450,5 +453,172 @@ public sealed class JobCatalogService
     private static string KindLabel(JobCatalogKind itemKind)
     {
         return itemKind == JobCatalogKind.Profile ? "profile" : "source";
+    }
+
+    public async Task<IReadOnlyList<ProfileBannedCompanyDto>> ListBannedCompaniesAsync(
+        Guid userId,
+        Guid profileId,
+        CancellationToken cancellationToken)
+    {
+        await RequireProfile(userId, profileId, cancellationToken);
+        var items = await _banned.ListByProfileIdAsync(profileId, cancellationToken);
+        return items.Select(ToBannedDto).ToArray();
+    }
+
+    public async Task<ProfileBannedCompanyDto> CreateBannedCompanyAsync(
+        Guid userId,
+        Guid profileId,
+        ProfileBannedCompanyWriteRequest request,
+        CancellationToken cancellationToken)
+    {
+        var profile = await RequireProfile(userId, profileId, cancellationToken);
+        var companyName = JobCatalogRules.NormalizeCompanyName(request.CompanyName);
+        var matchKey = CompanyNameMatcher.MatchKey(companyName);
+        if (await _banned.MatchKeyExistsAsync(profileId, matchKey, null, cancellationToken))
+        {
+            throw new ConflictException("That company is already banned on this profile.");
+        }
+
+        var created = JobProfileBannedCompany.Create(profileId, companyName, matchKey);
+        await _banned.AddAsync(created, cancellationToken);
+        await _banned.SaveChangesAsync(cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "catalog",
+            "ban-add",
+            $"Banned {companyName} on {profile.Title}",
+            $"{companyName} is excluded from Update for every pipeline row that uses {profile.Title}. Matching listings on the profile main tab are flagged.",
+            cancellationToken);
+        return ToBannedDto(created);
+    }
+
+    public async Task<ProfileBannedCompanyDto> UpdateBannedCompanyAsync(
+        Guid userId,
+        Guid profileId,
+        Guid companyId,
+        ProfileBannedCompanyWriteRequest request,
+        CancellationToken cancellationToken)
+    {
+        var profile = await RequireProfile(userId, profileId, cancellationToken);
+        var item = await _banned.GetByIdAsync(profileId, companyId, cancellationToken)
+            ?? throw new NotFoundException("Banned company was not found.");
+        var companyName = JobCatalogRules.NormalizeCompanyName(request.CompanyName);
+        var matchKey = CompanyNameMatcher.MatchKey(companyName);
+        if (await _banned.MatchKeyExistsAsync(profileId, matchKey, companyId, cancellationToken))
+        {
+            throw new ConflictException("That company is already banned on this profile.");
+        }
+
+        item.Replace(companyName, matchKey);
+        await _banned.SaveChangesAsync(cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "catalog",
+            "ban-edit",
+            $"Renamed a banned company on {profile.Title}",
+            $"Banned company is now {companyName} for profile {profile.Title}.",
+            cancellationToken);
+        return ToBannedDto(item);
+    }
+
+    public async Task DeleteBannedCompanyAsync(
+        Guid userId,
+        Guid profileId,
+        Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        var profile = await RequireProfile(userId, profileId, cancellationToken);
+        var item = await _banned.GetByIdAsync(profileId, companyId, cancellationToken)
+            ?? throw new NotFoundException("Banned company was not found.");
+        var companyName = item.CompanyName;
+        _banned.Remove(item);
+        await _banned.SaveChangesAsync(cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "catalog",
+            "ban-remove",
+            $"Unbanned {companyName} on {profile.Title}",
+            $"{companyName} can be copied onto {profile.Title} again from any source.",
+            cancellationToken);
+    }
+
+    public async Task<ProfileBannedMatchesDto> ListBannedMatchesAsync(
+        Guid userId,
+        Guid profileId,
+        CancellationToken cancellationToken)
+    {
+        var profile = await RequireProfile(userId, profileId, cancellationToken);
+        var bans = await _banned.ListByProfileIdAsync(profileId, cancellationToken);
+        if (bans.Count == 0)
+        {
+            return new ProfileBannedMatchesDto([]);
+        }
+
+        if (string.IsNullOrWhiteSpace(profile.SpreadsheetId))
+        {
+            throw new ValidationFailedException("This profile has no Google Sheet.");
+        }
+
+        var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+        var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
+        var main = RequireMainProfileSheet(profileSheets, profile.Title);
+        var profileRows = await _sheets.ReadListingsAsync(
+            access.AccessToken,
+            profile.SpreadsheetId,
+            main.Name,
+            cancellationToken);
+
+        return new ProfileBannedMatchesDto(CollectBannedMatches(profileRows, bans));
+    }
+
+    private static SpreadsheetSheet RequireMainProfileSheet(
+        IReadOnlyList<SpreadsheetSheet> sheets,
+        string profileTitle)
+    {
+        var mainName = JobCatalogRules.SheetTabName(profileTitle);
+        return sheets.FirstOrDefault(sheet => sheet.Name == mainName)
+            ?? throw new ValidationFailedException("This profile has no main Google Sheet tab.");
+    }
+
+    private static ProfileBannedCompanyDto ToBannedDto(JobProfileBannedCompany item)
+    {
+        return new ProfileBannedCompanyDto(item.Id, item.CompanyName, item.CreatedAt);
+    }
+
+    private static IReadOnlyList<ProfileBannedMatchDto> CollectBannedMatches(
+        IReadOnlyList<JobListingRow> rows,
+        IReadOnlyList<JobProfileBannedCompany> bans)
+    {
+        var matches = new List<ProfileBannedMatchDto>();
+        foreach (var row in rows)
+        {
+            if (row.IsEmpty)
+            {
+                continue;
+            }
+
+            var ban = MatchingBan(row.CompanyName, bans);
+            if (ban is null)
+            {
+                continue;
+            }
+
+            matches.Add(new ProfileBannedMatchDto(row.CompanyName, row.Position, row.Link, ban));
+        }
+
+        return matches;
+    }
+
+    private static string? MatchingBan(string companyName, IReadOnlyList<JobProfileBannedCompany> bans)
+    {
+        foreach (var ban in bans)
+        {
+            if (CompanyNameMatcher.IsMatch(companyName, ban.CompanyName))
+            {
+                return ban.CompanyName;
+            }
+        }
+
+        return null;
     }
 }

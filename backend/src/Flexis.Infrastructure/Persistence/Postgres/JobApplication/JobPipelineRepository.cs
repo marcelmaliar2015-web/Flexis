@@ -56,49 +56,6 @@ internal sealed class JobPipelineRepository : IJobPipelineRepository
         _db.JobPipelineEntries.Remove(entry);
     }
 
-    public async Task<IReadOnlyList<JobPipelineBannedCompany>> ListBannedAsync(
-        Guid pipelineEntryId,
-        CancellationToken cancellationToken)
-    {
-        return await _db.JobPipelineBannedCompanies
-            .Where(item => item.PipelineEntryId == pipelineEntryId)
-            .OrderBy(item => item.CreatedAt)
-            .ToListAsync(cancellationToken);
-    }
-
-    public Task<JobPipelineBannedCompany?> GetBannedAsync(
-        Guid pipelineEntryId,
-        Guid id,
-        CancellationToken cancellationToken)
-    {
-        return _db.JobPipelineBannedCompanies.FirstOrDefaultAsync(
-            item => item.PipelineEntryId == pipelineEntryId && item.Id == id,
-            cancellationToken);
-    }
-
-    public Task<bool> BannedMatchKeyExistsAsync(
-        Guid pipelineEntryId,
-        string matchKey,
-        Guid? excludeId,
-        CancellationToken cancellationToken)
-    {
-        return _db.JobPipelineBannedCompanies.AnyAsync(
-            item => item.PipelineEntryId == pipelineEntryId
-                && item.MatchKey == matchKey
-                && (excludeId == null || item.Id != excludeId),
-            cancellationToken);
-    }
-
-    public async Task AddBannedAsync(JobPipelineBannedCompany company, CancellationToken cancellationToken)
-    {
-        await _db.JobPipelineBannedCompanies.AddAsync(company, cancellationToken);
-    }
-
-    public void RemoveBanned(JobPipelineBannedCompany company)
-    {
-        _db.JobPipelineBannedCompanies.Remove(company);
-    }
-
     public async Task RemoveByCatalogItemIdAsync(Guid userId, Guid catalogItemId, CancellationToken cancellationToken)
     {
         var entries = await _db.JobPipelineEntries

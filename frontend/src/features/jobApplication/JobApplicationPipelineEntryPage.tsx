@@ -24,27 +24,28 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
+import { googleSyncIntervalMs } from "@/shared/api/googleSync";
+import {
+  createProfileBannedCompany,
+  deleteProfileBannedCompany,
+  getProfileBannedMatches,
+  listProfileBannedCompanies,
+  profileBannedMatchesQueryKey,
+  profileBannedQueryKey,
+  updateProfileBannedCompany,
+} from "@/shared/api/jobCatalog";
 import {
   applyJobPipelineEntry,
-  createJobPipelineBannedCompany,
-  deleteJobPipelineBannedCompany,
   deleteJobPipelineEntry,
   forwardJobPipelineEntry,
-  getJobPipelineBannedMatches,
   getJobPipelineBoard,
-  jobPipelineBannedMatchesQueryKey,
-  jobPipelineBannedQueryKey,
   jobPipelineQueryKey,
-  listJobPipelineBannedCompanies,
-  updateJobPipelineBannedCompany,
   updateJobPipelineEntry,
 } from "@/shared/api/pipeline";
 import { appPaths } from "@/shared/config/paths";
-import type {
-  JobPipelineBannedCompany,
-  JobPipelineBannedMatch,
-  JobPipelineWriteRequest,
-} from "@/shared/types/pipeline";
+import type { ProfileBannedCompany, ProfileBannedMatch } from "@/shared/types/jobCatalog";
+import type { JobPipelineWriteRequest } from "@/shared/types/pipeline";
+import { ProfileInfoPanel } from "@/features/jobApplication/ProfileInfoPanel";
 import {
   errorMessage,
   forwardNotice,
@@ -84,35 +85,36 @@ export function JobApplicationPipelineEntryPage() {
     queryFn: getJobPipelineBoard,
     enabled: Boolean(entryId),
   });
+  const entry = boardQuery.data?.entries.find((item) => item.id === entryId);
+  const profileId = entry?.profileId ?? "";
+  const board = boardQuery.data;
+  const sourceChoices = board ? sourceChoicesFromBoard(board) : [];
+
   const bannedQuery = useQuery({
-    queryKey: jobPipelineBannedQueryKey(entryId ?? ""),
-    queryFn: () => listJobPipelineBannedCompanies(entryId ?? ""),
-    enabled: Boolean(entryId),
+    queryKey: profileBannedQueryKey(profileId),
+    queryFn: () => listProfileBannedCompanies(profileId),
+    enabled: Boolean(profileId),
   });
   const matchesQuery = useQuery({
-    queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? ""),
-    queryFn: () => getJobPipelineBannedMatches(entryId ?? ""),
-    enabled: connected && Boolean(entryId),
-    refetchInterval: 10_000,
+    queryKey: profileBannedMatchesQueryKey(profileId),
+    queryFn: () => getProfileBannedMatches(profileId),
+    enabled: connected && Boolean(profileId),
+    refetchInterval: googleSyncIntervalMs,
     refetchOnWindowFocus: true,
   });
   const [notice, setNotice] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState(false);
   const [banEditor, setBanEditor] = useState<
-    { mode: "create" } | { mode: "edit"; item: JobPipelineBannedCompany } | null
+    { mode: "create" } | { mode: "edit"; item: ProfileBannedCompany } | null
   >(null);
-  const [banToDelete, setBanToDelete] = useState<JobPipelineBannedCompany | null>(null);
+  const [banToDelete, setBanToDelete] = useState<ProfileBannedCompany | null>(null);
   const [banError, setBanError] = useState<string | null>(null);
-
-  const entry = boardQuery.data?.entries.find((item) => item.id === entryId);
-  const board = boardQuery.data;
-  const sourceChoices = board ? sourceChoicesFromBoard(board) : [];
 
   const updateRowMutation = useMutation({
     mutationFn: (request: JobPipelineWriteRequest) => updateJobPipelineEntry(entryId ?? "", request),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
-      await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
+      await queryClient.invalidateQueries({ queryKey: profileBannedMatchesQueryKey(profileId) });
       await refreshJobApplicationWorkspace(queryClient);
     },
   });
@@ -121,7 +123,7 @@ export function JobApplicationPipelineEntryPage() {
     mutationFn: () => applyJobPipelineEntry(entryId ?? ""),
     onSuccess: async (result) => {
       setNotice(listingsNotice(result, false));
-      await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
+      await queryClient.invalidateQueries({ queryKey: profileBannedMatchesQueryKey(profileId) });
       await refreshJobApplicationWorkspace(queryClient);
     },
   });
@@ -130,7 +132,7 @@ export function JobApplicationPipelineEntryPage() {
     mutationFn: () => forwardJobPipelineEntry(entryId ?? ""),
     onSuccess: async (result) => {
       setNotice(forwardNotice(result));
-      await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
+      await queryClient.invalidateQueries({ queryKey: profileBannedMatchesQueryKey(profileId) });
       await refreshJobApplicationWorkspace(queryClient);
     },
   });
@@ -145,11 +147,10 @@ export function JobApplicationPipelineEntryPage() {
   });
 
   const createBanMutation = useMutation({
-    mutationFn: (companyName: string) =>
-      createJobPipelineBannedCompany(entryId ?? "", { companyName }),
+    mutationFn: (companyName: string) => createProfileBannedCompany(profileId, { companyName }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: jobPipelineBannedQueryKey(entryId ?? "") });
-      await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
+      await queryClient.invalidateQueries({ queryKey: profileBannedQueryKey(profileId) });
+      await queryClient.invalidateQueries({ queryKey: profileBannedMatchesQueryKey(profileId) });
       setBanEditor(null);
       setBanError(null);
       await refreshJobApplicationWorkspace(queryClient);
@@ -159,10 +160,10 @@ export function JobApplicationPipelineEntryPage() {
 
   const updateBanMutation = useMutation({
     mutationFn: ({ companyId, companyName }: { companyId: string; companyName: string }) =>
-      updateJobPipelineBannedCompany(entryId ?? "", companyId, { companyName }),
+      updateProfileBannedCompany(profileId, companyId, { companyName }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: jobPipelineBannedQueryKey(entryId ?? "") });
-      await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
+      await queryClient.invalidateQueries({ queryKey: profileBannedQueryKey(profileId) });
+      await queryClient.invalidateQueries({ queryKey: profileBannedMatchesQueryKey(profileId) });
       setBanEditor(null);
       setBanError(null);
       await refreshJobApplicationWorkspace(queryClient);
@@ -171,10 +172,10 @@ export function JobApplicationPipelineEntryPage() {
   });
 
   const deleteBanMutation = useMutation({
-    mutationFn: (companyId: string) => deleteJobPipelineBannedCompany(entryId ?? "", companyId),
+    mutationFn: (companyId: string) => deleteProfileBannedCompany(profileId, companyId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: jobPipelineBannedQueryKey(entryId ?? "") });
-      await queryClient.invalidateQueries({ queryKey: jobPipelineBannedMatchesQueryKey(entryId ?? "") });
+      await queryClient.invalidateQueries({ queryKey: profileBannedQueryKey(profileId) });
+      await queryClient.invalidateQueries({ queryKey: profileBannedMatchesQueryKey(profileId) });
       setBanToDelete(null);
       await refreshJobApplicationWorkspace(queryClient);
     },
@@ -182,7 +183,7 @@ export function JobApplicationPipelineEntryPage() {
 
   const actionsBusy = applyMutation.isPending || forwardMutation.isPending;
   const bans = bannedQuery.data ?? [];
-  const matches = [...(matchesQuery.data?.source ?? []), ...(matchesQuery.data?.profile ?? [])];
+  const matches = matchesQuery.data?.matches ?? [];
 
   return (
     <Box sx={{ py: { xs: 4, md: 6 } }}>
@@ -281,6 +282,7 @@ export function JobApplicationPipelineEntryPage() {
                   Delete
                 </Button>
               </Stack>
+              <ProfileInfoPanel actionsEnabled={connected} profileId={profileId} />
               <Stack
                 direction="row"
                 spacing={2}
@@ -341,10 +343,10 @@ export function JobApplicationPipelineEntryPage() {
                 <Alert severity="info">Connect Gmail on the Settings tab to scan sheets.</Alert>
               ) : null}
               {connected && bans.length === 0 ? (
-                <Alert severity="info">Add banned companies to scan the profile and source sheets.</Alert>
+                <Alert severity="info">Add banned companies to scan the profile main sheet.</Alert>
               ) : null}
               {connected && bans.length > 0 && matches.length === 0 && !matchesQuery.isError ? (
-                <Alert severity="success">No banned companies on the profile or source sheets.</Alert>
+                <Alert severity="success">No banned companies on the profile main sheet.</Alert>
               ) : null}
               {matches.length > 0 ? (
                 <Panel>
@@ -352,7 +354,6 @@ export function JobApplicationPipelineEntryPage() {
                     <Table>
                       <TableHead>
                         <TableRow>
-                          <TableCell>Sheet</TableCell>
                           <TableCell>Company</TableCell>
                           <TableCell>Position</TableCell>
                           <TableCell>Ban</TableCell>
@@ -360,7 +361,7 @@ export function JobApplicationPipelineEntryPage() {
                       </TableHead>
                       <TableBody>
                         {matches.map((match) => (
-                          <MatchRow key={`${match.sheet}-${match.link}-${match.companyName}-${match.position}`} match={match} />
+                          <MatchRow key={`${match.link}-${match.companyName}-${match.position}`} match={match} />
                         ))}
                       </TableBody>
                     </Table>
@@ -413,7 +414,7 @@ export function JobApplicationPipelineEntryPage() {
         <Dialog open onClose={() => setBanToDelete(null)} fullWidth maxWidth="xs">
           <DialogTitle>Delete banned company</DialogTitle>
           <DialogContent>
-            <Typography variant="body2">Remove {banToDelete.companyName} from this pipeline entry?</Typography>
+            <Typography variant="body2">Remove {banToDelete.companyName} from this profile?</Typography>
           </DialogContent>
           <DialogActions>
             <Button variant="text" onClick={() => setBanToDelete(null)} disabled={deleteBanMutation.isPending}>
@@ -433,10 +434,9 @@ export function JobApplicationPipelineEntryPage() {
   );
 }
 
-function MatchRow({ match }: { match: JobPipelineBannedMatch }) {
+function MatchRow({ match }: { match: ProfileBannedMatch }) {
   return (
     <TableRow hover>
-      <TableCell>{match.sheet === "profile" ? "Profile" : "Source"}</TableCell>
       <TableCell>{match.companyName}</TableCell>
       <TableCell>{match.position}</TableCell>
       <TableCell>{match.matchedBan}</TableCell>

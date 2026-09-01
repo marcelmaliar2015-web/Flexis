@@ -25,7 +25,7 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 
 `JobPipelineEntry` in `Flexis.Domain.JobApplication`. Table `job_pipeline_entries`. Unique (`UserId`, `ProfileId`, `SourceId`, `LocationSheetId`), cascade from `users`. `ApplyRate` and `BonusRate` are per row. EF configuration: `Persistence/Postgres/JobApplication/JobPipelineEntryConfiguration.cs`.
 
-`JobPipelineBannedCompany` in `Flexis.Domain.JobApplication`. Table `job_pipeline_banned_companies`. Unique (`PipelineEntryId`, `MatchKey`), cascade from `job_pipeline_entries`. EF configuration: `Persistence/Postgres/JobApplication/JobPipelineBannedCompanyConfiguration.cs`.
+`JobProfileBannedCompany` in `Flexis.Domain.JobApplication`. Table `job_profile_banned_companies`. Unique (`ProfileId`, `MatchKey`), cascade from `job_catalog_items` where kind is Profile. EF configuration: `Persistence/Postgres/JobApplication/JobProfileBannedCompanyConfiguration.cs`.
 
 `JobFinancialSettings` in `Flexis.Domain.JobApplication`. Table `job_financial_settings`. Unique `UserId`, cascade from `users`. Default apply rate 0.06 and bonus rate 1.5. EF configuration: `Persistence/Postgres/JobApplication/JobFinancialSettingsConfiguration.cs`.
 

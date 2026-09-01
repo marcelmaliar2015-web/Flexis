@@ -71,6 +71,57 @@ public sealed class JobCatalogController : ControllerBase
         return catalog.UpdateProfileInfoAsync(CurrentUserId(), id, request, cancellationToken);
     }
 
+    [HttpGet("profiles/{id:guid}/banned-companies")]
+    public Task<IReadOnlyList<ProfileBannedCompanyDto>> ListBannedCompanies(
+        Guid id,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        return catalog.ListBannedCompaniesAsync(CurrentUserId(), id, cancellationToken);
+    }
+
+    [HttpPost("profiles/{id:guid}/banned-companies")]
+    public async Task<ActionResult<ProfileBannedCompanyDto>> CreateBannedCompany(
+        Guid id,
+        [FromBody] ProfileBannedCompanyWriteRequest request,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        var created = await catalog.CreateBannedCompanyAsync(CurrentUserId(), id, request, cancellationToken);
+        return Created($"/api/job-application/profiles/{id}/banned-companies/{created.Id}", created);
+    }
+
+    [HttpPut("profiles/{id:guid}/banned-companies/{companyId:guid}")]
+    public Task<ProfileBannedCompanyDto> UpdateBannedCompany(
+        Guid id,
+        Guid companyId,
+        [FromBody] ProfileBannedCompanyWriteRequest request,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        return catalog.UpdateBannedCompanyAsync(CurrentUserId(), id, companyId, request, cancellationToken);
+    }
+
+    [HttpDelete("profiles/{id:guid}/banned-companies/{companyId:guid}")]
+    public async Task<IActionResult> DeleteBannedCompany(
+        Guid id,
+        Guid companyId,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        await catalog.DeleteBannedCompanyAsync(CurrentUserId(), id, companyId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpGet("profiles/{id:guid}/banned-matches")]
+    public Task<ProfileBannedMatchesDto> ListBannedMatches(
+        Guid id,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        return catalog.ListBannedMatchesAsync(CurrentUserId(), id, cancellationToken);
+    }
+
     [HttpGet("sources")]
     public Task<IReadOnlyList<JobCatalogItemDto>> ListSources(
         [FromServices] JobCatalogService catalog,

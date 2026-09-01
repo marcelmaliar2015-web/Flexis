@@ -34,6 +34,12 @@ export async function syncGoogleWorkspace(
       queryKey: jobPipelineQueryKey,
       queryFn: getJobPipelineBoard,
     });
+    await queryClient.refetchQueries({
+      predicate: (query) =>
+        query.queryKey[0] === "job-catalog"
+        && query.queryKey.length === 4
+        && query.queryKey[3] === "banned-matches",
+    });
     await queryClient.fetchQuery({
       queryKey: jobFinancialQueryKey,
       queryFn: getJobFinancialBoard,
@@ -72,6 +78,12 @@ export async function syncGoogleWorkspace(
       }
       return root === "job-pipeline" && query.queryKey.length > 1;
     },
+  });
+  await queryClient.refetchQueries({
+    predicate: (query) =>
+      query.queryKey[0] === "job-catalog"
+      && query.queryKey.length === 4
+      && (query.queryKey[3] === "banned-matches" || query.queryKey[3] === "banned-companies"),
   });
   await queryClient.fetchQuery({
     queryKey: jobFinancialQueryKey,
