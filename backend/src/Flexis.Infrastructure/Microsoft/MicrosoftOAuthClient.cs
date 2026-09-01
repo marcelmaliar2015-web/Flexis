@@ -216,12 +216,16 @@ internal sealed class MicrosoftOAuthClient : IMicrosoftOAuthGateway
 
     private sealed class TokenResponse
     {
+        [JsonPropertyName("access_token")]
         public string? AccessToken { get; set; }
 
+        [JsonPropertyName("refresh_token")]
         public string? RefreshToken { get; set; }
 
+        [JsonPropertyName("expires_in")]
         public int ExpiresIn { get; set; }
 
+        [JsonPropertyName("scope")]
         public string? Scope { get; set; }
     }
 
@@ -231,11 +235,13 @@ internal sealed class MicrosoftOAuthClient : IMicrosoftOAuthGateway
 
         public string? Mail { get; set; }
 
+        [JsonPropertyName("userPrincipalName")]
         public string? UserPrincipalName { get; set; }
     }
 
     private sealed class ErrorEnvelope
     {
+        [JsonPropertyName("error")]
         public string? Error { get; set; }
 
         [JsonPropertyName("error_description")]
