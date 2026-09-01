@@ -4,8 +4,9 @@ public enum MailCheckDecision
 {
     Skip,
     Discard,
-    InterviewScheduled,
-    WaitingForAnswer,
-    NeedToSchedule,
-    Others
+    InterviewSchedule,
+    AvailabilityRequest,
+    AssessmentRequest,
+    HrTeamMessage,
+    ReplyRequired
 }

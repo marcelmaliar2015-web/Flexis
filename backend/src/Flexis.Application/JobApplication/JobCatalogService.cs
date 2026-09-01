@@ -12,6 +12,7 @@ public sealed class JobCatalogService
     private readonly IGoogleSheetsWorkspace _sheets;
     private readonly GoogleDriveLayoutService _driveLayout;
     private readonly JobApplicationActivity _activity;
+    private readonly JobResumeService _resume;
 
     public JobCatalogService(
         IJobCatalogRepository items,
@@ -19,7 +20,8 @@ public sealed class JobCatalogService
         GoogleAccessTokenService tokens,
         IGoogleSheetsWorkspace sheets,
         GoogleDriveLayoutService driveLayout,
-        JobApplicationActivity activity)
+        JobApplicationActivity activity,
+        JobResumeService resume)
     {
         _items = items;
         _pipeline = pipeline;
@@ -27,6 +29,7 @@ public sealed class JobCatalogService
         _sheets = sheets;
         _driveLayout = driveLayout;
         _activity = activity;
+        _resume = resume;
     }
 
     public async Task<IReadOnlyList<JobCatalogItemDto>> ListAsync(
@@ -157,6 +160,10 @@ public sealed class JobCatalogService
                     : $"Renamed source to {title}",
                 $"Previous title was {previousTitle}. The Google Sheet file name was updated to match.",
                 cancellationToken);
+            if (item.Kind == JobCatalogKind.Profile)
+            {
+                await _resume.SyncJobMasterAsync(userId, cancellationToken);
+            }
         }
 
         return ToDto(item);
@@ -220,6 +227,10 @@ public sealed class JobCatalogService
         await _pipeline.RemoveByCatalogItemIdAsync(userId, id, cancellationToken);
         _items.Remove(item);
         await _items.SaveChangesAsync(cancellationToken);
+        if (kind == JobCatalogKind.Profile)
+        {
+            await _resume.SyncJobMasterAsync(userId, cancellationToken);
+        }
         await _activity.WriteAsync(
             userId,
             "catalog",

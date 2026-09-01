@@ -13,6 +13,7 @@ internal sealed class MailCheckSettingsConfiguration : IEntityTypeConfiguration<
         builder.HasKey(item => item.Id);
         builder.Property(item => item.ApiKeyProtected).HasColumnType("text");
         builder.Property(item => item.Model).HasMaxLength(128).IsRequired();
+        builder.Property(item => item.ClassifierPrompt).HasColumnType("text").IsRequired();
         builder.Property(item => item.LastError).HasMaxLength(500).IsRequired();
         builder.HasIndex(item => item.UserId).IsUnique();
         builder.HasOne<User>()

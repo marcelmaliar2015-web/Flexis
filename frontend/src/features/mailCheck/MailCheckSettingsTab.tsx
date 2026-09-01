@@ -27,12 +27,14 @@ export function MailCheckSettingsTab() {
   });
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("gpt-4o-mini");
+  const [classifierPrompt, setClassifierPrompt] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (settingsQuery.data) {
       setModel(settingsQuery.data.model);
+      setClassifierPrompt(settingsQuery.data.classifierPrompt);
     }
   }, [settingsQuery.data]);
 
@@ -48,10 +50,12 @@ export function MailCheckSettingsTab() {
         apiKey: apiKey.trim().length > 0 ? apiKey.trim() : null,
         clearApiKey: false,
         model: model.trim(),
+        classifierPrompt: classifierPrompt.trim(),
       }),
     onSuccess: async (result) => {
       setApiKey("");
       setModel(result.model);
+      setClassifierPrompt(result.classifierPrompt);
       setFormError(null);
       setSaved(true);
       await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
@@ -69,6 +73,7 @@ export function MailCheckSettingsTab() {
         apiKey: null,
         clearApiKey: true,
         model: model.trim() || "gpt-4o-mini",
+        classifierPrompt: classifierPrompt.trim(),
       }),
     onSuccess: async () => {
       setApiKey("");
@@ -93,6 +98,12 @@ export function MailCheckSettingsTab() {
     if (model.trim().length === 0) {
       setSaved(false);
       setFormError("Choose a model.");
+      return;
+    }
+
+    if (classifierPrompt.trim().length === 0) {
+      setSaved(false);
+      setFormError("Classifier prompt cannot be empty.");
       return;
     }
 
@@ -182,6 +193,52 @@ export function MailCheckSettingsTab() {
             </Stack>
           </Stack>
         </Box>
+      </Panel>
+      <Panel>
+        <Stack spacing={2}>
+          <Stack spacing={0.5}>
+            <Typography variant="h6" component="h2">
+              Classifier prompt
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Flexis classifies one message at a time and expects JSON with criteria flags
+              (job_application_related, action, message_type, needs_reply, draft_reply). Edit the
+              prompt here; non-job mail is left untouched, job mail is pinned or trashed, and reply
+              drafts are saved without sending.
+            </Typography>
+          </Stack>
+          <TextField
+            label="Prompt"
+            value={classifierPrompt}
+            onChange={(event) => {
+              setSaved(false);
+              setClassifierPrompt(event.target.value);
+            }}
+            multiline
+            minRows={12}
+            maxRows={24}
+            disabled={saveMutation.isPending || clearMutation.isPending}
+          />
+          <Stack direction="row" spacing={1}>
+            <Button
+              disabled={saveMutation.isPending || clearMutation.isPending || settingsQuery.isLoading}
+              loading={saveMutation.isPending}
+              onClick={() => {
+                setSaved(false);
+                setClassifierPrompt(settings?.defaultClassifierPrompt ?? classifierPrompt);
+              }}
+            >
+              Reset to default
+            </Button>
+            <Button
+              disabled={saveMutation.isPending || clearMutation.isPending || settingsQuery.isLoading}
+              loading={saveMutation.isPending}
+              onClick={() => saveMutation.mutate()}
+            >
+              Save prompt
+            </Button>
+          </Stack>
+        </Stack>
       </Panel>
     </Stack>
   );

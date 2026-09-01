@@ -51,6 +51,12 @@ public interface IMailMailbox
 
     Task TrashAsync(string accessToken, string messageId, CancellationToken cancellationToken);
 
+    Task CreateDraftReplyAsync(
+        string accessToken,
+        MailMessageContent message,
+        string replyBody,
+        CancellationToken cancellationToken);
+
     Task<IReadOnlyList<MailLabeledMessage>> ListLabeledAsync(
         string accessToken,
         IReadOnlyDictionary<MailCheckDecision, string> labels,

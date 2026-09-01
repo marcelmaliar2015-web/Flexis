@@ -8,6 +8,7 @@ public sealed class MailCheckSettings
     {
         Model = DefaultModel;
         LastError = string.Empty;
+        ClassifierPrompt = string.Empty;
     }
 
     public Guid Id { get; private set; }
@@ -17,6 +18,8 @@ public sealed class MailCheckSettings
     public string? ApiKeyProtected { get; private set; }
 
     public string Model { get; private set; }
+
+    public string ClassifierPrompt { get; private set; }
 
     public DateTimeOffset? LastRunAt { get; private set; }
 
@@ -64,6 +67,11 @@ public sealed class MailCheckSettings
     public void SetModel(string model)
     {
         Model = model;
+    }
+
+    public void SetClassifierPrompt(string prompt)
+    {
+        ClassifierPrompt = prompt;
     }
 
     public void RecordRun(

@@ -90,7 +90,10 @@ public sealed class MailCheckController : ControllerBase
         [FromServices] MailCheckService mailCheck,
         CancellationToken cancellationToken)
     {
-        return mailCheck.RunAsync(CurrentUserId(), request ?? new MailCheckRunRequest(false), cancellationToken);
+        return mailCheck.RunAsync(
+            CurrentUserId(),
+            request ?? new MailCheckRunRequest(false, null, false),
+            cancellationToken);
     }
 
     [HttpGet("inbox")]

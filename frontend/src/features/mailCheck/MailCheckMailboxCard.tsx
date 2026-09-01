@@ -38,7 +38,10 @@ const MailboxRow = styled(Box)(({ theme }) => ({
   flexWrap: "wrap",
 }));
 
-function mailboxNotice(result: string | null): { severity: "success" | "info" | "error"; text: string } | null {
+function mailboxNotice(
+  result: string | null,
+  reason: string | null,
+): { severity: "success" | "info" | "error"; text: string } | null {
   if (result === "connected") {
     return { severity: "success", text: "Mailbox connected." };
   }
@@ -46,7 +49,10 @@ function mailboxNotice(result: string | null): { severity: "success" | "info" | 
     return { severity: "info", text: "Mailbox access was not granted." };
   }
   if (result === "error") {
-    return { severity: "error", text: "Mailbox connect did not complete." };
+    return {
+      severity: "error",
+      text: reason?.trim() || "Mailbox connect did not complete.",
+    };
   }
   return null;
 }
@@ -72,7 +78,8 @@ export function MailCheckMailboxCard() {
 
   useEffect(() => {
     const result = searchParams.get("mailbox");
-    const nextNotice = mailboxNotice(result);
+    const reason = searchParams.get("mailboxReason");
+    const nextNotice = mailboxNotice(result, reason);
     if (!nextNotice) {
       return;
     }

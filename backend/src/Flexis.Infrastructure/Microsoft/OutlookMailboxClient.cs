@@ -198,6 +198,38 @@ internal sealed class OutlookMailboxClient : IMailMailbox
             cancellationToken);
     }
 
+    public async Task CreateDraftReplyAsync(
+        string accessToken,
+        MailMessageContent message,
+        string replyBody,
+        CancellationToken cancellationToken)
+    {
+        var draft = await SendJson<GraphMessage>(
+            accessToken,
+            HttpMethod.Post,
+            $"{GraphBase}/me/messages/{Uri.EscapeDataString(message.Id)}/createReply",
+            null,
+            cancellationToken);
+        if (string.IsNullOrWhiteSpace(draft.Id))
+        {
+            throw new MicrosoftOAuthException("Outlook did not create a reply draft.");
+        }
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Patch,
+            $"{GraphBase}/me/messages/{Uri.EscapeDataString(draft.Id)}",
+            new
+            {
+                body = new
+                {
+                    contentType = "Text",
+                    content = replyBody.Trim()
+                }
+            },
+            cancellationToken);
+    }
+
     public async Task<IReadOnlyList<MailLabeledMessage>> ListLabeledAsync(
         string accessToken,
         IReadOnlyDictionary<MailCheckDecision, string> labels,

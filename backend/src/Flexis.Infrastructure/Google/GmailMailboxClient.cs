@@ -27,10 +27,11 @@ internal sealed class GmailMailboxClient : IMailMailbox
         ' ',
         "(in:inbox OR in:spam OR category:updates OR category:promotions OR category:forums OR category:social)",
         "-in:trash -in:draft -in:sent",
-        $"-label:\"{MailCheckLabels.InterviewScheduled}\"",
-        $"-label:\"{MailCheckLabels.WaitingForAnswer}\"",
-        $"-label:\"{MailCheckLabels.NeedToSchedule}\"",
-        $"-label:\"{MailCheckLabels.Others}\"");
+        $"-label:\"{MailCheckLabels.InterviewSchedule}\"",
+        $"-label:\"{MailCheckLabels.AvailabilityRequest}\"",
+        $"-label:\"{MailCheckLabels.AssessmentRequest}\"",
+        $"-label:\"{MailCheckLabels.HrTeamMessage}\"",
+        $"-label:\"{MailCheckLabels.ReplyRequired}\"");
 
     private readonly HttpClient _http;
 
@@ -152,6 +153,28 @@ internal sealed class GmailMailboxClient : IMailMailbox
             HttpMethod.Post,
             $"{Base}/messages/{Uri.EscapeDataString(messageId)}/trash",
             null,
+            cancellationToken);
+    }
+
+    public async Task CreateDraftReplyAsync(
+        string accessToken,
+        MailMessageContent message,
+        string replyBody,
+        CancellationToken cancellationToken)
+    {
+        var raw = BuildRawReply(message, replyBody);
+        await SendJson<GmailDraft>(
+            accessToken,
+            HttpMethod.Post,
+            $"{Base}/drafts",
+            new
+            {
+                message = new
+                {
+                    threadId = message.ThreadId,
+                    raw
+                }
+            },
             cancellationToken);
     }
 
@@ -349,6 +372,45 @@ internal sealed class GmailMailboxClient : IMailMailbox
             ?? string.Empty;
     }
 
+    private static string BuildRawReply(MailMessageContent message, string replyBody)
+    {
+        var to = ExtractEmailAddress(message.From);
+        var subject = message.Subject.StartsWith("Re:", StringComparison.OrdinalIgnoreCase)
+            ? message.Subject
+            : $"Re: {message.Subject}";
+        var mime = string.Join(
+            "\r\n",
+            $"To: {to}",
+            $"Subject: {subject}",
+            "MIME-Version: 1.0",
+            "Content-Type: text/plain; charset=UTF-8",
+            "",
+            replyBody.Trim());
+        return EncodeRaw(mime);
+    }
+
+    private static string ExtractEmailAddress(string from)
+    {
+        var trimmed = from.Trim();
+        var start = trimmed.LastIndexOf('<');
+        var end = trimmed.LastIndexOf('>');
+        if (start >= 0 && end > start)
+        {
+            return trimmed[(start + 1)..end].Trim();
+        }
+
+        return trimmed;
+    }
+
+    private static string EncodeRaw(string mime)
+    {
+        var bytes = Encoding.UTF8.GetBytes(mime);
+        return Convert.ToBase64String(bytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+    }
+
     private static string ReadGoogleError(string payload, string fallback)
     {
         try
@@ -386,6 +448,11 @@ internal sealed class GmailMailboxClient : IMailMailbox
     }
 
     private sealed class GmailRef
+    {
+        public string? Id { get; set; }
+    }
+
+    private sealed class GmailDraft
     {
         public string? Id { get; set; }
     }

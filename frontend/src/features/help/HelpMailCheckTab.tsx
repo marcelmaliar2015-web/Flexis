@@ -178,9 +178,9 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                   <TableCell align="left">
 
-                    Mail Flexis labeled or categorized and pinned. Filter by Interview Scheduled,
+                    Mail Flexis labeled or categorized and pinned. Filter by Interview Schedule,
 
-                    Waiting for answer, Need to Schedule/Availability, or Others.
+                    Availability Request, Assessment Request, HR Team Message, or Reply required.
 
                   </TableCell>
 
@@ -192,8 +192,9 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                   <TableCell align="left">
 
-                    Check all processes every inbox and junk candidate with live progress. Background
-                    auto-check still runs about every two minutes while Mail Check is open.
+                    Check all processes every inbox and junk candidate one message at a time with
+                    live progress. Background auto-check still runs about every two minutes while
+                    Mail Check is open.
 
                   </TableCell>
 
@@ -205,9 +206,8 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                   <TableCell align="left">
 
-                    Connect Gmail or Outlook, plus OpenAI key and model. Pick any chat or reasoning
-
-                    model; Flexis adapts the request.
+                    Connect Gmail or Outlook, OpenAI key and model, and the classifier prompt. Pick
+                    any chat or reasoning model; Flexis adapts the request.
 
                   </TableCell>
 
@@ -239,9 +239,9 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
               <ListItemText
 
-                primary="Creates four keep groups"
+                primary="Creates five keep groups"
 
-                secondary="Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others. Gmail labels or Outlook master categories. Created when you save a key with a mailbox connected, and on each check."
+                secondary="Interview Schedule, Availability Request, Assessment Request, HR Team Message, and Reply required. Gmail labels or Outlook master categories. Created when you save a key with a mailbox connected, and on each check."
 
               />
 
@@ -266,6 +266,18 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
                 primary="Pins keepers"
 
                 secondary="Gmail stars labeled mail. Outlook flags categorized mail. Junk or spam keepers move back to the inbox."
+
+              />
+
+            </ListItem>
+
+            <ListItem disableGutters>
+
+              <ListItemText
+
+                primary="Saves reply drafts"
+
+                secondary="When the classifier marks a message as needing a reply, Flexis writes a draft in your mailbox. Nothing is sent automatically."
 
               />
 

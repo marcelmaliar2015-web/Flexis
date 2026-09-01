@@ -8,7 +8,7 @@ Job Application creates Google Sheets on the connected account. Those files must
 
 Opening Job Application or creating a profile or source ensures this tree in that user's Drive:
 
-- `Flexis` — workspace root
+- `Flexis` — workspace root; also holds the `job-master` spreadsheet for resume generation (see [024-resume-generation-job-master.md](024-resume-generation-job-master.md))
 - `Job Application` — Job Application files
 - `Profiles` — one Sheet per profile
 - `Sources` — one Sheet per source; location tabs stay in the workbook

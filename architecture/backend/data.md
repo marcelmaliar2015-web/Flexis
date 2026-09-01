@@ -29,9 +29,13 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 
 `JobFinancialSettings` in `Flexis.Domain.JobApplication`. Table `job_financial_settings`. Unique `UserId`, cascade from `users`. Default apply rate 0.06 and bonus rate 1.5. EF configuration: `Persistence/Postgres/JobApplication/JobFinancialSettingsConfiguration.cs`.
 
+`JobResumeSettings` in `Flexis.Domain.JobApplication`. Table `job_resume_settings`. Unique `UserId`, cascade from `users`. Stores owner option list JSON and job-master spreadsheet id and url. EF configuration: `Persistence/Postgres/JobApplication/JobResumeSettingsConfiguration.cs`.
+
+`JobProfileResumeSettings` in `Flexis.Domain.JobApplication`. Table `job_profile_resume_settings`. Unique `ProfileId`, cascade from `job_catalog_items`. Per-profile prompt, resume style, and owner. EF configuration: `Persistence/Postgres/JobApplication/JobProfileResumeSettingsConfiguration.cs`.
+
 `JobApplicationLog` in `Flexis.Domain.JobApplication`. Table `job_application_logs`. Cascade from `users`. Newest 200 rows are listed per user. EF configuration: `Persistence/Postgres/JobApplication/JobApplicationLogConfiguration.cs`.
 
-`MailCheckSettings` in `Flexis.Domain.MailCheck`. Table `mail_check_settings`. Unique `UserId`, cascade from `users`. OpenAI key stored protected. Default model `gpt-4o-mini`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckSettingsConfiguration.cs`.
+`MailCheckSettings` in `Flexis.Domain.MailCheck`. Table `mail_check_settings`. Unique `UserId`, cascade from `users`. OpenAI key stored protected. Default model `gpt-4o-mini`. Optional `ClassifierPrompt` text; empty uses the built-in default. EF configuration: `Persistence/Postgres/MailCheck/MailCheckSettingsConfiguration.cs`.
 
 `MailConnection` in `Flexis.Domain.MailCheck`. Table `mail_connections`. Unique (`UserId`, `Provider`, `ExternalSubject`), cascade from `users`. Provider is `Gmail` or `Outlook`. Refresh and access tokens are stored protected. EF configuration: `Persistence/Postgres/MailCheck/MailConnectionConfiguration.cs`.
 

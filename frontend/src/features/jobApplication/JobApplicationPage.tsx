@@ -9,6 +9,7 @@ import { useState } from "react";
 import { JobApplicationFinancialTab } from "@/features/jobApplication/JobApplicationFinancialTab";
 import { JobApplicationLogsTab } from "@/features/jobApplication/JobApplicationLogsTab";
 import { JobApplicationOperationsTab } from "@/features/jobApplication/JobApplicationOperationsTab";
+import { JobApplicationResumeTab } from "@/features/jobApplication/JobApplicationResumeTab";
 import { JobApplicationSettingsTab } from "@/features/jobApplication/JobApplicationSettingsTab";
 
 const AccentRule = styled("span")(({ theme }) => ({
@@ -19,12 +20,13 @@ const AccentRule = styled("span")(({ theme }) => ({
   backgroundColor: theme.palette.secondary.main,
 }));
 
-type JobApplicationTab = "operations" | "financial" | "logs" | "settings";
+type JobApplicationTab = "operations" | "financial" | "resume" | "logs" | "settings";
 
 export function JobApplicationPage() {
   const [tab, setTab] = useState<JobApplicationTab>("operations");
   const [visited, setVisited] = useState({
     financial: false,
+    resume: false,
     logs: false,
     settings: false,
   });
@@ -46,13 +48,14 @@ export function JobApplicationPage() {
             value={tab}
             onChange={(_event, value: JobApplicationTab) => {
               setTab(value);
-              if (value === "financial" || value === "logs" || value === "settings") {
+              if (value === "financial" || value === "resume" || value === "logs" || value === "settings") {
                 setVisited((current) => ({ ...current, [value]: true }));
               }
             }}
           >
             <Tab label="Operations" value="operations" />
             <Tab label="Financial" value="financial" />
+            <Tab label="Resume generation" value="resume" />
             <Tab label="Logs" value="logs" />
             <Tab label="Settings" value="settings" />
           </Tabs>
@@ -62,6 +65,11 @@ export function JobApplicationPage() {
           {tab === "financial" || visited.financial ? (
             <Box role="tabpanel" hidden={tab !== "financial"}>
               <JobApplicationFinancialTab />
+            </Box>
+          ) : null}
+          {tab === "resume" || visited.resume ? (
+            <Box role="tabpanel" hidden={tab !== "resume"}>
+              <JobApplicationResumeTab />
             </Box>
           ) : null}
           {tab === "logs" || visited.logs ? (

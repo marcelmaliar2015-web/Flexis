@@ -17,6 +17,10 @@ public static class FlexisDriveLayout
     public const string ProfilesDescription = "One Google Sheet per profile.";
 
     public const string SourcesDescription = "One Google Sheet per source. Location tabs stay inside each workbook.";
+
+    public const string JobMasterFileName = "job-master";
+
+    public const string JobMasterDescription = "Flexis job master workbook for resume generation profile management.";
 }
 
 public sealed record FlexisDriveFolders(
@@ -40,6 +44,17 @@ public interface IGoogleDriveGateway
         string accessToken,
         string name,
         string? parentFolderId,
+        CancellationToken cancellationToken);
+
+    Task<string?> FindSpreadsheetAsync(
+        string accessToken,
+        string name,
+        string parentFolderId,
+        CancellationToken cancellationToken);
+
+    Task<bool> SpreadsheetIsActiveAsync(
+        string accessToken,
+        string spreadsheetId,
         CancellationToken cancellationToken);
 
     Task MoveFileToFolderAsync(

@@ -6,7 +6,7 @@ Mail Check stored one `mail_connections` row per user. Connect Outlook was disab
 
 ## Decision
 
-A signed-in user may connect any number of Gmail and Outlook mailboxes. Unique key is `(UserId, Provider, ExternalSubject)`. Reconnecting the same account refreshes tokens. Disconnect is per connection id. Check all and auto-check process every connected mailbox. Inbox is a combined list with mailbox identity on each row. Processed message ids are scoped by `MailConnectionId`. OpenAI settings stay one per user. Outlook connect still requires the admin Microsoft client and `Microsoft:RedirectUri` (`outlookAvailable`).
+A signed-in user may connect any number of Gmail and Outlook mailboxes. Unique key is `(UserId, Provider, ExternalSubject)`. Reconnecting the same account refreshes tokens. Disconnect is per connection id. Check all processes every connected mailbox; Check runs one mailbox. Scan cursors resume past already-checked candidates so large inboxes keep advancing. Inbox is a combined list with mailbox identity on each row. Processed message ids are scoped by `MailConnectionId`. OpenAI settings stay one per user. Outlook connect still requires the admin Microsoft client and `Microsoft:RedirectUri` (`outlookAvailable`).
 
 Supersedes the single-mailbox wording in [019-mail-check.md](019-mail-check.md).
 

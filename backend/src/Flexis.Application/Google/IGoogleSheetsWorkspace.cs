@@ -130,5 +130,25 @@ public interface IGoogleSheetsWorkspace
         string spreadsheetId,
         IReadOnlyDictionary<string, string> values,
         CancellationToken cancellationToken);
+
+    Task<CreatedSpreadsheet> EnsureJobMasterWorkbookAsync(
+        string accessToken,
+        string rootFolderId,
+        string? existingSpreadsheetId,
+        CancellationToken cancellationToken);
+
+    Task SyncJobMasterProfileManagementAsync(
+        string accessToken,
+        string spreadsheetId,
+        IReadOnlyList<JobMasterProfileRow> rows,
+        CancellationToken cancellationToken);
 }
+
+public sealed record JobMasterProfileRow(
+    string Name,
+    string Tab,
+    string Sheet,
+    string Prompt,
+    int? ResumeStyle,
+    string Owner);
 

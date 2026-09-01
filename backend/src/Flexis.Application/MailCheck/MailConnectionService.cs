@@ -184,9 +184,23 @@ public sealed class MailConnectionService
             await CompleteOutlookConnectAsync(pending.UserId, tokens, profile, cancellationToken);
             return AppendMailboxResult(pending.ReturnUrl, "connected");
         }
-        catch (MicrosoftOAuthException)
+        catch (MicrosoftOAuthException exception)
         {
-            return AppendMailboxResult(pending.ReturnUrl, "error");
+            return AppendMailboxResult(pending.ReturnUrl, "error", exception.Message);
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AppendMailboxResult(
+                pending.ReturnUrl,
+                "error",
+                "Microsoft login timed out while finishing the connection. Check that this machine can reach login.microsoftonline.com, then try Add Outlook again.");
+        }
+        catch (HttpRequestException exception)
+        {
+            return AppendMailboxResult(
+                pending.ReturnUrl,
+                "error",
+                $"Microsoft login could not finish: {exception.Message}");
         }
     }
 
@@ -208,9 +222,15 @@ public sealed class MailConnectionService
         await _connections.SaveChangesAsync(cancellationToken);
     }
 
-    public static string AppendMailboxResult(string returnUrl, string result)
+    public static string AppendMailboxResult(string returnUrl, string result, string? reason = null)
     {
-        return $"{returnUrl}?mailbox={Uri.EscapeDataString(result)}";
+        var url = $"{returnUrl}?mailbox={Uri.EscapeDataString(result)}";
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            url += $"&mailboxReason={Uri.EscapeDataString(reason)}";
+        }
+
+        return url;
     }
 
     public static string MailCheckFallbackReturnUrl(IReadOnlyList<string> origins)

@@ -37,8 +37,16 @@ export function listMailCheckModels(): Promise<MailCheckModels> {
   return getJson<MailCheckModels>("/api/mail-check/models");
 }
 
-export function runMailCheck(force: boolean): Promise<MailCheckRun> {
-  return postJson<MailCheckRun>("/api/mail-check/run", { force });
+export function runMailCheck(options?: {
+  force?: boolean;
+  mailboxId?: string | null;
+  resetCursor?: boolean;
+}): Promise<MailCheckRun> {
+  return postJson<MailCheckRun>("/api/mail-check/run", {
+    force: options?.force ?? false,
+    mailboxId: options?.mailboxId ?? null,
+    resetCursor: options?.resetCursor ?? false,
+  });
 }
 
 export function getMailCheckInbox(label: MailCheckLabelSlug | "all"): Promise<MailCheckInbox> {

@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<JobCatalogService>();
         services.AddScoped<JobPipelineService>();
         services.AddScoped<JobFinancialService>();
+        services.AddScoped<JobResumeService>();
         services.AddScoped<JobApplicationLogService>();
         services.AddScoped<JobApplicationActivity>();
         services.AddScoped<GoogleDriveLayoutService>();

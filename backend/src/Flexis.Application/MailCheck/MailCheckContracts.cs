@@ -3,6 +3,8 @@ namespace Flexis.Application.MailCheck;
 public sealed record MailCheckSettingsDto(
     bool HasApiKey,
     string Model,
+    string ClassifierPrompt,
+    string DefaultClassifierPrompt,
     DateTimeOffset? LastRunAt,
     string LastError,
     int LastLabeled,
@@ -16,13 +18,17 @@ public sealed record MailCheckSettingsDto(
     IReadOnlyList<MailMailboxItemDto> Mailboxes,
     bool OutlookAvailable);
 
-public sealed record MailCheckSettingsWriteRequest(string? ApiKey, bool ClearApiKey, string Model);
+public sealed record MailCheckSettingsWriteRequest(
+    string? ApiKey,
+    bool ClearApiKey,
+    string Model,
+    string? ClassifierPrompt);
 
 public sealed record MailCheckModelDto(string Id, bool Recommended);
 
 public sealed record MailCheckModelsDto(IReadOnlyList<MailCheckModelDto> Models);
 
-public sealed record MailCheckRunRequest(bool Force);
+public sealed record MailCheckRunRequest(bool Force, Guid? MailboxId, bool ResetCursor);
 
 public sealed record MailCheckRunItemDto(
     string MessageId,
@@ -43,6 +49,8 @@ public sealed record MailCheckRunDto(
     int Skipped,
     int Errors,
     bool HasMore,
+    int Scanned,
+    int AlreadySeen,
     IReadOnlyList<MailCheckRunItemDto> Items);
 
 public sealed record MailCheckInboxItemDto(

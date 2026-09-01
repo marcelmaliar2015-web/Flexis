@@ -211,6 +211,64 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("job_financial_settings", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobProfileResumeSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Owner")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ResumeStyle")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileId")
+                        .IsUnique();
+
+                    b.ToTable("job_profile_resume_settings", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobResumeSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("JobMasterSpreadsheetId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("JobMasterUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("OwnerOptionsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("job_resume_settings", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineBannedCompany", b =>
                 {
                     b.Property<Guid>("Id")
@@ -325,6 +383,10 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("ApiKeyProtected")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClassifierPrompt")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("LastError")
@@ -519,6 +581,24 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                 });
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSettings", b =>
+                {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobProfileResumeSettings", b =>
+                {
+                    b.HasOne("Flexis.Domain.JobApplication.JobCatalogItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobResumeSettings", b =>
                 {
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()

@@ -29,10 +29,11 @@ export function providerLabel(provider: MailCheckMailboxProvider | string): stri
 }
 
 export const mailCheckActionLabels: Record<string, string> = {
-  interviewScheduled: "Interview Scheduled",
-  waitingForAnswer: "Waiting for answer",
-  needToSchedule: "Need to Schedule/Availability",
-  others: "Others",
+  interviewSchedule: "Interview Schedule",
+  availabilityRequest: "Availability Request",
+  assessmentRequest: "Assessment Request",
+  hrTeamMessage: "HR Team Message",
+  replyRequired: "Reply required",
   discard: "Trashed",
   skip: "Left in place",
   error: "Error",

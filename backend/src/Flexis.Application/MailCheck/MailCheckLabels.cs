@@ -4,27 +4,30 @@ namespace Flexis.Application.MailCheck;
 
 public static class MailCheckLabels
 {
-    public const string InterviewScheduled = "Interview Scheduled";
-    public const string WaitingForAnswer = "Waiting for answer";
-    public const string NeedToSchedule = "Need to Schedule/Availability";
-    public const string Others = "Others";
+    public const string InterviewSchedule = "Interview Schedule";
+    public const string AvailabilityRequest = "Availability Request";
+    public const string AssessmentRequest = "Assessment Request";
+    public const string HrTeamMessage = "HR Team Message";
+    public const string ReplyRequired = "Reply required";
 
     public static readonly IReadOnlyList<MailCheckDecision> KeepDecisions =
     [
-        MailCheckDecision.InterviewScheduled,
-        MailCheckDecision.WaitingForAnswer,
-        MailCheckDecision.NeedToSchedule,
-        MailCheckDecision.Others
+        MailCheckDecision.InterviewSchedule,
+        MailCheckDecision.AvailabilityRequest,
+        MailCheckDecision.AssessmentRequest,
+        MailCheckDecision.HrTeamMessage,
+        MailCheckDecision.ReplyRequired
     ];
 
     public static string NameFor(MailCheckDecision decision)
     {
         return decision switch
         {
-            MailCheckDecision.InterviewScheduled => InterviewScheduled,
-            MailCheckDecision.WaitingForAnswer => WaitingForAnswer,
-            MailCheckDecision.NeedToSchedule => NeedToSchedule,
-            MailCheckDecision.Others => Others,
+            MailCheckDecision.InterviewSchedule => InterviewSchedule,
+            MailCheckDecision.AvailabilityRequest => AvailabilityRequest,
+            MailCheckDecision.AssessmentRequest => AssessmentRequest,
+            MailCheckDecision.HrTeamMessage => HrTeamMessage,
+            MailCheckDecision.ReplyRequired => ReplyRequired,
             _ => string.Empty
         };
     }
@@ -33,13 +36,14 @@ public static class MailCheckLabels
     {
         return decision switch
         {
-            MailCheckDecision.InterviewScheduled => "interviewScheduled",
-            MailCheckDecision.WaitingForAnswer => "waitingForAnswer",
-            MailCheckDecision.NeedToSchedule => "needToSchedule",
-            MailCheckDecision.Others => "others",
+            MailCheckDecision.InterviewSchedule => "interviewSchedule",
+            MailCheckDecision.AvailabilityRequest => "availabilityRequest",
+            MailCheckDecision.AssessmentRequest => "assessmentRequest",
+            MailCheckDecision.HrTeamMessage => "hrTeamMessage",
+            MailCheckDecision.ReplyRequired => "replyRequired",
             MailCheckDecision.Discard => "discard",
             MailCheckDecision.Skip => "skip",
-            _ => "others"
+            _ => "replyRequired"
         };
     }
 
@@ -47,10 +51,11 @@ public static class MailCheckLabels
     {
         return slug switch
         {
-            "interviewScheduled" => MailCheckDecision.InterviewScheduled,
-            "waitingForAnswer" => MailCheckDecision.WaitingForAnswer,
-            "needToSchedule" => MailCheckDecision.NeedToSchedule,
-            "others" => MailCheckDecision.Others,
+            "interviewSchedule" => MailCheckDecision.InterviewSchedule,
+            "availabilityRequest" => MailCheckDecision.AvailabilityRequest,
+            "assessmentRequest" => MailCheckDecision.AssessmentRequest,
+            "hrTeamMessage" => MailCheckDecision.HrTeamMessage,
+            "replyRequired" => MailCheckDecision.ReplyRequired,
             _ => null
         };
     }

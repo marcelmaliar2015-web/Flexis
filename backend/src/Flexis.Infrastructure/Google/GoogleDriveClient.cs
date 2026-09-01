@@ -82,6 +82,35 @@ internal sealed class GoogleDriveClient : IGoogleDriveGateway
         return string.IsNullOrWhiteSpace(id) ? null : id;
     }
 
+    public async Task<string?> FindSpreadsheetAsync(
+        string accessToken,
+        string name,
+        string parentFolderId,
+        CancellationToken cancellationToken)
+    {
+        var query =
+            $"name = '{EscapeDriveQuery(name)}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false and '{EscapeDriveQuery(parentFolderId)}' in parents";
+        var listed = await SendJson<DriveFileList>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://www.googleapis.com/drive/v3/files?q={Uri.EscapeDataString(query)}&fields=files(id)&pageSize=1&orderBy=createdTime",
+            null,
+            cancellationToken);
+        var id = listed?.Files?.FirstOrDefault()?.Id;
+        return string.IsNullOrWhiteSpace(id) ? null : id;
+    }
+
+    public async Task<bool> SpreadsheetIsActiveAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        var file = await GetFileAsync(accessToken, spreadsheetId, "id,mimeType,trashed", cancellationToken);
+        return file is not null
+            && file.Trashed != true
+            && string.Equals(file.MimeType, "application/vnd.google-apps.spreadsheet", StringComparison.Ordinal);
+    }
+
     public async Task MoveFileToFolderAsync(
         string accessToken,
         string fileId,

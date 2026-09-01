@@ -167,7 +167,7 @@ export function HelpProblemsTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="Labels are missing in Gmail"
-                secondary="Save the OpenAI key while a mailbox is connected, or run Check all. Flexis creates Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others."
+                secondary="Save the OpenAI key while a mailbox is connected, or run Check all. Flexis creates Interview Schedule, Availability Request, Assessment Request, HR Team Message, and Reply required."
               />
             </ListItem>
             <ListItem disableGutters>

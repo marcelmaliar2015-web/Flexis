@@ -1,10 +1,11 @@
 export type MailCheckMailboxProvider = "gmail" | "outlook";
 
 export type MailCheckLabelSlug =
-  | "interviewScheduled"
-  | "waitingForAnswer"
-  | "needToSchedule"
-  | "others";
+  | "interviewSchedule"
+  | "availabilityRequest"
+  | "assessmentRequest"
+  | "hrTeamMessage"
+  | "replyRequired";
 
 export type MailCheckAction = MailCheckLabelSlug | "discard" | "skip" | "error";
 
@@ -18,6 +19,8 @@ export type MailCheckMailboxItem = {
 export type MailCheckSettings = {
   hasApiKey: boolean;
   model: string;
+  classifierPrompt: string;
+  defaultClassifierPrompt: string;
   lastRunAt: string | null;
   lastError: string;
   lastLabeled: number;
@@ -41,6 +44,7 @@ export type MailCheckSettingsWrite = {
   apiKey: string | null;
   clearApiKey: boolean;
   model: string;
+  classifierPrompt?: string | null;
 };
 
 export type MailCheckModel = {
@@ -72,6 +76,8 @@ export type MailCheckRun = {
   skipped: number;
   errors: number;
   hasMore: boolean;
+  scanned: number;
+  alreadySeen: number;
   items: MailCheckRunItem[];
 };
 
@@ -95,8 +101,9 @@ export type MailCheckInbox = {
 };
 
 export const mailCheckKeepLabels: { slug: MailCheckLabelSlug; name: string }[] = [
-  { slug: "interviewScheduled", name: "Interview Scheduled" },
-  { slug: "waitingForAnswer", name: "Waiting for answer" },
-  { slug: "needToSchedule", name: "Need to Schedule/Availability" },
-  { slug: "others", name: "Others" },
+  { slug: "interviewSchedule", name: "Interview Schedule" },
+  { slug: "availabilityRequest", name: "Availability Request" },
+  { slug: "assessmentRequest", name: "Assessment Request" },
+  { slug: "hrTeamMessage", name: "HR Team Message" },
+  { slug: "replyRequired", name: "Reply required" },
 ];

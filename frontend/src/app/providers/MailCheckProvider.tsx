@@ -51,12 +51,12 @@ export function MailCheckProvider({ children }: MailCheckProviderProps) {
         });
       }
 
-      let result: MailCheckRun = await runMailCheck(false);
+      let result: MailCheckRun = await runMailCheck({ force: false });
       if (!result.busy) {
         queryClient.setQueryData(mailCheckLastRunQueryKey, result);
         let extra = 0;
         while (result.hasMore && extra < 2) {
-          result = await runMailCheck(false);
+          result = await runMailCheck({ force: false });
           if (result.busy) {
             break;
           }
@@ -68,6 +68,8 @@ export function MailCheckProvider({ children }: MailCheckProviderProps) {
             trashed: (previous?.trashed ?? 0) + result.trashed,
             skipped: (previous?.skipped ?? 0) + result.skipped,
             errors: (previous?.errors ?? 0) + result.errors,
+            scanned: (previous?.scanned ?? 0) + result.scanned,
+            alreadySeen: (previous?.alreadySeen ?? 0) + result.alreadySeen,
             items: [...(previous?.items ?? []), ...result.items],
           });
           extra += 1;

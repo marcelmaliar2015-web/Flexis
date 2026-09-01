@@ -550,46 +550,53 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         var payload = await SendJson<SpreadsheetList>(
             accessToken,
             HttpMethod.Get,
-            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,title)",
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,title),sheets.bandedRanges(bandedRangeId,range),sheets.tables(tableId,name,range,columnProperties)",
             null,
             cancellationToken);
+
+        var columns = ColumnsFor(JobWorkbookKind.Profile);
+        var statusIndex = Array.FindIndex(columns, column => column.Name == "Status");
+        if (statusIndex < 0)
+        {
+            return;
+        }
 
         var requests = new List<object>();
         foreach (var sheet in payload.Sheets ?? [])
         {
-            if (sheet.Properties is null
-                || JobSheetNames.IsProfileInfoTab(sheet.Properties.Title)
-                || JobSheetNames.IsArchiveTab(sheet.Properties.Title))
+            if (sheet.Properties is null || JobSheetNames.IsProfileInfoTab(sheet.Properties.Title))
             {
                 continue;
             }
 
             var sheetId = sheet.Properties.SheetId;
-            var statusIndex = Array.FindIndex(ColumnsFor(JobWorkbookKind.Profile), column => column.Name == "Status");
-            requests.Add(new
+            var existingTable = (sheet.Tables ?? [])
+                .FirstOrDefault(table => string.Equals(table.TableId, ListingsTableId(sheetId), StringComparison.Ordinal))
+                ?? (sheet.Tables ?? []).FirstOrDefault(table => table.Range?.SheetId == sheetId);
+            if (existingTable?.TableId is { } tableId)
             {
-                setDataValidation = new
+                var statusColumn = existingTable.ColumnProperties?
+                    .FirstOrDefault(column => column.ColumnIndex == statusIndex);
+                if (string.Equals(statusColumn?.ColumnType, "DROPDOWN", StringComparison.Ordinal))
                 {
-                    range = new
-                    {
-                        sheetId,
-                        startRowIndex = 1,
-                        endRowIndex = 200,
-                        startColumnIndex = statusIndex,
-                        endColumnIndex = statusIndex + 1
-                    },
-                    rule = new
-                    {
-                        condition = new
-                        {
-                            type = "ONE_OF_LIST",
-                            values = StatusValues.Select(value => new { userEnteredValue = value }).ToArray()
-                        },
-                        showCustomUi = true,
-                        strict = false
-                    }
+                    continue;
                 }
-            });
+
+                requests.Add(UpdateListingsTableStatusColumnRequest(tableId, statusIndex, columns[statusIndex].Name));
+                continue;
+            }
+
+            foreach (var banding in sheet.BandedRanges ?? [])
+            {
+                if (banding.Range?.SheetId == sheetId)
+                {
+                    requests.Add(new { deleteBanding = new { bandedRangeId = banding.BandedRangeId } });
+                }
+            }
+
+            requests.Add(new { clearBasicFilter = new { sheetId } });
+            requests.Add(ClearStatusDataValidationRequest(sheetId, statusIndex));
+            requests.Add(AddListingsTableRequest(sheetId, columns));
         }
 
         if (requests.Count == 0)
@@ -805,6 +812,314 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             cancellationToken);
     }
 
+    private const string JobMasterProfileManagementSheet = "Profile Management";
+
+    private static readonly string[] JobMasterProfileManagementHeaders =
+    [
+        "Name",
+        "Tab",
+        "Sheet",
+        "Prompt",
+        "Resume Style",
+        "Owner"
+    ];
+
+    public async Task<CreatedSpreadsheet> EnsureJobMasterWorkbookAsync(
+        string accessToken,
+        string rootFolderId,
+        string? existingSpreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        string spreadsheetId;
+        if (!string.IsNullOrWhiteSpace(existingSpreadsheetId))
+        {
+            var active = await SendJson<SpreadsheetCreated>(
+                accessToken,
+                HttpMethod.Get,
+                $"https://sheets.googleapis.com/v4/spreadsheets/{existingSpreadsheetId}?fields=spreadsheetId,spreadsheetUrl",
+                null,
+                cancellationToken);
+            if (!string.IsNullOrWhiteSpace(active.SpreadsheetId) && !string.IsNullOrWhiteSpace(active.SpreadsheetUrl))
+            {
+                spreadsheetId = active.SpreadsheetId;
+                await EnsureJobMasterProfileManagementSheetAsync(accessToken, spreadsheetId, cancellationToken);
+                return new CreatedSpreadsheet(spreadsheetId, active.SpreadsheetUrl);
+            }
+        }
+
+        var createdFile = await SendJson<DriveFileCreated>(
+            accessToken,
+            HttpMethod.Post,
+            "https://www.googleapis.com/drive/v3/files?fields=id&supportsAllDrives=true",
+            new
+            {
+                name = FlexisDriveLayout.JobMasterFileName,
+                mimeType = "application/vnd.google-apps.spreadsheet",
+                parents = new[] { rootFolderId }
+            },
+            cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(createdFile.Id))
+        {
+            throw new GoogleOAuthException("Google Drive did not return a spreadsheet.");
+        }
+
+        spreadsheetId = createdFile.Id;
+        var spreadsheet = await SendJson<SpreadsheetCreated>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=spreadsheetId,spreadsheetUrl,sheets.properties(sheetId,title)",
+            null,
+            cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(spreadsheet.SpreadsheetId) || string.IsNullOrWhiteSpace(spreadsheet.SpreadsheetUrl))
+        {
+            throw new GoogleOAuthException("Google Sheets did not return a spreadsheet.");
+        }
+
+        await EnsureJobMasterProfileManagementSheetAsync(accessToken, spreadsheet.SpreadsheetId, cancellationToken);
+        return new CreatedSpreadsheet(spreadsheet.SpreadsheetId, spreadsheet.SpreadsheetUrl);
+    }
+
+    public async Task SyncJobMasterProfileManagementAsync(
+        string accessToken,
+        string spreadsheetId,
+        IReadOnlyList<JobMasterProfileRow> rows,
+        CancellationToken cancellationToken)
+    {
+        await EnsureJobMasterProfileManagementSheetAsync(accessToken, spreadsheetId, cancellationToken);
+        var values = new List<object[]>(rows.Count + 1)
+        {
+            JobMasterProfileManagementHeaders
+        };
+        foreach (var row in rows)
+        {
+            values.Add(
+            [
+                row.Name,
+                row.Tab,
+                row.Sheet,
+                row.Prompt,
+                row.ResumeStyle?.ToString() ?? string.Empty,
+                row.Owner
+            ]);
+        }
+
+        var endRow = Math.Max(values.Count, 2);
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Put,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(JobMasterProfileManagementSheet, $"A1:F{endRow}")}?valueInputOption=USER_ENTERED",
+            new { values },
+            cancellationToken);
+
+        var sheets = await ListSheetsAsync(accessToken, spreadsheetId, cancellationToken);
+        var sheet = sheets.FirstOrDefault(item => string.Equals(item.Name, JobMasterProfileManagementSheet, StringComparison.Ordinal))
+            ?? throw new GoogleOAuthException("Profile Management sheet was not found.");
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new
+            {
+                requests = JobMasterProfileManagementFormatRequests(sheet.SheetId, endRow)
+            },
+            cancellationToken);
+    }
+
+    private async Task EnsureJobMasterProfileManagementSheetAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        var sheets = await ListSheetsAsync(accessToken, spreadsheetId, cancellationToken);
+        var profileManagement = sheets.FirstOrDefault(item =>
+            string.Equals(item.Name, JobMasterProfileManagementSheet, StringComparison.Ordinal));
+        if (profileManagement is null)
+        {
+            var first = sheets.FirstOrDefault()
+                ?? throw new GoogleOAuthException("Google Sheets returned no tabs.");
+            await SendJson<object>(
+                accessToken,
+                HttpMethod.Post,
+                $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+                new
+                {
+                    requests = new object[]
+                    {
+                        new
+                        {
+                            updateSheetProperties = new
+                            {
+                                properties = new
+                                {
+                                    sheetId = first.SheetId,
+                                    title = JobMasterProfileManagementSheet,
+                                    gridProperties = new
+                                    {
+                                        frozenRowCount = 1,
+                                        rowCount = 500,
+                                        columnCount = JobMasterProfileManagementHeaders.Length
+                                    }
+                                },
+                                fields = "title,gridProperties.frozenRowCount,gridProperties.rowCount,gridProperties.columnCount"
+                            }
+                        }
+                    }
+                },
+                cancellationToken);
+            profileManagement = new SpreadsheetSheet(first.SheetId, JobMasterProfileManagementSheet);
+        }
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Put,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(JobMasterProfileManagementSheet, "A1:F1")}?valueInputOption=USER_ENTERED",
+            new { values = new[] { JobMasterProfileManagementHeaders } },
+            cancellationToken);
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new
+            {
+                requests = JobMasterProfileManagementFormatRequests(profileManagement.SheetId, 500)
+            },
+            cancellationToken);
+    }
+
+    private static object[] JobMasterProfileManagementFormatRequests(int sheetId, int rowCount)
+    {
+        return
+        [
+            new
+            {
+                repeatCell = new
+                {
+                    range = new
+                    {
+                        sheetId,
+                        startRowIndex = 0,
+                        endRowIndex = 1,
+                        startColumnIndex = 0,
+                        endColumnIndex = JobMasterProfileManagementHeaders.Length
+                    },
+                    cell = new
+                    {
+                        userEnteredFormat = new
+                        {
+                            backgroundColor = new Color(0.055, 0.153, 0.267),
+                            horizontalAlignment = "LEFT",
+                            verticalAlignment = "MIDDLE",
+                            wrapStrategy = "WRAP",
+                            textFormat = new
+                            {
+                                foregroundColor = new Color(0.969, 0.957, 0.937),
+                                fontFamily = "Calibri",
+                                fontSize = 11,
+                                bold = true
+                            }
+                        }
+                    },
+                    fields = "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)"
+                }
+            },
+            new
+            {
+                repeatCell = new
+                {
+                    range = new
+                    {
+                        sheetId,
+                        startRowIndex = 1,
+                        endRowIndex = rowCount,
+                        startColumnIndex = 0,
+                        endColumnIndex = JobMasterProfileManagementHeaders.Length
+                    },
+                    cell = new
+                    {
+                        userEnteredFormat = new
+                        {
+                            horizontalAlignment = "LEFT",
+                            verticalAlignment = "TOP",
+                            wrapStrategy = "WRAP",
+                            textFormat = new
+                            {
+                                foregroundColor = new Color(0, 0, 0),
+                                fontFamily = "Calibri",
+                                fontSize = 11
+                            }
+                        }
+                    },
+                    fields = "userEnteredFormat(textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)"
+                }
+            },
+            new
+            {
+                updateDimensionProperties = new
+                {
+                    range = new { sheetId, dimension = "ROWS", startIndex = 0, endIndex = rowCount },
+                    properties = new { pixelSize = 21 },
+                    fields = "pixelSize"
+                }
+            },
+            new
+            {
+                updateDimensionProperties = new
+                {
+                    range = new { sheetId, dimension = "COLUMNS", startIndex = 0, endIndex = 1 },
+                    properties = new { pixelSize = 180 },
+                    fields = "pixelSize"
+                }
+            },
+            new
+            {
+                updateDimensionProperties = new
+                {
+                    range = new { sheetId, dimension = "COLUMNS", startIndex = 1, endIndex = 2 },
+                    properties = new { pixelSize = 180 },
+                    fields = "pixelSize"
+                }
+            },
+            new
+            {
+                updateDimensionProperties = new
+                {
+                    range = new { sheetId, dimension = "COLUMNS", startIndex = 2, endIndex = 3 },
+                    properties = new { pixelSize = 280 },
+                    fields = "pixelSize"
+                }
+            },
+            new
+            {
+                updateDimensionProperties = new
+                {
+                    range = new { sheetId, dimension = "COLUMNS", startIndex = 3, endIndex = 4 },
+                    properties = new { pixelSize = 360 },
+                    fields = "pixelSize"
+                }
+            },
+            new
+            {
+                updateDimensionProperties = new
+                {
+                    range = new { sheetId, dimension = "COLUMNS", startIndex = 4, endIndex = 5 },
+                    properties = new { pixelSize = 120 },
+                    fields = "pixelSize"
+                }
+            },
+            new
+            {
+                updateDimensionProperties = new
+                {
+                    range = new { sheetId, dimension = "COLUMNS", startIndex = 5, endIndex = 6 },
+                    properties = new { pixelSize = 160 },
+                    fields = "pixelSize"
+                }
+            }
+        ];
+    }
+
     private static readonly string[] ProfileInfoFields =
     [
         "Name",
@@ -1000,9 +1315,112 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         return int.TryParse(digits, out row) && row > 0;
     }
 
+    private static string ListingsTableId(int sheetId) => $"flexis-listings-{sheetId}";
+
+    private static string ListingsTableName(int sheetId) => $"Flexis Listings {sheetId}";
+
+    private static object StatusDropdownValidationRule()
+    {
+        return new
+        {
+            condition = new
+            {
+                type = "ONE_OF_LIST",
+                values = StatusValues.Select(value => new { userEnteredValue = value }).ToArray()
+            }
+        };
+    }
+
+    private static object[] ListingsTableColumnProperties(Column[] columns)
+    {
+        return columns.Select((column, index) =>
+        {
+            if (column.Name == "Status")
+            {
+                return new
+                {
+                    columnIndex = index,
+                    columnName = column.Name,
+                    columnType = "DROPDOWN",
+                    dataValidationRule = StatusDropdownValidationRule()
+                };
+            }
+
+            return new { columnIndex = index, columnName = column.Name };
+        }).ToArray<object>();
+    }
+
+    private static object AddListingsTableRequest(int sheetId, Column[] columns)
+    {
+        return new
+        {
+            addTable = new
+            {
+                table = new
+                {
+                    name = ListingsTableName(sheetId),
+                    tableId = ListingsTableId(sheetId),
+                    range = new
+                    {
+                        sheetId,
+                        startRowIndex = 0,
+                        endRowIndex = 200,
+                        startColumnIndex = 0,
+                        endColumnIndex = columns.Length
+                    },
+                    columnProperties = ListingsTableColumnProperties(columns)
+                }
+            }
+        };
+    }
+
+    private static object UpdateListingsTableStatusColumnRequest(string tableId, int statusIndex, string statusColumnName)
+    {
+        return new
+        {
+            updateTable = new
+            {
+                table = new
+                {
+                    tableId,
+                    columnProperties = new[]
+                    {
+                        new
+                        {
+                            columnIndex = statusIndex,
+                            columnName = statusColumnName,
+                            columnType = "DROPDOWN",
+                            dataValidationRule = StatusDropdownValidationRule()
+                        }
+                    }
+                },
+                fields = "columnProperties"
+            }
+        };
+    }
+
+    private static object ClearStatusDataValidationRequest(int sheetId, int statusIndex)
+    {
+        return new
+        {
+            setDataValidation = new
+            {
+                range = new
+                {
+                    sheetId,
+                    startRowIndex = 1,
+                    endRowIndex = 200,
+                    startColumnIndex = statusIndex,
+                    endColumnIndex = statusIndex + 1
+                }
+            }
+        };
+    }
+
     private static object[] FormatRequests(int sheetId, Column[] columns)
     {
         var statusIndex = Array.FindIndex(columns, column => column.Name == "Status");
+        var usesListingsTable = statusIndex >= 0;
         var requests = new List<object>
         {
             new
@@ -1046,8 +1464,12 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                     fields = "pixelSize"
                 }
             },
-            BodyCellFormatRequest(sheetId, 1, 200, columns.Length),
-            new
+            BodyCellFormatRequest(sheetId, 1, 200, columns.Length)
+        };
+
+        if (!usesListingsTable)
+        {
+            requests.Add(new
             {
                 addBanding = new
                 {
@@ -1069,8 +1491,8 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                         }
                     }
                 }
-            },
-            new
+            });
+            requests.Add(new
             {
                 setBasicFilter = new
                 {
@@ -1086,8 +1508,8 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                         }
                     }
                 }
-            }
-        };
+            });
+        }
 
         for (var index = 0; index < columns.Length; index++)
         {
@@ -1105,30 +1527,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
 
         if (statusIndex >= 0)
         {
-            requests.Add(new
-            {
-                setDataValidation = new
-                {
-                    range = new
-                    {
-                        sheetId,
-                        startRowIndex = 1,
-                        endRowIndex = 200,
-                        startColumnIndex = statusIndex,
-                        endColumnIndex = statusIndex + 1
-                    },
-                    rule = new
-                    {
-                        condition = new
-                        {
-                            type = "ONE_OF_LIST",
-                            values = StatusValues.Select(value => new { userEnteredValue = value }).ToArray()
-                        },
-                        showCustomUi = true,
-                        strict = false
-                    }
-                }
-            });
+            requests.Add(AddListingsTableRequest(sheetId, columns));
 
             foreach (var status in StatusColors)
             {
@@ -1285,6 +1684,42 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         public SheetProps? Properties { get; set; }
 
         public List<ProtectedRangeInfo>? ProtectedRanges { get; set; }
+
+        public List<BandedRangeInfo>? BandedRanges { get; set; }
+
+        public List<TableInfo>? Tables { get; set; }
+    }
+
+    private sealed class BandedRangeInfo
+    {
+        public int BandedRangeId { get; set; }
+
+        public GridRangeInfo? Range { get; set; }
+    }
+
+    private sealed class TableInfo
+    {
+        public string? TableId { get; set; }
+
+        public string? Name { get; set; }
+
+        public GridRangeInfo? Range { get; set; }
+
+        public List<TableColumnProperty>? ColumnProperties { get; set; }
+    }
+
+    private sealed class TableColumnProperty
+    {
+        public int? ColumnIndex { get; set; }
+
+        public string? ColumnName { get; set; }
+
+        public string? ColumnType { get; set; }
+    }
+
+    private sealed class GridRangeInfo
+    {
+        public int? SheetId { get; set; }
     }
 
     private sealed class ProtectedRangeInfo

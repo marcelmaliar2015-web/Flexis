@@ -8,10 +8,11 @@ namespace Flexis.Application.MailCheck;
 
 public sealed class MailCheckService
 {
-    private const int BatchSize = 30;
-    private const int MaxListPages = 20;
+    private const int BatchSize = 1;
+    private const int MaxAlreadySeenPages = 80;
     private static readonly TimeSpan AutoCooldown = TimeSpan.FromSeconds(60);
     private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> RunLocks = new();
+    private static readonly ConcurrentDictionary<(Guid UserId, Guid ConnectionId), string?> ScanCursors = new();
 
     private static readonly HashSet<string> RecommendedModels = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -84,6 +85,17 @@ public sealed class MailCheckService
             settings.SetApiKeyProtected(_protector.Protect(key));
         }
 
+        if (request.ClassifierPrompt is not null)
+        {
+            var prompt = request.ClassifierPrompt.Trim();
+            if (prompt.Length is 0 or > 8000)
+            {
+                throw new ValidationFailedException("Classifier prompt must be between 1 and 8000 characters.");
+            }
+
+            settings.SetClassifierPrompt(prompt);
+        }
+
         await _settings.SaveChangesAsync(cancellationToken);
         if (settings.HasApiKey)
         {
@@ -132,7 +144,12 @@ public sealed class MailCheckService
 
         try
         {
-            return await RunLockedAsync(userId, settings, cancellationToken);
+            if (request.ResetCursor)
+            {
+                ClearCursors(userId, request.MailboxId);
+            }
+
+            return await RunLockedAsync(userId, settings, request.MailboxId, cancellationToken);
         }
         finally
         {
@@ -145,7 +162,7 @@ public sealed class MailCheckService
         string? labelSlug,
         CancellationToken cancellationToken)
     {
-        var connections = await RequireConnectionsAsync(userId, cancellationToken);
+        var connections = await RequireConnectionsAsync(userId, null, cancellationToken);
         var filter = MailCheckLabels.KeepFromSlug(labelSlug);
         var items = new List<MailCheckInboxItemDto>();
         foreach (var connection in connections)
@@ -179,6 +196,7 @@ public sealed class MailCheckService
     private async Task<MailCheckRunDto> RunLockedAsync(
         Guid userId,
         MailCheckSettings settings,
+        Guid? mailboxId,
         CancellationToken cancellationToken)
     {
         if (!settings.HasApiKey)
@@ -186,14 +204,17 @@ public sealed class MailCheckService
             throw new ValidationFailedException("Save an OpenAI API key on Mail Check Settings.");
         }
 
-        var connections = await RequireConnectionsAsync(userId, cancellationToken);
+        var connections = await RequireConnectionsAsync(userId, mailboxId, cancellationToken);
         var apiKey = _protector.Unprotect(settings.ApiKeyProtected!);
+        var classifierPrompt = ResolveClassifierPrompt(settings);
         var items = new List<MailCheckRunItemDto>();
         var labeled = 0;
         var trashed = 0;
         var skipped = 0;
         var errors = 0;
         var processed = 0;
+        var scanned = 0;
+        var alreadySeen = 0;
         var hasMore = false;
 
         try
@@ -212,28 +233,56 @@ public sealed class MailCheckService
                 var labels = await mailbox.EnsureLabelsAsync(access.AccessToken, cancellationToken);
                 var ourLabelIds = labels.Values.ToHashSet(StringComparer.Ordinal);
                 var providerName = MailConnectionService.ToProviderName(connection.Provider);
-                string? pageToken = null;
+                var cursorKey = (userId, connection.Id);
+                ScanCursors.TryGetValue(cursorKey, out var pageToken);
+                var alreadySeenPages = 0;
                 var mailboxHasMore = false;
 
-                for (var page = 0; page < MaxListPages && processed < BatchSize; page++)
+                while (processed < BatchSize)
                 {
-                    var batch = await mailbox.ListCandidatesAsync(access.AccessToken, pageToken, cancellationToken);
-                    pageToken = batch.NextPageToken;
+                    var pageTokenUsed = pageToken;
+                    var batch = await mailbox.ListCandidatesAsync(access.AccessToken, pageTokenUsed, cancellationToken);
                     if (batch.Messages.Count == 0)
                     {
+                        ScanCursors.TryRemove(cursorKey, out _);
                         break;
                     }
 
+                    scanned += batch.Messages.Count;
                     var existing = await _processed.FindExistingAsync(
                         connection.Id,
                         batch.Messages.Select(item => item.Id).ToList(),
                         cancellationToken);
                     var fresh = batch.Messages.Where(item => !existing.Contains(item.Id)).ToList();
-                    mailboxHasMore = pageToken is not null || fresh.Count > BatchSize - processed;
+                    alreadySeen += batch.Messages.Count - fresh.Count;
+
+                    if (fresh.Count == 0)
+                    {
+                        if (string.IsNullOrWhiteSpace(batch.NextPageToken))
+                        {
+                            ScanCursors.TryRemove(cursorKey, out _);
+                            break;
+                        }
+
+                        pageToken = batch.NextPageToken;
+                        ScanCursors[cursorKey] = pageToken;
+                        alreadySeenPages++;
+                        if (alreadySeenPages >= MaxAlreadySeenPages)
+                        {
+                            mailboxHasMore = true;
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    alreadySeenPages = 0;
+                    var finishedPage = true;
                     foreach (var candidate in fresh)
                     {
                         if (processed >= BatchSize)
                         {
+                            finishedPage = false;
                             mailboxHasMore = true;
                             break;
                         }
@@ -258,6 +307,7 @@ public sealed class MailCheckService
                             var classification = await _openAi.ClassifyAsync(
                                 apiKey,
                                 settings.Model,
+                                classifierPrompt,
                                 FormatMail(message),
                                 cancellationToken);
                             await ApplyAsync(
@@ -302,13 +352,25 @@ public sealed class MailCheckService
                         }
                     }
 
-                    if (processed >= BatchSize || pageToken is null)
+                    if (!finishedPage)
                     {
+                        ScanCursors[cursorKey] = pageTokenUsed;
                         break;
                     }
+
+                    if (string.IsNullOrWhiteSpace(batch.NextPageToken))
+                    {
+                        ScanCursors.TryRemove(cursorKey, out _);
+                        break;
+                    }
+
+                    pageToken = batch.NextPageToken;
+                    ScanCursors[cursorKey] = pageToken;
                 }
 
-                if (mailboxHasMore || (processed >= BatchSize && index < connections.Count - 1))
+                if (mailboxHasMore
+                    || ScanCursors.ContainsKey(cursorKey)
+                    || (processed >= BatchSize && index < connections.Count - 1))
                 {
                     hasMore = true;
                 }
@@ -326,7 +388,17 @@ public sealed class MailCheckService
 
         await _processed.SaveChangesAsync(cancellationToken);
         await _settings.SaveChangesAsync(cancellationToken);
-        return new MailCheckRunDto(false, processed, labeled, trashed, skipped, errors, hasMore, items);
+        return new MailCheckRunDto(
+            false,
+            processed,
+            labeled,
+            trashed,
+            skipped,
+            errors,
+            hasMore,
+            scanned,
+            alreadySeen,
+            items);
     }
 
     private async Task ApplyAsync(
@@ -355,6 +427,11 @@ public sealed class MailCheckService
             await mailbox.ApplyLabelAndPinAsync(token, message.Id, labelId, message.LabelIds, cancellationToken);
         }
 
+        if (!string.IsNullOrWhiteSpace(classification.DraftReply))
+        {
+            await mailbox.CreateDraftReplyAsync(token, message, classification.DraftReply, cancellationToken);
+        }
+
         await _processed.AddAsync(
             MailCheckProcessedMessage.Create(userId, connection.Id, message.Id, classification.Decision),
             cancellationToken);
@@ -372,15 +449,40 @@ public sealed class MailCheckService
 
     private async Task<IReadOnlyList<MailConnection>> RequireConnectionsAsync(
         Guid userId,
+        Guid? mailboxId,
         CancellationToken cancellationToken)
     {
         var connections = await _mailConnections.ListByUserIdAsync(userId, cancellationToken);
+        if (mailboxId is Guid id)
+        {
+            connections = connections.Where(connection => connection.Id == id).ToList();
+            if (connections.Count == 0)
+            {
+                throw new ValidationFailedException("That mailbox is not connected.");
+            }
+
+            return connections;
+        }
+
         if (connections.Count == 0)
         {
             throw new ValidationFailedException("Connect a mailbox on Mail Check Settings first.");
         }
 
         return connections;
+    }
+
+    private static void ClearCursors(Guid userId, Guid? mailboxId)
+    {
+        foreach (var key in ScanCursors.Keys.Where(key => key.UserId == userId).ToList())
+        {
+            if (mailboxId is Guid id && key.ConnectionId != id)
+            {
+                continue;
+            }
+
+            ScanCursors.TryRemove(key, out _);
+        }
     }
 
     private async Task<MailCheckSettings> GetOrCreateSettingsAsync(Guid userId, CancellationToken cancellationToken)
@@ -418,6 +520,8 @@ public sealed class MailCheckService
         return new MailCheckSettingsDto(
             settings.HasApiKey,
             settings.Model,
+            ResolveClassifierPrompt(settings),
+            MailCheckClassifierPrompt.Default,
             settings.LastRunAt,
             settings.LastError,
             settings.LastLabeled,
@@ -432,9 +536,16 @@ public sealed class MailCheckService
             outlookAvailable);
     }
 
+    private static string ResolveClassifierPrompt(MailCheckSettings settings)
+    {
+        return string.IsNullOrWhiteSpace(settings.ClassifierPrompt)
+            ? MailCheckClassifierPrompt.Default
+            : settings.ClassifierPrompt.Trim();
+    }
+
     private static MailCheckRunDto EmptyRun(bool busy, bool hasMore)
     {
-        return new MailCheckRunDto(busy, 0, 0, 0, 0, 0, hasMore, []);
+        return new MailCheckRunDto(busy, 0, 0, 0, 0, 0, hasMore, 0, 0, []);
     }
 
     private static string FormatMail(MailMessageContent message)

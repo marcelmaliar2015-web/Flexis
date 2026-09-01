@@ -72,11 +72,13 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
         services.AddHttpClient<IGoogleOAuthGateway, GoogleOAuthClient>();
-        services.AddHttpClient<IMicrosoftOAuthGateway, MicrosoftOAuthClient>();
+        services.AddHttpClient<IMicrosoftOAuthGateway, MicrosoftOAuthClient>()
+            .ConfigurePrimaryHttpMessageHandler(CreateProxyHttpHandler);
         services.AddHttpClient<IGoogleSheetsWorkspace, GoogleSheetsClient>();
         services.AddHttpClient<IGoogleDriveGateway, GoogleDriveClient>();
         services.AddHttpClient<GmailMailboxClient>();
-        services.AddHttpClient<OutlookMailboxClient>();
+        services.AddHttpClient<OutlookMailboxClient>()
+            .ConfigurePrimaryHttpMessageHandler(CreateProxyHttpHandler);
         services.AddScoped<IMailMailboxGateway, MailMailboxGateway>();
         services.AddHttpClient<IOpenAiGateway, OpenAiClient>();
         services.AddSingleton<IGoogleTokenProtector, AesGoogleTokenProtector>();
@@ -90,6 +92,7 @@ public static class DependencyInjection
         services.AddScoped<IJobCatalogRepository, JobCatalogRepository>();
         services.AddScoped<IJobPipelineRepository, JobPipelineRepository>();
         services.AddScoped<IJobFinancialSettingsRepository, JobFinancialSettingsRepository>();
+        services.AddScoped<IJobResumeRepository, JobResumeRepository>();
         services.AddScoped<IJobApplicationLogRepository, JobApplicationLogRepository>();
         services.AddScoped<IMailCheckSettingsRepository, MailCheckSettingsRepository>();
         services.AddScoped<IMailCheckProcessedMessageRepository, MailCheckProcessedMessageRepository>();
@@ -120,5 +123,15 @@ public static class DependencyInjection
             .AddCheck<MongoHealthCheck>("mongo", timeout: TimeSpan.FromSeconds(3));
 
         return services;
+    }
+
+    private static HttpClientHandler CreateProxyHttpHandler()
+    {
+        return new HttpClientHandler
+        {
+            UseProxy = true,
+            Proxy = HttpClient.DefaultProxy,
+            AutomaticDecompression = System.Net.DecompressionMethods.All
+        };
     }
 }
