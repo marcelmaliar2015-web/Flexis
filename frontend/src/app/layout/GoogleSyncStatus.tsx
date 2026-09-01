@@ -36,6 +36,10 @@ const SyncTrigger = styled(Button, {
             ? theme.palette.primary.dark
             : "#641820",
   },
+  "&.Mui-disabled": {
+    color: theme.palette.common.white,
+    opacity: 1,
+  },
 }));
 
 const Lamp = styled("span", {
@@ -67,6 +71,7 @@ const Lamp = styled("span", {
 );
 
 const SyncLabel = styled("span")(({ theme }) => ({
+  color: "inherit",
   [theme.breakpoints.down("sm")]: {
     display: "none",
   },
@@ -121,7 +126,7 @@ export function GoogleSyncStatus() {
           />
         </Stack>
         <SyncLabel>
-          <Typography variant="body2" component="span">
+          <Typography variant="body2" component="span" sx={{ color: "inherit" }}>
             {label}
           </Typography>
         </SyncLabel>

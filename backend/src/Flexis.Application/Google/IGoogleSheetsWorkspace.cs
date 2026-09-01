@@ -24,6 +24,8 @@ public sealed record JobListingRow(
         && string.IsNullOrWhiteSpace(Jd);
 }
 
+public sealed record ProfileListingStatusUpdate(int RowNumber, string Status);
+
 public interface IGoogleSheetsWorkspace
 {
     Task<CreatedSpreadsheet> CreateWorkbookAsync(
@@ -106,6 +108,13 @@ public interface IGoogleSheetsWorkspace
     Task EnsureProfileStatusDropdownAsync(
         string accessToken,
         string spreadsheetId,
+        CancellationToken cancellationToken);
+
+    Task SetProfileListingStatusesAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        IReadOnlyList<ProfileListingStatusUpdate> updates,
         CancellationToken cancellationToken);
 
     Task AppendListingsAsync(

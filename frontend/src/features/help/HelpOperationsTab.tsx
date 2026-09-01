@@ -79,13 +79,13 @@ export function HelpOperationsTab() {
               <ListItemText primary="Profile info" secondary="Edit the paired profile's Profile tab fields on the pipeline entry page." />
             </ListItem>
             <ListItem disableGutters>
-              <ListItemText primary="Banned companies" secondary="Per profile. Update will not copy a listing whose company matches a ban. The page lists live matches on the profile main tab, refreshed on the Google workspace sync interval (3 minutes)." />
+              <ListItemText primary="Banned companies" secondary="Per profile. Update will not copy a listing whose company matches a ban. The page lists live matches on the profile main tab and sets Status to Banned on those rows, refreshed on the Google workspace sync interval (3 minutes)." />
             </ListItem>
           </List>
           <Alert severity="info">
-            Matching folds case, accents, and punctuation, treats & as and, drops filler words, and
-            strips trailing legal or geo tokens. Amazon does not match Amazon Web Services. Duplicate
-            bans that fold to the same name are rejected.
+            folds case and punctuation, strips legal suffixes and generic words like Solutions or
+            Group, and matches when any normalized key overlaps. Duplicate bans that match an existing
+            name are rejected.
           </Alert>
         </Stack>
       </Panel>
@@ -101,7 +101,7 @@ export function HelpOperationsTab() {
           </Typography>
           <List disablePadding>
             <ListItem disableGutters>
-              <ListItemText primary="Profile" secondary="Main tab name is the profile title. Columns: Company Name, Position, Link, JD, Download, Status, Issue. Status is Applied, Interview, Invalid, Expired, or Other, each with its own color." />
+              <ListItemText primary="Profile" secondary="Main tab name is the profile title. Columns: Company Name, Position, Link, JD, Download, Status, Issue. Status is Applied, Interview, Banned, Invalid, Expired, or Other, each with its own color." />
             </ListItem>
             <ListItem disableGutters>
               <ListItemText primary="Source" secondary="First location tab is US. Further tabs are locations. Source tabs have Company Name, Position, Link, and JD. No Status column." />

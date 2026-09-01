@@ -473,12 +473,13 @@ public sealed class JobCatalogService
     {
         var profile = await RequireProfile(userId, profileId, cancellationToken);
         var companyName = JobCatalogRules.NormalizeCompanyName(request.CompanyName);
-        var matchKey = CompanyNameMatcher.MatchKey(companyName);
-        if (await _banned.MatchKeyExistsAsync(profileId, matchKey, null, cancellationToken))
+        var existing = await _banned.ListByProfileIdAsync(profileId, cancellationToken);
+        if (existing.Any(ban => CompanyNameMatcher.IsMatch(companyName, ban.CompanyName)))
         {
             throw new ConflictException("That company is already banned on this profile.");
         }
 
+        var matchKey = CompanyNameMatcher.MatchKey(companyName);
         var created = JobProfileBannedCompany.Create(profileId, companyName, matchKey);
         await _banned.AddAsync(created, cancellationToken);
         await _banned.SaveChangesAsync(cancellationToken);
@@ -503,12 +504,13 @@ public sealed class JobCatalogService
         var item = await _banned.GetByIdAsync(profileId, companyId, cancellationToken)
             ?? throw new NotFoundException("Banned company was not found.");
         var companyName = JobCatalogRules.NormalizeCompanyName(request.CompanyName);
-        var matchKey = CompanyNameMatcher.MatchKey(companyName);
-        if (await _banned.MatchKeyExistsAsync(profileId, matchKey, companyId, cancellationToken))
+        var existing = await _banned.ListByProfileIdAsync(profileId, cancellationToken);
+        if (existing.Any(ban => ban.Id != companyId && CompanyNameMatcher.IsMatch(companyName, ban.CompanyName)))
         {
             throw new ConflictException("That company is already banned on this profile.");
         }
 
+        var matchKey = CompanyNameMatcher.MatchKey(companyName);
         item.Replace(companyName, matchKey);
         await _banned.SaveChangesAsync(cancellationToken);
         await _activity.WriteAsync(
@@ -560,15 +562,53 @@ public sealed class JobCatalogService
         }
 
         var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+        await _sheets.EnsureProfileStatusDropdownAsync(
+            access.AccessToken,
+            profile.SpreadsheetId,
+            cancellationToken);
+
         var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
         var main = RequireMainProfileSheet(profileSheets, profile.Title);
-        var profileRows = await _sheets.ReadListingsAsync(
+        var profileRows = await _sheets.ReadProfileListingsAsync(
             access.AccessToken,
             profile.SpreadsheetId,
             main.Name,
             cancellationToken);
 
-        return new ProfileBannedMatchesDto(CollectBannedMatches(profileRows, bans));
+        var matches = new List<ProfileBannedMatchDto>();
+        var statusUpdates = new List<ProfileListingStatusUpdate>();
+        for (var index = 0; index < profileRows.Count; index++)
+        {
+            var row = profileRows[index];
+            if (row.IsEmpty)
+            {
+                continue;
+            }
+
+            var ban = MatchingBan(row.CompanyName, bans);
+            if (ban is null)
+            {
+                continue;
+            }
+
+            matches.Add(new ProfileBannedMatchDto(row.CompanyName, row.Position, row.Link, ban));
+            if (!string.Equals(row.Status.Trim(), "Banned", StringComparison.OrdinalIgnoreCase))
+            {
+                statusUpdates.Add(new ProfileListingStatusUpdate(index + 2, "Banned"));
+            }
+        }
+
+        if (statusUpdates.Count > 0)
+        {
+            await _sheets.SetProfileListingStatusesAsync(
+                access.AccessToken,
+                profile.SpreadsheetId,
+                main.Name,
+                statusUpdates,
+                cancellationToken);
+        }
+
+        return new ProfileBannedMatchesDto(matches);
     }
 
     private static SpreadsheetSheet RequireMainProfileSheet(
@@ -583,30 +623,6 @@ public sealed class JobCatalogService
     private static ProfileBannedCompanyDto ToBannedDto(JobProfileBannedCompany item)
     {
         return new ProfileBannedCompanyDto(item.Id, item.CompanyName, item.CreatedAt);
-    }
-
-    private static IReadOnlyList<ProfileBannedMatchDto> CollectBannedMatches(
-        IReadOnlyList<JobListingRow> rows,
-        IReadOnlyList<JobProfileBannedCompany> bans)
-    {
-        var matches = new List<ProfileBannedMatchDto>();
-        foreach (var row in rows)
-        {
-            if (row.IsEmpty)
-            {
-                continue;
-            }
-
-            var ban = MatchingBan(row.CompanyName, bans);
-            if (ban is null)
-            {
-                continue;
-            }
-
-            matches.Add(new ProfileBannedMatchDto(row.CompanyName, row.Position, row.Link, ban));
-        }
-
-        return matches;
     }
 
     private static string? MatchingBan(string companyName, IReadOnlyList<JobProfileBannedCompany> bans)

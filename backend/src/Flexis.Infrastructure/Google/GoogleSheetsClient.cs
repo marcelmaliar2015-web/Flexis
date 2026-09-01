@@ -15,17 +15,18 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private static readonly string[] StatusValues = ["Applied", "Interview", "Invalid", "Expired", "Other"];
+    private static readonly string[] StatusValues = ["Applied", "Interview", "Banned", "Invalid", "Expired", "Other"];
 
     private const string FlexisLockDescription = "Flexis owner lock";
 
     private static readonly (string Value, Color Bg, Color Fg)[] StatusColors =
     [
-        ("Applied", new Color(0.902, 0.957, 0.925), new Color(0.106, 0.498, 0.306)),
-        ("Interview", new Color(0.910, 0.851, 0.980), new Color(0.404, 0.176, 0.620)),
-        ("Invalid", new Color(0.988, 0.910, 0.902), new Color(0.706, 0.137, 0.094)),
-        ("Expired", new Color(0.996, 0.941, 0.780), new Color(0.710, 0.278, 0.031)),
-        ("Other", new Color(0.820, 0.914, 1.0), new Color(0.090, 0.361, 0.827))
+        ("Applied", new Color(0.910, 0.961, 0.914), new Color(0.180, 0.490, 0.196)),
+        ("Interview", new Color(0.953, 0.898, 0.961), new Color(0.416, 0.106, 0.604)),
+        ("Banned", new Color(0.988, 0.894, 0.925), new Color(0.678, 0.079, 0.341)),
+        ("Invalid", new Color(1.0, 0.922, 0.933), new Color(0.776, 0.157, 0.157)),
+        ("Expired", new Color(1.0, 0.973, 0.882), new Color(0.961, 0.498, 0.090)),
+        ("Other", new Color(0.890, 0.949, 0.992), new Color(0.082, 0.396, 0.753))
     ];
 
     private static readonly Color ListingsHeaderBackground = new(0.055, 0.153, 0.267);
@@ -532,6 +533,42 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             .ToArray();
     }
 
+    public async Task SetProfileListingStatusesAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        IReadOnlyList<ProfileListingStatusUpdate> updates,
+        CancellationToken cancellationToken)
+    {
+        if (updates.Count == 0)
+        {
+            return;
+        }
+
+        var columns = ColumnsFor(JobWorkbookKind.Profile);
+        var statusIndex = Array.FindIndex(columns, column => column.Name == "Status");
+        if (statusIndex < 0)
+        {
+            return;
+        }
+
+        var statusColumn = ColumnLetter(statusIndex);
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values:batchUpdate",
+            new
+            {
+                valueInputOption = "USER_ENTERED",
+                data = updates.Select(update => new
+                {
+                    range = SheetRange(sheetName, $"{statusColumn}{update.RowNumber}"),
+                    values = new[] { new[] { update.Status } }
+                }).ToArray()
+            },
+            cancellationToken);
+    }
+
     public async Task<IReadOnlyList<JobListingRow>> ReadProfileListingsAsync(
         string accessToken,
         string spreadsheetId,
@@ -558,7 +595,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         var payload = await SendJson<SpreadsheetList>(
             accessToken,
             HttpMethod.Get,
-            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,title),sheets.bandedRanges(bandedRangeId,range),sheets.tables(tableId,name,range,columnProperties)",
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,title),sheets.bandedRanges(bandedRangeId,range),sheets.tables(tableId,name,range,columnProperties),sheets.conditionalFormats",
             null,
             cancellationToken);
 
@@ -585,15 +622,11 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                 ?? (sheet.Tables ?? []).FirstOrDefault(table => table.Range?.SheetId == sheetId);
             if (existingTable?.TableId is { } tableId)
             {
-                var statusColumn = existingTable.ColumnProperties?
-                    .FirstOrDefault(column => column.ColumnIndex == statusIndex);
-                if (!string.Equals(statusColumn?.ColumnType, "DROPDOWN", StringComparison.Ordinal))
-                {
-                    tableRequests.Add(UpdateListingsTableStatusColumnRequest(tableId, statusIndex, columns[statusIndex].Name));
-                }
-
+                tableRequests.Add(UpdateListingsTableStatusColumnRequest(tableId, statusIndex, columns[statusIndex].Name));
                 styleRequests.Add(UpdateListingsTableRowsPropertiesRequest(tableId));
                 styleRequests.AddRange(ListingsTableSurfaceFormatRequests(sheetId, columns.Length));
+                styleRequests.AddRange(DeleteConditionalFormatRequests(sheetId, sheet.ConditionalFormats?.Count ?? 0));
+                styleRequests.AddRange(StatusConditionalFormatRequests(sheetId, statusIndex));
                 continue;
             }
 
@@ -606,6 +639,8 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             prepRequests.Add(ClearStatusDataValidationRequest(sheetId, statusIndex));
             tableRequests.Add(AddListingsTableRequest(sheetId, columns));
             styleRequests.AddRange(ListingsTableSurfaceFormatRequests(sheetId, columns.Length));
+            styleRequests.AddRange(DeleteConditionalFormatRequests(sheetId, sheet.ConditionalFormats?.Count ?? 0));
+            styleRequests.AddRange(StatusConditionalFormatRequests(sheetId, statusIndex));
         }
 
         if (prepRequests.Count == 0 && tableRequests.Count == 0 && styleRequests.Count == 0)
@@ -1651,47 +1686,79 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         {
             requests.Add(AddListingsTableRequest(sheetId, columns));
             requests.AddRange(ListingsTableSurfaceFormatRequests(sheetId, columns.Length));
-
-            foreach (var status in StatusColors)
-            {
-                requests.Add(new
-                {
-                    addConditionalFormatRule = new
-                    {
-                        rule = new
-                        {
-                            ranges = new[]
-                            {
-                                new
-                                {
-                                    sheetId,
-                                    startRowIndex = 1,
-                                    endRowIndex = 200,
-                                    startColumnIndex = statusIndex,
-                                    endColumnIndex = statusIndex + 1
-                                }
-                            },
-                            booleanRule = new
-                            {
-                                condition = new
-                                {
-                                    type = "TEXT_EQ",
-                                    values = new[] { new { userEnteredValue = status.Value } }
-                                },
-                                format = new
-                                {
-                                    backgroundColor = status.Bg,
-                                    textFormat = new { foregroundColor = status.Fg, bold = true }
-                                }
-                            }
-                        },
-                        index = 0
-                    }
-                });
-            }
+            requests.AddRange(StatusConditionalFormatRequests(sheetId, statusIndex));
         }
 
         return requests.ToArray();
+    }
+
+    private static object[] StatusConditionalFormatRequests(int sheetId, int statusIndex)
+    {
+        var requests = new List<object>();
+        foreach (var status in StatusColors)
+        {
+            requests.Add(new
+            {
+                addConditionalFormatRule = new
+                {
+                    rule = new
+                    {
+                        ranges = new[]
+                        {
+                            new
+                            {
+                                sheetId,
+                                startRowIndex = 1,
+                                endRowIndex = 200,
+                                startColumnIndex = statusIndex,
+                                endColumnIndex = statusIndex + 1
+                            }
+                        },
+                        booleanRule = new
+                        {
+                            condition = new
+                            {
+                                type = "TEXT_EQ",
+                                values = new[] { new { userEnteredValue = status.Value } }
+                            },
+                            format = new
+                            {
+                                backgroundColor = status.Bg,
+                                textFormat = new { foregroundColor = status.Fg, bold = true }
+                            }
+                        }
+                    },
+                    index = 0
+                }
+            });
+        }
+
+        return requests.ToArray();
+    }
+
+    private static object[] DeleteConditionalFormatRequests(int sheetId, int ruleCount)
+    {
+        var requests = new List<object>();
+        for (var index = ruleCount - 1; index >= 0; index--)
+        {
+            requests.Add(new { deleteConditionalFormatRule = new { sheetId, index } });
+        }
+
+        return requests.ToArray();
+    }
+
+    private static string ColumnLetter(int zeroBasedIndex)
+    {
+        var quotient = zeroBasedIndex;
+        var letter = "";
+        do
+        {
+            letter = (char)('A' + quotient % 26) + letter;
+            quotient = quotient / 26 - 1;
+        }
+        while (quotient >= 0);
+
+        return letter;
     }
 
     private async Task<T> SendJson<T>(
@@ -1743,7 +1810,12 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
 
     private static string ValuesRange(string sheetName, string cells)
     {
-        return Uri.EscapeDataString($"'{sheetName.Replace("'", "''", StringComparison.Ordinal)}'!{cells}");
+        return Uri.EscapeDataString(SheetRange(sheetName, cells));
+    }
+
+    private static string SheetRange(string sheetName, string cells)
+    {
+        return $"'{sheetName.Replace("'", "''", StringComparison.Ordinal)}'!{cells}";
     }
 
     private static JobListingRow ToListing(List<JsonElement> row)
@@ -1811,6 +1883,12 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         public List<BandedRangeInfo>? BandedRanges { get; set; }
 
         public List<TableInfo>? Tables { get; set; }
+
+        public List<ConditionalFormatInfo>? ConditionalFormats { get; set; }
+    }
+
+    private sealed class ConditionalFormatInfo
+    {
     }
 
     private sealed class BandedRangeInfo
