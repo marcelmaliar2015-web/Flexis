@@ -80,7 +80,7 @@ internal static class CompanyNameMatcher
         var canonical = keys
             .Where(IsUsableKey)
             .OrderByDescending(key => key.Contains(' ', StringComparison.Ordinal) ? 1 : 0)
-            .ThenByDescending(key => key.Length, StringComparer.Ordinal)
+            .ThenByDescending(key => key.Length)
             .First();
 
         return canonical.Length <= 200 ? canonical : canonical[..200];

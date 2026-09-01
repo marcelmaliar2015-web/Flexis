@@ -18,21 +18,13 @@ import {
 } from "@/shared/api/jobCatalog";
 import { isQueryLoading } from "@/shared/api/queryState";
 import { emptyProfileInfo, type ProfileInfo } from "@/shared/types/jobCatalog";
+import { ProfileInfoFields } from "@/features/jobApplication/ProfileInfoFields";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
   backgroundColor: theme.palette.background.paper,
   borderRadius: theme.shape.borderRadius,
   padding: theme.spacing(3),
-}));
-
-const FieldGrid = styled(Box)(({ theme }) => ({
-  display: "grid",
-  gap: theme.spacing(2),
-  gridTemplateColumns: "1fr",
-  [theme.breakpoints.up("md")]: {
-    gridTemplateColumns: "1fr 1fr",
-  },
 }));
 
 type ProfileInfoPanelProps = {
@@ -110,10 +102,12 @@ export function ProfileInfoPanel({ actionsEnabled, profileId: fixedProfileId }: 
     saveMutation.mutate();
   }
 
-  function setField<K extends keyof ProfileInfo>(key: K, value: ProfileInfo[K]) {
+  function handleFormChange(next: ProfileInfo) {
     setSaved(false);
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm(next);
   }
+
+  const fieldsDisabled = !actionsEnabled || !profileId || loading || saveMutation.isPending;
 
   return (
     <Panel>
@@ -157,83 +151,7 @@ export function ProfileInfoPanel({ actionsEnabled, profileId: fixedProfileId }: 
                 ))}
               </TextField>
             ) : null}
-            <FieldGrid>
-              <TextField
-                label="Name"
-                value={form.name}
-                onChange={(event) => setField("name", event.target.value)}
-                disabled={!actionsEnabled || !profileId || loading || saveMutation.isPending}
-                fullWidth
-              />
-              <TextField
-                label="Mail"
-                value={form.mail}
-                onChange={(event) => setField("mail", event.target.value)}
-                disabled={!actionsEnabled || !profileId || loading || saveMutation.isPending}
-                fullWidth
-              />
-              <TextField
-                label="Phone"
-                value={form.phone}
-                onChange={(event) => setField("phone", event.target.value)}
-                disabled={!actionsEnabled || !profileId || loading || saveMutation.isPending}
-                fullWidth
-              />
-              <TextField
-                label="Password"
-                type="password"
-                value={form.password}
-                onChange={(event) => setField("password", event.target.value)}
-                disabled={!actionsEnabled || !profileId || loading || saveMutation.isPending}
-                fullWidth
-                autoComplete="off"
-              />
-              <TextField
-                label="LinkedIn"
-                value={form.linkedIn}
-                onChange={(event) => setField("linkedIn", event.target.value)}
-                disabled={!actionsEnabled || !profileId || loading || saveMutation.isPending}
-                fullWidth
-              />
-              <TextField
-                label="Target Rate (Monthly)"
-                value={form.targetRateMonthly}
-                onChange={(event) => setField("targetRateMonthly", event.target.value)}
-                disabled={!actionsEnabled || !profileId || loading || saveMutation.isPending}
-                fullWidth
-              />
-              <TextField
-                label="Sex"
-                value={form.sex}
-                onChange={(event) => setField("sex", event.target.value)}
-                disabled={!actionsEnabled || !profileId || loading || saveMutation.isPending}
-                fullWidth
-              />
-              <TextField
-                label="Race"
-                value={form.race}
-                onChange={(event) => setField("race", event.target.value)}
-                disabled={!actionsEnabled || !profileId || loading || saveMutation.isPending}
-                fullWidth
-              />
-              <TextField
-                label="Veteran Status"
-                value={form.veteranStatus}
-                onChange={(event) => setField("veteranStatus", event.target.value)}
-                disabled={!actionsEnabled || !profileId || loading || saveMutation.isPending}
-                fullWidth
-              />
-              <TextField
-                label="Address"
-                value={form.address}
-                onChange={(event) => setField("address", event.target.value)}
-                disabled={!actionsEnabled || !profileId || loading || saveMutation.isPending}
-                fullWidth
-                multiline
-                minRows={2}
-                sx={{ gridColumn: { md: "1 / -1" } }}
-              />
-            </FieldGrid>
+            <ProfileInfoFields value={form} onChange={handleFormChange} disabled={fieldsDisabled} />
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
               <Button
                 type="submit"

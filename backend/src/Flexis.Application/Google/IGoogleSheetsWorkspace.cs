@@ -110,6 +110,12 @@ public interface IGoogleSheetsWorkspace
         string spreadsheetId,
         CancellationToken cancellationToken);
 
+    Task EnsureProfileMainStatusColumnAsync(
+        string accessToken,
+        string spreadsheetId,
+        string mainSheetName,
+        CancellationToken cancellationToken);
+
     Task SetProfileListingStatusesAsync(
         string accessToken,
         string spreadsheetId,

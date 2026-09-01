@@ -595,7 +595,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         var payload = await SendJson<SpreadsheetList>(
             accessToken,
             HttpMethod.Get,
-            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,title),sheets.bandedRanges(bandedRangeId,range),sheets.tables(tableId,name,range,columnProperties),sheets.conditionalFormats",
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,title),sheets.bandedRanges(bandedRangeId,range),sheets.tables(tableId,name,range,columnProperties)",
             null,
             cancellationToken);
 
@@ -625,8 +625,6 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                 tableRequests.Add(UpdateListingsTableStatusColumnRequest(tableId, statusIndex, columns[statusIndex].Name));
                 styleRequests.Add(UpdateListingsTableRowsPropertiesRequest(tableId));
                 styleRequests.AddRange(ListingsTableSurfaceFormatRequests(sheetId, columns.Length));
-                styleRequests.AddRange(DeleteConditionalFormatRequests(sheetId, sheet.ConditionalFormats?.Count ?? 0));
-                styleRequests.AddRange(StatusConditionalFormatRequests(sheetId, statusIndex));
                 continue;
             }
 
@@ -677,6 +675,60 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                 new { requests = styleRequests },
                 cancellationToken);
         }
+    }
+
+    public async Task EnsureProfileMainStatusColumnAsync(
+        string accessToken,
+        string spreadsheetId,
+        string mainSheetName,
+        CancellationToken cancellationToken)
+    {
+        var payload = await SendJson<SpreadsheetList>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,title),sheets.tables(tableId,range,columnProperties)",
+            null,
+            cancellationToken);
+
+        var columns = ColumnsFor(JobWorkbookKind.Profile);
+        var statusIndex = Array.FindIndex(columns, column => column.Name == "Status");
+        if (statusIndex < 0)
+        {
+            return;
+        }
+
+        var requests = new List<object>();
+        foreach (var sheet in payload.Sheets ?? [])
+        {
+            if (sheet.Properties is null
+                || !string.Equals(sheet.Properties.Title, mainSheetName, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var sheetId = sheet.Properties.SheetId;
+            var existingTable = (sheet.Tables ?? [])
+                .FirstOrDefault(table => string.Equals(table.TableId, ListingsTableId(sheetId), StringComparison.Ordinal))
+                ?? (sheet.Tables ?? []).FirstOrDefault(table => table.Range?.SheetId == sheetId);
+            if (existingTable?.TableId is not { } tableId)
+            {
+                return;
+            }
+
+            requests.Add(UpdateListingsTableStatusColumnRequest(tableId, statusIndex, columns[statusIndex].Name));
+        }
+
+        if (requests.Count == 0)
+        {
+            return;
+        }
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new { requests },
+            cancellationToken);
     }
 
     public async Task AppendListingsAsync(

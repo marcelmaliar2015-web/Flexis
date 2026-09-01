@@ -1,5 +1,4 @@
 import Alert from "@mui/material/Alert";
-import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -11,6 +10,7 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
+import { ProfileResumeFields } from "@/features/jobApplication/ProfileResumeFields";
 import { userFacingError } from "@/shared/api/errors";
 import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
 import {
@@ -27,8 +27,6 @@ const Panel = styled(Box)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
   padding: theme.spacing(3),
 }));
-
-const resumeStyleOptions = Array.from({ length: 14 }, (_, index) => index + 1);
 
 type JobApplicationResumeTabProps = {
   actionsEnabled?: boolean;
@@ -304,67 +302,25 @@ export function JobApplicationResumeTab({ actionsEnabled }: JobApplicationResume
                   </MenuItem>
                 ))}
               </TextField>
-              <TextField
-                label="Prompt"
-                value={prompt}
-                onChange={(event) => {
+              <ProfileResumeFields
+                prompt={prompt}
+                resumeStyle={resumeStyle}
+                owner={owner}
+                ownerOptions={ownerOptions}
+                onPromptChange={(value) => {
                   setSaved(false);
-                  setPrompt(event.target.value);
+                  setPrompt(value);
                 }}
-                multiline
-                minRows={14}
-                maxRows={28}
+                onResumeStyleChange={(value) => {
+                  setSaved(false);
+                  setResumeStyle(value);
+                }}
+                onOwnerChange={(value) => {
+                  setSaved(false);
+                  setOwner(value);
+                }}
                 disabled={!connected || !profileId || loading || profileMutation.isPending}
-                fullWidth
-                placeholder="Resume generation instructions for this profile..."
               />
-              <Stack
-                direction={{ xs: "column", md: "row" }}
-                spacing={2}
-                sx={{ alignItems: { md: "flex-start" } }}
-              >
-                <TextField
-                  select
-                  label="Resume style"
-                  value={resumeStyle}
-                  onChange={(event) => {
-                    setSaved(false);
-                    const value = event.target.value;
-                    setResumeStyle(value === "" ? "" : Number(value));
-                  }}
-                  disabled={!connected || !profileId || loading || profileMutation.isPending}
-                  sx={{ minWidth: { md: 200 } }}
-                  fullWidth
-                >
-                  <MenuItem value="">None</MenuItem>
-                  {resumeStyleOptions.map((value) => (
-                    <MenuItem key={value} value={value}>
-                      {value}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <Autocomplete
-                  options={ownerOptions}
-                  value={owner.length > 0 ? owner : null}
-                  onChange={(_event, value) => {
-                    setSaved(false);
-                    setOwner(value ?? "");
-                  }}
-                  disabled={!connected || !profileId || loading || profileMutation.isPending}
-                  fullWidth
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Owner"
-                      helperText={
-                        ownerOptions.length === 0
-                          ? "Add owner options above before selecting an owner."
-                          : "Choose from your saved owner options."
-                      }
-                    />
-                  )}
-                />
-              </Stack>
               <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                 <Button
                   type="submit"

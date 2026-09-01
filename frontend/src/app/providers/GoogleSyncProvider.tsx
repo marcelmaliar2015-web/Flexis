@@ -16,6 +16,7 @@ type GoogleSyncContextValue = {
   lastSyncedAt: number | null;
   failed: boolean;
   isSyncing: boolean;
+  syncProgress: number;
   refresh: () => Promise<void>;
 };
 
@@ -31,6 +32,7 @@ export function GoogleSyncProvider({ children }: GoogleSyncProviderProps) {
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
   const busyRef = useRef(false);
   const lastSyncedAtRef = useRef<number | null>(null);
 
@@ -42,8 +44,9 @@ export function GoogleSyncProvider({ children }: GoogleSyncProviderProps) {
 
       busyRef.current = true;
       setIsSyncing(true);
+      setSyncProgress(0);
       try {
-        await syncGoogleWorkspace(queryClient, mode);
+        await syncGoogleWorkspace(queryClient, mode, setSyncProgress);
         const stamped = Date.now();
         lastSyncedAtRef.current = stamped;
         setLastSyncedAt(stamped);
@@ -53,6 +56,7 @@ export function GoogleSyncProvider({ children }: GoogleSyncProviderProps) {
       } finally {
         busyRef.current = false;
         setIsSyncing(false);
+        setSyncProgress(0);
       }
     },
     [auth.user, queryClient],
@@ -98,8 +102,8 @@ export function GoogleSyncProvider({ children }: GoogleSyncProviderProps) {
   }, [auth.user, runSync]);
 
   const value = useMemo(
-    () => ({ lastSyncedAt, failed, isSyncing, refresh }),
-    [failed, isSyncing, lastSyncedAt, refresh],
+    () => ({ lastSyncedAt, failed, isSyncing, syncProgress, refresh }),
+    [failed, isSyncing, lastSyncedAt, refresh, syncProgress],
   );
 
   return <GoogleSyncContext.Provider value={value}>{children}</GoogleSyncContext.Provider>;

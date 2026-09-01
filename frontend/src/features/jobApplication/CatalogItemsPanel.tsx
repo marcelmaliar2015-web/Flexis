@@ -18,18 +18,24 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
+import { ProfileInfoFields } from "@/features/jobApplication/ProfileInfoFields";
+import { ProfileResumeFields } from "@/features/jobApplication/ProfileResumeFields";
+import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
 import { userFacingError } from "@/shared/api/errors";
 import {
   createJobCatalogItem,
+  createProfileWithDetails,
   deleteJobCatalogItem,
   jobCatalogQueryKey,
   listJobCatalogItems,
+  profileInfoQueryKey,
   updateJobCatalogItem,
+  type ProfileCreateRequest,
 } from "@/shared/api/jobCatalog";
-import { isQueryLoading } from "@/shared/api/queryState";
 import { jobPipelineQueryKey } from "@/shared/api/pipeline";
-import type { JobCatalogItem, JobCatalogKind } from "@/shared/types/jobCatalog";
-import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
+import { isQueryLoading } from "@/shared/api/queryState";
+import { getJobResumeBoard, jobResumeQueryKey } from "@/shared/api/resume";
+import { emptyProfileInfo, type JobCatalogItem, type JobCatalogKind } from "@/shared/types/jobCatalog";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -85,10 +91,17 @@ export function CatalogItemsPanel({
   const [formError, setFormError] = useState<string | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: (request: { title: string }) => createJobCatalogItem(kind, request),
+    mutationFn: (request: ProfileCreateRequest | { title: string }) =>
+      kind === "profiles" && "info" in request
+        ? createProfileWithDetails(request)
+        : createJobCatalogItem(kind, { title: request.title }),
     onSuccess: async (item) => {
       await queryClient.invalidateQueries({ queryKey });
       await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
+      if (kind === "profiles") {
+        await queryClient.invalidateQueries({ queryKey: profileInfoQueryKey(item.id) });
+        await queryClient.invalidateQueries({ queryKey: jobResumeQueryKey });
+      }
       await refreshJobApplicationWorkspace(queryClient);
       setFormError(null);
       setEditor({ mode: "created", item });
@@ -213,6 +226,7 @@ export function CatalogItemsPanel({
         />
       ) : editor ? (
         <CatalogEditorDialog
+          kind={kind}
           editor={editor}
           itemLabel={itemLabel}
           error={formError}
@@ -274,16 +288,18 @@ function CreatedSheetDialog({
 }
 
 type CatalogEditorDialogProps = {
+  kind: JobCatalogKind;
   editor: Exclude<EditorState, { mode: "created"; item: JobCatalogItem }>;
   itemLabel: string;
   error: string | null;
   isSaving: boolean;
   onClose: () => void;
-  onCreate: (request: { title: string }) => void;
+  onCreate: (request: ProfileCreateRequest | { title: string }) => void;
   onUpdate: (id: string, request: { title: string }) => void;
 };
 
 function CatalogEditorDialog({
+  kind,
   editor,
   itemLabel,
   error,
@@ -293,11 +309,35 @@ function CatalogEditorDialog({
   onUpdate,
 }: CatalogEditorDialogProps) {
   const isEdit = editor.mode === "edit";
+  const isProfileCreate = kind === "profiles" && !isEdit;
   const [title, setTitle] = useState(isEdit ? editor.item.title : "");
+  const [profileInfo, setProfileInfo] = useState(emptyProfileInfo);
+  const [prompt, setPrompt] = useState("");
+  const [resumeStyle, setResumeStyle] = useState<number | "">("");
+  const [owner, setOwner] = useState("");
+  const resumeBoardQuery = useQuery({
+    queryKey: jobResumeQueryKey,
+    queryFn: getJobResumeBoard,
+    enabled: isProfileCreate,
+  });
+  const ownerOptions = resumeBoardQuery.data?.ownerOptions ?? [];
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (editor.mode === "create") {
+      if (isProfileCreate) {
+        onCreate({
+          title,
+          info: profileInfo,
+          resume: {
+            prompt,
+            resumeStyle: resumeStyle === "" ? null : resumeStyle,
+            owner: owner.trim().length > 0 ? owner.trim() : null,
+          },
+        });
+        return;
+      }
+
       onCreate({ title });
       return;
     }
@@ -306,10 +346,10 @@ function CatalogEditorDialog({
   }
 
   return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open onClose={onClose} fullWidth maxWidth={isProfileCreate ? "md" : "sm"}>
       <Box component="form" onSubmit={handleSubmit}>
         <DialogTitle>{isEdit ? `Edit ${itemLabel}` : `New ${itemLabel}`}</DialogTitle>
-        <DialogContent>
+        <DialogContent dividers={isProfileCreate} sx={isProfileCreate ? { maxHeight: "70vh" } : undefined}>
           <Stack spacing={2} sx={{ pt: 1 }}>
             {error ? <Alert severity="error">{error}</Alert> : null}
             <TextField
@@ -319,6 +359,42 @@ function CatalogEditorDialog({
               required
               fullWidth
             />
+            {isProfileCreate ? (
+              <>
+                <Stack spacing={0.5}>
+                  <Typography variant="subtitle1" component="h3">
+                    Profile info
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Optional personal details written to the locked Profile tab in the new sheet.
+                  </Typography>
+                </Stack>
+                <ProfileInfoFields
+                  value={profileInfo}
+                  onChange={setProfileInfo}
+                  disabled={isSaving}
+                />
+                <Stack spacing={0.5}>
+                  <Typography variant="subtitle1" component="h3">
+                    Resume generation
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Optional prompt, resume style, and owner. Saved the same way as on the Resume
+                    generation tab.
+                  </Typography>
+                </Stack>
+                <ProfileResumeFields
+                  prompt={prompt}
+                  resumeStyle={resumeStyle}
+                  owner={owner}
+                  ownerOptions={ownerOptions}
+                  onPromptChange={setPrompt}
+                  onResumeStyleChange={setResumeStyle}
+                  onOwnerChange={setOwner}
+                  disabled={isSaving}
+                />
+              </>
+            ) : null}
             <Typography variant="body2" color="text.secondary">
               {isEdit
                 ? "Saving a new title also renames the Google Sheet and the main listing tab."
@@ -341,7 +417,7 @@ function CatalogEditorDialog({
             Cancel
           </Button>
           <Button type="submit" disabled={isSaving} loading={isSaving}>
-            Save
+            {isProfileCreate ? "Create profile" : "Save"}
           </Button>
         </DialogActions>
       </Box>

@@ -1,4 +1,6 @@
+import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
@@ -77,6 +79,77 @@ const SyncLabel = styled("span")(({ theme }) => ({
   },
 }));
 
+const SYNC_PROGRESS_RING_SIZE = 30;
+
+const ProgressRingRoot = styled(Box)({
+  position: "relative",
+  width: SYNC_PROGRESS_RING_SIZE,
+  height: SYNC_PROGRESS_RING_SIZE,
+  flexShrink: 0,
+});
+
+const ProgressRingLayer = styled(CircularProgress)({
+  position: "absolute",
+  top: 0,
+  left: 0,
+});
+
+const ProgressRingTrack = styled(ProgressRingLayer)({
+  color: "rgba(255, 255, 255, 0.22)",
+});
+
+const ProgressRingValue = styled(ProgressRingLayer)(({ theme }) => ({
+  color: theme.palette.common.white,
+  transition: theme.transitions.create("stroke-dashoffset", {
+    duration: theme.transitions.duration.shorter,
+    easing: theme.transitions.easing.easeInOut,
+  }),
+  "& .MuiCircularProgress-circle": {
+    strokeLinecap: "round",
+  },
+}));
+
+const ProgressRingLabel = styled(Typography)(({ theme }) => ({
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  fontSize: 9,
+  fontWeight: 700,
+  lineHeight: 1,
+  color: theme.palette.common.white,
+  fontVariantNumeric: "tabular-nums",
+  pointerEvents: "none",
+}));
+
+type SyncProgressRingProps = {
+  value: number;
+};
+
+function SyncProgressRing({ value }: SyncProgressRingProps) {
+  const clamped = Math.min(100, Math.max(0, Math.round(value)));
+
+  return (
+    <ProgressRingRoot aria-hidden>
+      <ProgressRingTrack
+        variant="determinate"
+        value={100}
+        size={SYNC_PROGRESS_RING_SIZE}
+        thickness={3.5}
+      />
+      <ProgressRingValue
+        variant="determinate"
+        value={clamped}
+        size={SYNC_PROGRESS_RING_SIZE}
+        thickness={3.5}
+      />
+      <ProgressRingLabel component="span" variant="caption">
+        {clamped}
+      </ProgressRingLabel>
+    </ProgressRingRoot>
+  );
+}
+
 export function GoogleSyncStatus() {
   const sync = useGoogleSync();
   const [now, setNow] = useState(() => Date.now());
@@ -99,32 +172,40 @@ export function GoogleSyncStatus() {
       variant="text"
       lane={lane}
       disabled={sync.isSyncing}
-      aria-label={`${label}. Refresh Google sheets and configuration.`}
+      aria-label={
+        sync.isSyncing
+          ? `Updating Google sheets and configuration. ${sync.syncProgress} percent complete.`
+          : `${label}. Refresh Google sheets and configuration.`
+      }
       onClick={() => {
         void sync.refresh();
       }}
     >
       <Stack direction="row" spacing={1.25} sx={{ alignItems: "center", minWidth: 0 }}>
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-          <Lamp
-            toneColor="#FF4D4D"
-            lit={litIndex === 0}
-            chasing={lane === "busy"}
-            delayMs={0}
-          />
-          <Lamp
-            toneColor="#FFC107"
-            lit={litIndex === 1}
-            chasing={lane === "busy"}
-            delayMs={lane === "busy" ? 180 : 0}
-          />
-          <Lamp
-            toneColor="#3DDC84"
-            lit={litIndex === 2}
-            chasing={lane === "busy"}
-            delayMs={lane === "busy" ? 360 : 0}
-          />
-        </Stack>
+        {sync.isSyncing ? (
+          <SyncProgressRing value={sync.syncProgress} />
+        ) : (
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Lamp
+              toneColor="#FF4D4D"
+              lit={litIndex === 0}
+              chasing={lane === "busy"}
+              delayMs={0}
+            />
+            <Lamp
+              toneColor="#FFC107"
+              lit={litIndex === 1}
+              chasing={lane === "busy"}
+              delayMs={lane === "busy" ? 180 : 0}
+            />
+            <Lamp
+              toneColor="#3DDC84"
+              lit={litIndex === 2}
+              chasing={lane === "busy"}
+              delayMs={lane === "busy" ? 360 : 0}
+            />
+          </Stack>
+        )}
         <SyncLabel>
           <Typography variant="body2" component="span" sx={{ color: "inherit" }}>
             {label}

@@ -1,4 +1,5 @@
 import { deleteRequest, getJson, postJson, putJson } from "@/shared/api/client";
+import { updateJobResumeProfile } from "@/shared/api/resume";
 import type {
   JobCatalogItem,
   JobCatalogKind,
@@ -10,7 +11,7 @@ import type {
   ProfileInfoWrite,
   SourceLocation,
 } from "@/shared/types/jobCatalog";
-
+import type { JobResumeProfileWrite } from "@/shared/types/resume";
 export function jobCatalogQueryKey(kind: JobCatalogKind) {
   return ["job-catalog", kind] as const;
 }
@@ -29,6 +30,44 @@ export function profileBannedQueryKey(profileId: string) {
 
 export function profileBannedMatchesQueryKey(profileId: string) {
   return ["job-catalog", "profiles", profileId, "banned-matches"] as const;
+}
+
+export type ProfileCreateRequest = {
+  title: string;
+  info: ProfileInfo;
+  resume: JobResumeProfileWrite;
+};
+
+function profileInfoHasContent(info: ProfileInfo): boolean {
+  return (
+    info.name.trim().length > 0
+    || info.address.trim().length > 0
+    || info.mail.trim().length > 0
+    || info.password.trim().length > 0
+    || info.linkedIn.trim().length > 0
+    || info.phone.trim().length > 0
+    || info.sex.trim().length > 0
+    || info.targetRateMonthly.trim().length > 0
+    || info.race.trim().length > 0
+    || info.veteranStatus.trim().length > 0
+  );
+}
+
+function resumeHasConfig(resume: JobResumeProfileWrite): boolean {
+  const prompt = resume.prompt?.trim() ?? "";
+  const owner = resume.owner?.trim() ?? "";
+  return prompt.length > 0 || resume.resumeStyle != null || owner.length > 0;
+}
+
+export async function createProfileWithDetails(request: ProfileCreateRequest): Promise<JobCatalogItem> {
+  const item = await createJobCatalogItem("profiles", { title: request.title });
+  if (profileInfoHasContent(request.info)) {
+    await updateProfileInfo(item.id, request.info);
+  }
+  if (resumeHasConfig(request.resume)) {
+    await updateJobResumeProfile(item.id, request.resume);
+  }
+  return item;
 }
 
 export function listJobCatalogItems(kind: JobCatalogKind): Promise<JobCatalogItem[]> {
