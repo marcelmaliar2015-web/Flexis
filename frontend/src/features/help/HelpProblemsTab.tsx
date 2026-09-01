@@ -154,8 +154,8 @@ export function HelpProblemsTab() {
           <List disablePadding>
             <ListItem disableGutters>
               <ListItemText
-                primary="Check now stays disabled"
-                secondary="Connect Gmail on Mail Check Settings, then save an OpenAI API key there."
+                primary="Check all stays disabled"
+                secondary="Connect a mailbox on Mail Check Settings, then save an OpenAI API key there."
               />
             </ListItem>
             <ListItem disableGutters>
@@ -167,7 +167,7 @@ export function HelpProblemsTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="Labels are missing in Gmail"
-                secondary="Save the OpenAI key while Gmail is connected, or run Check now. Flexis creates Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others."
+                secondary="Save the OpenAI key while a mailbox is connected, or run Check all. Flexis creates Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others."
               />
             </ListItem>
             <ListItem disableGutters>

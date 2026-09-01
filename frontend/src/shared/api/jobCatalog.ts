@@ -3,6 +3,8 @@ import type {
   JobCatalogItem,
   JobCatalogKind,
   JobCatalogWriteRequest,
+  ProfileInfo,
+  ProfileInfoWrite,
   SourceLocation,
 } from "@/shared/types/jobCatalog";
 
@@ -12,6 +14,10 @@ export function jobCatalogQueryKey(kind: JobCatalogKind) {
 
 export function sourceLocationsQueryKey(sourceId: string) {
   return ["job-catalog", "sources", sourceId, "locations"] as const;
+}
+
+export function profileInfoQueryKey(profileId: string) {
+  return ["job-catalog", "profiles", profileId, "info"] as const;
 }
 
 export function listJobCatalogItems(kind: JobCatalogKind): Promise<JobCatalogItem[]> {
@@ -35,6 +41,14 @@ export function updateJobCatalogItem(
 
 export function deleteJobCatalogItem(kind: JobCatalogKind, id: string): Promise<void> {
   return deleteRequest(`/api/job-application/${kind}/${id}`);
+}
+
+export function getProfileInfo(profileId: string): Promise<ProfileInfo> {
+  return getJson<ProfileInfo>(`/api/job-application/profiles/${profileId}/info`);
+}
+
+export function updateProfileInfo(profileId: string, request: ProfileInfoWrite): Promise<ProfileInfo> {
+  return putJson<ProfileInfo>(`/api/job-application/profiles/${profileId}/info`, request);
 }
 
 export function listSourceLocations(sourceId: string): Promise<SourceLocation[]> {

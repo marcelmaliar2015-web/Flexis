@@ -8,6 +8,13 @@ export type MailCheckLabelSlug =
 
 export type MailCheckAction = MailCheckLabelSlug | "discard" | "skip" | "error";
 
+export type MailCheckMailboxItem = {
+  id: string;
+  provider: MailCheckMailboxProvider;
+  email: string;
+  connectedAt: string;
+};
+
 export type MailCheckSettings = {
   hasApiKey: boolean;
   model: string;
@@ -21,18 +28,13 @@ export type MailCheckSettings = {
   lastHasMore: boolean;
   totalLabeled: number;
   totalTrashed: number;
-  mailboxConnected: boolean;
-  mailboxEmail: string | null;
-  mailboxProvider: MailCheckMailboxProvider | null;
+  mailboxes: MailCheckMailboxItem[];
   outlookAvailable: boolean;
 };
 
 export type MailCheckMailboxStatus = {
-  connected: boolean;
-  provider: MailCheckMailboxProvider | null;
-  email: string | null;
-  connectedAt: string | null;
   outlookAvailable: boolean;
+  mailboxes: MailCheckMailboxItem[];
 };
 
 export type MailCheckSettingsWrite = {
@@ -51,12 +53,15 @@ export type MailCheckModels = {
 };
 
 export type MailCheckRunItem = {
-  gmailMessageId: string;
+  messageId: string;
   subject: string;
   from: string;
   action: MailCheckAction | string;
   reason: string;
   label: string;
+  mailboxId: string;
+  mailboxEmail: string;
+  mailboxProvider: MailCheckMailboxProvider | string;
 };
 
 export type MailCheckRun = {
@@ -80,6 +85,9 @@ export type MailCheckInboxItem = {
   label: string;
   labelSlug: MailCheckLabelSlug | string;
   starred: boolean;
+  mailboxId: string;
+  mailboxEmail: string;
+  mailboxProvider: MailCheckMailboxProvider | string;
 };
 
 export type MailCheckInbox = {

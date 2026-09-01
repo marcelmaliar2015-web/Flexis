@@ -58,6 +58,6 @@ export function startMailCheckOutlook(returnUrl: string): Promise<{ authorizatio
   return postJson<{ authorizationUrl: string }>("/api/mail-check/mailbox/outlook/start", { returnUrl });
 }
 
-export function disconnectMailCheckMailbox(): Promise<void> {
-  return deleteRequest("/api/mail-check/mailbox");
+export function disconnectMailCheckMailbox(id: string): Promise<void> {
+  return deleteRequest(`/api/mail-check/mailbox/${id}`);
 }

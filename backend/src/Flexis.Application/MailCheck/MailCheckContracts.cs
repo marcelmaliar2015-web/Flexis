@@ -13,9 +13,7 @@ public sealed record MailCheckSettingsDto(
     bool LastHasMore,
     int TotalLabeled,
     int TotalTrashed,
-    bool MailboxConnected,
-    string? MailboxEmail,
-    string? MailboxProvider,
+    IReadOnlyList<MailMailboxItemDto> Mailboxes,
     bool OutlookAvailable);
 
 public sealed record MailCheckSettingsWriteRequest(string? ApiKey, bool ClearApiKey, string Model);
@@ -27,12 +25,15 @@ public sealed record MailCheckModelsDto(IReadOnlyList<MailCheckModelDto> Models)
 public sealed record MailCheckRunRequest(bool Force);
 
 public sealed record MailCheckRunItemDto(
-    string GmailMessageId,
+    string MessageId,
     string Subject,
     string From,
     string Action,
     string Reason,
-    string Label);
+    string Label,
+    Guid MailboxId,
+    string MailboxEmail,
+    string MailboxProvider);
 
 public sealed record MailCheckRunDto(
     bool Busy,
@@ -53,6 +54,9 @@ public sealed record MailCheckInboxItemDto(
     string Snippet,
     string Label,
     string LabelSlug,
-    bool Starred);
+    bool Starred,
+    Guid MailboxId,
+    string MailboxEmail,
+    string MailboxProvider);
 
 public sealed record MailCheckInboxDto(IReadOnlyList<MailCheckInboxItemDto> Items);

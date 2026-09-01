@@ -12,7 +12,7 @@ export const helpTabItems = [
   {
     value: "microsoft",
     label: "Microsoft setup",
-    summary: "Azure app registration, Graph scopes, and Connect Outlook.",
+    summary: "Eight clear Azure and Flexis steps to unlock Connect Outlook.",
   },
   {
     value: "operations",
@@ -32,7 +32,7 @@ export const helpTabItems = [
   {
     value: "mailCheck",
     label: "Mail Check",
-    summary: "Gmail or Outlook connect, OpenAI key, auto check, pin, and trash.",
+    summary: "Check all catches up the mailbox; auto-check runs in the background.",
   },
   {
     value: "problems",

@@ -129,7 +129,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Mail Check</TableCell>
                   <TableCell align="left">
-                    Inbox of labeled or categorized interview mail, Check now plus auto check, and
+                    Inbox of labeled or categorized interview mail, Check all plus auto check, and
                     Settings for mailbox connect, OpenAI key, and model.
                   </TableCell>
                   <TableCell align="left">
@@ -185,7 +185,13 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             <ListItem disableGutters>
               <ListItemText
                 primary="Issues"
-                secondary="Left of Google sync when signed in, and next to Sign in for visitors. Badge is the count. A snackbar appears on each new error or warning. Open Issues for time, source, HTTP method, path, status, and full message. Copy all produces a pasteable log. The API also appends the same facts to .flexis/issue-log.jsonl."
+                secondary="Left of client integrations when signed in, and next to Sign in for visitors. Badge is the count. A snackbar appears on each new error or warning. Open Issues for time, source, HTTP method, path, status, and full message. Copy all produces a pasteable log. The API also appends the same facts to .flexis/issue-log.jsonl."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Client integrations"
+                secondary="Left of Google sync. Google and Microsoft orbs show whether the admin OAuth apps are ready. Green means Ready. Open it for a short status and a link to Settings (admin) or Help. Saving clients stays on Settings."
               />
             </ListItem>
             <ListItem disableGutters>

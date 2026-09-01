@@ -37,7 +37,7 @@ export function MailCheckProvider({ children }: MailCheckProviderProps) {
     try {
       const settings = await getMailCheckSettings();
       queryClient.setQueryData(mailCheckSettingsQueryKey, settings);
-      if (!settings.hasApiKey || !settings.mailboxConnected) {
+      if (!settings.hasApiKey || settings.mailboxes.length === 0) {
         return;
       }
 

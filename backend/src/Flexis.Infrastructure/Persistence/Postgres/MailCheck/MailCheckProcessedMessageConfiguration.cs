@@ -11,12 +11,16 @@ internal sealed class MailCheckProcessedMessageConfiguration : IEntityTypeConfig
     {
         builder.ToTable("mail_check_processed_messages");
         builder.HasKey(item => item.Id);
-        builder.Property(item => item.GmailMessageId).HasMaxLength(128).IsRequired();
+        builder.Property(item => item.MessageId).HasMaxLength(128).IsRequired();
         builder.Property(item => item.Decision).HasMaxLength(32).IsRequired();
-        builder.HasIndex(item => new { item.UserId, item.GmailMessageId }).IsUnique();
+        builder.HasIndex(item => new { item.MailConnectionId, item.MessageId }).IsUnique();
         builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(item => item.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<MailConnection>()
+            .WithMany()
+            .HasForeignKey(item => item.MailConnectionId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

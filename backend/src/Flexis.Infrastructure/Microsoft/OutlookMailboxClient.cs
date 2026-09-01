@@ -23,7 +23,8 @@ internal sealed class OutlookMailboxClient : IMailMailbox
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private static readonly string[] CandidateFolders = ["inbox", "junkemail"];
+    private const string InboxFolder = "inbox";
+    private const string JunkFolder = "junkemail";
 
     private readonly HttpClient _http;
 
@@ -74,23 +75,61 @@ internal sealed class OutlookMailboxClient : IMailMailbox
         string? pageToken,
         CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(pageToken))
+        var (folder, graphUrl) = ParsePageToken(pageToken);
+        var url = graphUrl
+            ?? $"{GraphBase}/me/mailFolders/{folder}/messages?$top={CandidatePageSize}&$orderby=receivedDateTime desc&$select=id,categories";
+        var page = await FetchCandidatePageAsync(accessToken, url, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(page.NextPageToken))
         {
-            return await FetchCandidatePageAsync(accessToken, pageToken, cancellationToken);
+            return new MailCandidatePage(page.Messages, EncodePageToken(folder, page.NextPageToken));
         }
 
-        foreach (var folder in CandidateFolders)
+        if (string.Equals(folder, InboxFolder, StringComparison.Ordinal))
         {
-            var url =
-                $"{GraphBase}/me/mailFolders/{folder}/messages?$top={CandidatePageSize}&$orderby=receivedDateTime desc&$select=id,categories";
-            var page = await FetchCandidatePageAsync(accessToken, url, cancellationToken);
-            if (page.Messages.Count > 0 || page.NextPageToken is not null)
+            if (page.Messages.Count == 0)
             {
-                return page;
+                return await ListCandidatesAsync(accessToken, EncodePageToken(JunkFolder, null), cancellationToken);
             }
+
+            return new MailCandidatePage(page.Messages, EncodePageToken(JunkFolder, null));
         }
 
-        return new MailCandidatePage([], null);
+        return new MailCandidatePage(page.Messages, null);
+    }
+
+    private static (string Folder, string? GraphUrl) ParsePageToken(string? pageToken)
+    {
+        if (string.IsNullOrWhiteSpace(pageToken))
+        {
+            return (InboxFolder, null);
+        }
+
+        var separator = pageToken.IndexOf('|');
+        if (separator <= 0)
+        {
+            if (string.Equals(pageToken, JunkFolder, StringComparison.Ordinal)
+                || string.Equals(pageToken, InboxFolder, StringComparison.Ordinal))
+            {
+                return (pageToken, null);
+            }
+
+            return (InboxFolder, pageToken);
+        }
+
+        var folder = pageToken[..separator];
+        var graphUrl = pageToken[(separator + 1)..];
+        if (!string.Equals(folder, InboxFolder, StringComparison.Ordinal)
+            && !string.Equals(folder, JunkFolder, StringComparison.Ordinal))
+        {
+            return (InboxFolder, pageToken);
+        }
+
+        return (folder, string.IsNullOrWhiteSpace(graphUrl) ? null : graphUrl);
+    }
+
+    private static string EncodePageToken(string folder, string? graphUrl)
+    {
+        return string.IsNullOrWhiteSpace(graphUrl) ? folder : $"{folder}|{graphUrl}";
     }
 
     public async Task<MailMessageContent> GetMessageAsync(

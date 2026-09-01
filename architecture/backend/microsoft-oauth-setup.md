@@ -1,89 +1,137 @@
 # Microsoft OAuth setup (local)
 
-One-time Azure work so Mail Check **Connect Outlook** can run. Use a Microsoft 365 or Outlook.com account that you will connect in Flexis.
+One-time Azure work so Mail Check **Connect Outlook** can run. Same guide is in the app at `/help` → Microsoft setup.
 
-The same steps are in the signed-in app at `/help` on the Microsoft setup tab.
+Do steps 1 to 8 in order. Steps 1 to 5 are Azure. Step 6 is Flexis Settings. Step 8 connects your mailbox.
 
-Flexis redirect (must match the app registration exactly, no trailing slash):
+Flexis redirect (exact, step 4 only):
 
 `http://localhost:5080/api/mail-check/mailbox/outlook/callback`
 
-## 1. Register an app
+## 1. Open a directory in Azure Portal
 
-Open [https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade).
+Goal: App registrations must run inside a directory. This is free Microsoft account / app setup, **not** a paid Microsoft Graph plan. Outlook mail Graph calls are not metered mail APIs.
 
-**New registration**. Name: `flexis-local`. Supported account types: **Accounts in any organizational directory and personal Microsoft accounts**. Redirect URI: leave blank for now. Register.
+**Skip this whole Microsoft setup if you use Gmail only.**
 
-Copy **Application (client) ID** from Overview.
+### Do this first (no payment setup)
 
-## 2. Client secret
+1. Open [https://portal.azure.com/](https://portal.azure.com/) and sign in with the same Microsoft account you use for Outlook.
+2. If the top bar already shows a directory name, go to step 2.
+3. If **New registration** works on App registrations, go to step 2.
+4. If New registration is blocked with “applications outside of a directory has been deprecated,” join the [Microsoft 365 Developer Program](https://developer.microsoft.com/microsoft-365/dev-program) (Contact Email, Country/Region, Company such as `Individual`, preferences, Join). No Graph payment. If **Set up E5 subscription** appears you may follow it; if you do not qualify, retry App registrations afterward.
+5. If another Flexis admin already saved the Microsoft client on Settings, skip steps 1 to 6 and only Connect Outlook on Mail Check Settings.
 
-Open **Certificates & secrets** → **New client secret**. Description: `flexis-local`. Add.
+### Only if Microsoft still blocks New registration
 
-Copy the **Value** now. Azure does not show it again.
+Some personal accounts must create a directory through Microsoft’s free Azure signup. That is still not buying Graph API access. If Microsoft’s own form asks for a card, that is their account verification. Flexis does not require it and does not charge you. Prefer finishing without that form whenever Portal already shows a directory.
 
-## 3. Redirect URI
+1. Open [https://azure.microsoft.com/free/](https://azure.microsoft.com/free/) only if the steps above still cannot open App registrations.
+2. Complete Microsoft’s free signup with your Outlook Microsoft account.
+3. If Microsoft asks for a card, that is their verification form, not a Flexis or Graph fee. You can stop if you refuse; then Connect Outlook stays locked until a directory exists.
+4. After signup, open Azure Portal, select the new directory, continue to step 2.
 
-Open **Authentication** → **Add a platform** → **Web**.
+Done when: Azure Portal top bar shows a directory, or New registration opens. Then go to step 2.
 
-Redirect URI (exact):
+## 2. Register an app
 
-- `http://localhost:5080/api/mail-check/mailbox/outlook/callback`
+Goal: create one Azure app named `flexis-local` and copy Application (client) ID.
 
-Do not use `127.0.0.1:5080`. Do not add a trailing slash.
+1. Open [App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade).
+2. Click **New registration**.
+3. If Azure shows the directory-deprecated message, go back to step 1.
+4. Name: `flexis-local`.
+5. Supported account types: **Accounts in any organizational directory and personal Microsoft accounts**.
+6. Redirect URI: leave empty.
+7. Click **Register**.
+8. On Overview, copy **Application (client) ID** for step 6.
 
-Under **Implicit grant and hybrid flows**, leave access tokens and ID tokens unchecked.
+Done when: you have Application (client) ID and Overview is open.
 
-Save.
+## 3. Create a client secret
 
-## 4. API permissions
+Goal: create a secret Value. Azure shows it only once.
 
-Open **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated permissions**.
+1. Stay on the same app.
+2. Left menu: **Certificates & secrets**.
+3. **Client secrets** → **New client secret**.
+4. Description: `flexis-local`. Choose expiry. **Add**.
+5. Copy the **Value** column immediately. Do not copy Secret ID.
+6. Keep the Value for step 6.
 
-Add:
+Done when: you have Application (client) ID and secret Value.
 
-| Permission | Why |
-| --- | --- |
-| `Mail.ReadWrite` | Read mail, move junk to inbox, trash noise |
-| `MailboxSettings.ReadWrite` | Create master categories (Outlook labels) |
-| `openid` | Sign-in |
-| `profile` | Account identity |
-| `email` | Connected address |
-| `offline_access` | Refresh token |
+## 4. Add the redirect URI
 
-Click **Grant admin consent** if your tenant requires it. Personal Microsoft accounts do not need tenant admin consent for these delegated scopes.
+Goal: tell Azure where to send the browser after Outlook sign-in.
 
-Do not add application permissions.
+1. Stay on the same app.
+2. Left menu: **Authentication**.
+3. **Add a platform** → **Web**.
+4. Paste Redirect URI exactly: `http://localhost:5080/api/mail-check/mailbox/outlook/callback`
+5. No trailing slash. Do not use `127.0.0.1`.
+6. Leave Implicit grant unchecked.
+7. **Configure**, then **Save** if asked.
 
-## 5. Put credentials in Flexis
+Done when: Authentication shows that Web redirect URI.
 
-Sign in as an admin. Open Settings. Under **Microsoft client**, paste Application (client) ID and client secret. Save.
+## 5. Add API permissions
 
-That is one Azure app for the Flexis deployment. Each person still connects their own mailbox on Mail Check.
+Goal: allow this app to read and organize mail for the signed-in user.
 
-## 6. Confirm Flexis is running
+1. Stay on the same app.
+2. Left menu: **API permissions**.
+3. **Add a permission** → **Microsoft Graph** → **Delegated permissions**.
+4. Add: `Mail.ReadWrite`, `MailboxSettings.ReadWrite`, `openid`, `profile`, `email`, `offline_access`.
+5. **Add permissions**.
+6. **Grant admin consent** if shown. Personal accounts often skip this.
+7. Do not add Application permissions.
 
-API must be running at [http://localhost:5080/api/health](http://localhost:5080/api/health) (`Healthy`). Frontend at [http://127.0.0.1:5173/](http://127.0.0.1:5173/). Saving the Microsoft client in Settings does not need a restart.
+Done when: those delegated permissions are listed.
 
-## 7. Connect
+## 6. Paste credentials into Flexis
 
-1. [http://127.0.0.1:5173/mail-check](http://127.0.0.1:5173/mail-check) — Settings tab
-2. **Connect Outlook** — sign in with the mailbox you want triaged — Accept
-3. Microsoft returns to Flexis. The chip should read **Connected** and show that address.
-4. Paste an OpenAI API key on the same tab before auto-check classifies mail.
+Goal: unlock Connect Outlook. This is not your mailbox yet.
 
-Flexis creates four Outlook master categories: Interview Scheduled, Waiting for answer, Need to Schedule/Availability, and Others. See [019-mail-check.md](../decisions/019-mail-check.md).
+1. Sign in to Flexis as an admin.
+2. Open Settings → **Microsoft client**.
+3. Paste Application (client) ID from step 2.
+4. Paste secret Value from step 3.
+5. Save.
 
-## If Connect fails
+Done when: Microsoft client is saved in Settings.
+
+## 7. Confirm Flexis is running
+
+1. [http://localhost:5080/api/health](http://localhost:5080/api/health) must say Healthy.
+2. [http://127.0.0.1:5173/](http://127.0.0.1:5173/) must load.
+3. No restart needed after step 6.
+
+Done when: health is Healthy and the app loads.
+
+## 8. Connect your Outlook mailbox
+
+Goal: link the mailbox Flexis should organize.
+
+1. Open Mail Check → Settings.
+2. Click **Add Outlook**. If disabled, finish step 6.
+3. Sign in with the Outlook or Microsoft 365 mailbox to triage.
+4. Accept.
+5. Wait for Connected and your address.
+6. Paste an OpenAI API key, pick a model, Save.
+
+Done when: mailbox Connected and OpenAI key saved.
+
+## If something fails
 
 | What you see | Fix |
 | --- | --- |
-| Connect Outlook stays disabled | An admin must save the Microsoft client in Settings |
-| `redirect_uri_mismatch` | Redirect URI on the Azure app must be exactly `http://localhost:5080/api/mail-check/mailbox/outlook/callback` |
-| `AADSTS50011` | Same as redirect mismatch; check Authentication → Web redirect URIs |
-| `mailbox=error` after Microsoft | Check API logs; confirm delegated permissions in step 4 |
-| `mailbox=denied` | User cancelled consent or admin blocked the app |
-| Token refresh fails later | Secret expired; create a new client secret and update Settings |
+| New registration blocked / outside a directory deprecated | Finish step 1, then retry step 2 |
+| Connect Outlook / Add Outlook stays disabled | Finish step 6 |
+| `redirect_uri_mismatch` or `AADSTS50011` | Step 4 URI must match exactly |
+| `mailbox=error` | Check API logs; recheck step 5 |
+| `mailbox=denied` | User cancelled consent |
+| Token refresh fails later | New client secret in Azure, update Settings |
 
 ## Related
 

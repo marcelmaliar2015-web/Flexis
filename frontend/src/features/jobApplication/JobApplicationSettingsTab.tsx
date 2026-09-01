@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CatalogItemsPanel } from "@/features/jobApplication/CatalogItemsPanel";
 import { JobApplicationFinancialDefaultsCard } from "@/features/jobApplication/JobApplicationFinancialDefaultsCard";
 import { JobApplicationGmailCard } from "@/features/jobApplication/JobApplicationGmailCard";
+import { ProfileInfoPanel } from "@/features/jobApplication/ProfileInfoPanel";
 import { SourceLocationsPanel } from "@/features/jobApplication/SourceLocationsPanel";
 import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
 
@@ -27,6 +28,7 @@ export function JobApplicationSettingsTab() {
         itemLabel="profile"
         actionsEnabled={connected}
       />
+      <ProfileInfoPanel actionsEnabled={connected} />
       <CatalogItemsPanel
         kind="sources"
         heading="Sources"

@@ -10,7 +10,7 @@ Admins save Application (client) ID and client secret on Settings (`GET`/`PUT /a
 
 ## Consequences
 
-Production can change the Azure app without a new deploy. Each user still has a separate mailbox connection in `mail_connections`. Do not put the secret in committed files.
+Production can change the Azure app without a new deploy. Each user may connect multiple mailboxes in `mail_connections`. Do not put the secret in committed files.
 
 ## Related
 

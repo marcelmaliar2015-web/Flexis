@@ -4,7 +4,7 @@ public sealed class MailCheckProcessedMessage
 {
     private MailCheckProcessedMessage()
     {
-        GmailMessageId = string.Empty;
+        MessageId = string.Empty;
         Decision = string.Empty;
     }
 
@@ -12,19 +12,26 @@ public sealed class MailCheckProcessedMessage
 
     public Guid UserId { get; private set; }
 
-    public string GmailMessageId { get; private set; }
+    public Guid MailConnectionId { get; private set; }
+
+    public string MessageId { get; private set; }
 
     public string Decision { get; private set; }
 
     public DateTimeOffset ProcessedAt { get; private set; }
 
-    public static MailCheckProcessedMessage Create(Guid userId, string gmailMessageId, MailCheckDecision decision)
+    public static MailCheckProcessedMessage Create(
+        Guid userId,
+        Guid mailConnectionId,
+        string messageId,
+        MailCheckDecision decision)
     {
         return new MailCheckProcessedMessage
         {
             Id = Guid.NewGuid(),
             UserId = userId,
-            GmailMessageId = gmailMessageId,
+            MailConnectionId = mailConnectionId,
+            MessageId = messageId,
             Decision = decision.ToString(),
             ProcessedAt = DateTimeOffset.UtcNow
         };

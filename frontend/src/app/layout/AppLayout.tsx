@@ -6,6 +6,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { Link as RouterLink, Outlet } from "react-router-dom";
+import { ClientIntegrationsStatus } from "@/app/layout/ClientIntegrationsStatus";
 import { GoogleConnectStatus } from "@/app/layout/GoogleConnectStatus";
 import { GoogleSyncStatus } from "@/app/layout/GoogleSyncStatus";
 import { NotificationCenter } from "@/app/layout/NotificationCenter";
@@ -79,6 +80,7 @@ export function AppLayout() {
           {auth.user ? (
             <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexShrink: 0 }}>
               <NotificationCenter />
+              <ClientIntegrationsStatus />
               <GoogleSyncStatus />
               <GoogleConnectStatus />
               <HeaderRail />

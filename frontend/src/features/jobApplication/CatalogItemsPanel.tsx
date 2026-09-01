@@ -321,10 +321,10 @@ function CatalogEditorDialog({
             />
             <Typography variant="body2" color="text.secondary">
               {isEdit
-                ? "Saving a new title also renames the Google Sheet."
+                ? "Saving a new title also renames the Google Sheet and the main listing tab."
                 : `Creates a Google Sheet. Connect Gmail first. ${
                     itemLabel === "profile"
-                      ? "The tab is named after this title."
+                      ? "The main tab is named after this title. A locked Profile info tab is added too."
                       : "The first location tab is US."
                   }`}
             </Typography>

@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Panel } from "@/features/mailCheck/mailCheckLayout";
+import { providerLabel } from "@/features/mailCheck/mailCheckUi";
 import {
   disconnectMailCheckMailbox,
   getMailCheckMailbox,
@@ -18,11 +19,23 @@ import {
   startMailCheckOutlook,
 } from "@/shared/api/mailCheck";
 import { appPaths } from "@/shared/config/paths";
+import type { MailCheckMailboxItem } from "@/shared/types/mailCheck";
 
 const ProviderCard = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
   borderRadius: theme.shape.borderRadius,
   padding: theme.spacing(2),
+}));
+
+const MailboxRow = styled(Box)(({ theme }) => ({
+  border: `1px solid ${theme.palette.divider}`,
+  borderRadius: theme.shape.borderRadius,
+  padding: theme.spacing(1.5, 2),
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: theme.spacing(2),
+  flexWrap: "wrap",
 }));
 
 function mailboxNotice(result: string | null): { severity: "success" | "info" | "error"; text: string } | null {
@@ -38,11 +51,19 @@ function mailboxNotice(result: string | null): { severity: "success" | "info" | 
   return null;
 }
 
+function formatConnectedAt(value: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 export function MailCheckMailboxCard() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [notice, setNotice] = useState<ReturnType<typeof mailboxNotice>>(null);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
   const mailboxQuery = useQuery({
     queryKey: mailCheckMailboxQueryKey,
@@ -77,18 +98,22 @@ export function MailCheckMailboxCard() {
   });
 
   const disconnectMutation = useMutation({
-    mutationFn: disconnectMailCheckMailbox,
+    mutationFn: (id: string) => disconnectMailCheckMailbox(id),
+    onMutate: (id) => {
+      setDisconnectingId(id);
+    },
     onSuccess: async () => {
       setNotice(null);
       await queryClient.invalidateQueries({ queryKey: mailCheckMailboxQueryKey });
       await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
     },
+    onSettled: () => {
+      setDisconnectingId(null);
+    },
   });
 
-  const mailbox = mailboxQuery.data;
-  const connected = mailbox?.connected === true;
-  const providerLabel =
-    mailbox?.provider === "gmail" ? "Gmail" : mailbox?.provider === "outlook" ? "Outlook" : "Mailbox";
+  const mailboxes = mailboxQuery.data?.mailboxes ?? [];
+  const outlookAvailable = mailboxQuery.data?.outlookAvailable === true;
 
   return (
     <Panel>
@@ -100,89 +125,76 @@ export function MailCheckMailboxCard() {
         >
           <Stack spacing={0.5}>
             <Typography variant="h6" component="h2">
-              Mailbox
+              Mailboxes
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Mail Check uses its own mailbox connection. Job Application Gmail stays separate for
-              sheets and pipeline.
+              Connect any number of Gmail and Outlook accounts. Check all and Inbox use every
+              connected mailbox. Job Application Gmail stays separate for sheets and pipeline.
             </Typography>
           </Stack>
-          {connected ? <Chip color="success" label="Connected" /> : <Chip label="Not connected" />}
+          {mailboxes.length > 0 ? (
+            <Chip color="success" label={`${mailboxes.length} connected`} />
+          ) : (
+            <Chip label="None connected" />
+          )}
         </Stack>
         {notice ? <Alert severity={notice.severity}>{notice.text}</Alert> : null}
-        {connected && mailbox.email ? (
-          <Typography variant="body2">
-            {providerLabel} · {mailbox.email}
-          </Typography>
+        {mailboxes.length > 0 ? (
+          <Stack spacing={1}>
+            {mailboxes.map((mailbox: MailCheckMailboxItem) => (
+              <MailboxRow key={mailbox.id}>
+                <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+                  <Typography variant="body2">
+                    {providerLabel(mailbox.provider)} · {mailbox.email}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Connected {formatConnectedAt(mailbox.connectedAt)}
+                  </Typography>
+                </Stack>
+                <Button
+                  variant="outlined"
+                  disabled={disconnectMutation.isPending}
+                  loading={disconnectingId === mailbox.id}
+                  onClick={() => disconnectMutation.mutate(mailbox.id)}
+                >
+                  Disconnect
+                </Button>
+              </MailboxRow>
+            ))}
+          </Stack>
         ) : null}
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
           <ProviderCard sx={{ flex: 1 }}>
             <Stack spacing={1.5}>
-              <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-                <Typography variant="subtitle1">Gmail</Typography>
-                {mailbox?.provider === "gmail" && connected ? (
-                  <Chip size="small" color="success" label="Active" />
-                ) : null}
-              </Stack>
+              <Typography variant="subtitle1">Gmail</Typography>
               <Typography variant="body2" color="text.secondary">
-                Uses Gmail labels and stars. Free except your OpenAI key.
+                Uses Gmail labels and stars. Add another Gmail account any time.
               </Typography>
-              {mailbox?.provider === "gmail" && connected ? (
-                <Button
-                  variant="outlined"
-                  disabled={disconnectMutation.isPending}
-                  loading={disconnectMutation.isPending}
-                  onClick={() => disconnectMutation.mutate()}
-                >
-                  Disconnect Gmail
-                </Button>
-              ) : (
-                <Button
-                  disabled={connectGmailMutation.isPending || (connected && mailbox?.provider !== "gmail")}
-                  loading={connectGmailMutation.isPending}
-                  onClick={() => connectGmailMutation.mutate()}
-                >
-                  Connect Gmail
-                </Button>
-              )}
+              <Button
+                disabled={connectGmailMutation.isPending}
+                loading={connectGmailMutation.isPending}
+                onClick={() => connectGmailMutation.mutate()}
+              >
+                Add Gmail
+              </Button>
             </Stack>
           </ProviderCard>
-          <ProviderCard sx={{ flex: 1, opacity: mailbox?.outlookAvailable ? 1 : 0.72 }}>
+          <ProviderCard sx={{ flex: 1, opacity: outlookAvailable ? 1 : 0.72 }}>
             <Stack spacing={1.5}>
-              <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-                <Typography variant="subtitle1">Outlook</Typography>
-                {mailbox?.provider === "outlook" && connected ? (
-                  <Chip size="small" color="success" label="Active" />
-                ) : null}
-              </Stack>
+              <Typography variant="subtitle1">Outlook</Typography>
               <Typography variant="body2" color="text.secondary">
-                {mailbox?.outlookAvailable
-                  ? "Uses Outlook categories and flags. Works with Microsoft 365 and Outlook.com."
-                  : "An admin must save the Microsoft client on Settings before Connect Outlook is available."}
+                {outlookAvailable
+                  ? "Uses Outlook categories and flags. Add Microsoft 365 or Outlook.com accounts."
+                  : "An admin must save the Microsoft client on Settings before Add Outlook is available."}
               </Typography>
-              {mailbox?.provider === "outlook" && connected ? (
-                <Button
-                  variant="outlined"
-                  disabled={disconnectMutation.isPending}
-                  loading={disconnectMutation.isPending}
-                  onClick={() => disconnectMutation.mutate()}
-                >
-                  Disconnect Outlook
-                </Button>
-              ) : (
-                <Button
-                  variant="outlined"
-                  disabled={
-                    !mailbox?.outlookAvailable
-                    || connectOutlookMutation.isPending
-                    || (connected && mailbox?.provider !== "outlook")
-                  }
-                  loading={connectOutlookMutation.isPending}
-                  onClick={() => connectOutlookMutation.mutate()}
-                >
-                  Connect Outlook
-                </Button>
-              )}
+              <Button
+                variant="outlined"
+                disabled={!outlookAvailable || connectOutlookMutation.isPending}
+                loading={connectOutlookMutation.isPending}
+                onClick={() => connectOutlookMutation.mutate()}
+              >
+                Add Outlook
+              </Button>
             </Stack>
           </ProviderCard>
         </Stack>

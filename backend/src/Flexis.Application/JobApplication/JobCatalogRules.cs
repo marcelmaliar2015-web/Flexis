@@ -18,6 +18,17 @@ internal static class JobCatalogRules
         return trimmed;
     }
 
+    public static string NormalizeProfileTitle(string? title)
+    {
+        var trimmed = NormalizeTitle(title);
+        if (string.Equals(trimmed, Google.JobSheetNames.ProfileInfoTab, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ValidationFailedException("Profile title cannot be Profile. That name is reserved for the profile info tab.");
+        }
+
+        return trimmed;
+    }
+
     public static string NormalizeLocationName(string? name)
     {
         var trimmed = name?.Trim() ?? string.Empty;

@@ -57,47 +57,85 @@ async function send(path: string, init?: RequestInit): Promise<Response> {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  let response: Response;
-  try {
-    response = await fetch(`${getApiBaseUrl()}${path}`, { ...init, headers });
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw error;
-    }
+  const maxAttempts = 4;
+  let lastNetworkError: unknown = null;
+  let lastBadGateway: Response | null = null;
 
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}${path}`, { ...init, headers });
+      if (
+        (response.status === 502 || response.status === 504)
+        && attempt < maxAttempts
+      ) {
+        lastBadGateway = response;
+        await wait(attempt * 500);
+        continue;
+      }
+
+      if (!response.ok && response.status !== 503) {
+        if (response.status === 502 || response.status === 504) {
+          const message =
+            "Could not reach the API. Check backend/src/Flexis.Api is running on http://localhost:5080.";
+          notifyApiFailure(message, response.status, path, method);
+          throw new Error(message);
+        }
+
+        let body: unknown = null;
+        try {
+          body = await response.json();
+        } catch {
+          body = null;
+        }
+
+        const message = problemMessage(body, response.status, method, path);
+        notifyApiFailure(message, response.status, path, method);
+        throw new ApiError(message, response.status, path, method);
+      }
+
+      return response;
+    } catch (error) {
+      if (error instanceof ApiError || (error instanceof Error && error.message.startsWith("Could not reach the API"))) {
+        throw error;
+      }
+
+      if (isAbortError(error)) {
+        throw error;
+      }
+
+      lastNetworkError = error;
+      if (attempt < maxAttempts) {
+        await wait(attempt * 500);
+        continue;
+      }
+    }
+  }
+
+  if (lastBadGateway) {
     const message =
       "Could not reach the API. Check backend/src/Flexis.Api is running on http://localhost:5080.";
-    notifyApiFailure(
-      message,
-      0,
-      path,
-      method,
-      error instanceof Error ? `${error.name}: ${error.message}` : String(error),
-    );
+    notifyApiFailure(message, lastBadGateway.status, path, method);
     throw new Error(message);
   }
 
-  if (!response.ok && response.status !== 503) {
-    if (response.status === 502 || response.status === 504) {
-      const message =
-        "Could not reach the API. Check backend/src/Flexis.Api is running on http://localhost:5080.";
-      notifyApiFailure(message, response.status, path, method);
-      throw new Error(message);
-    }
+  const message =
+    "Could not reach the API. Check backend/src/Flexis.Api is running on http://localhost:5080.";
+  notifyApiFailure(
+    message,
+    0,
+    path,
+    method,
+    lastNetworkError instanceof Error
+      ? `${lastNetworkError.name}: ${lastNetworkError.message}`
+      : String(lastNetworkError),
+  );
+  throw new Error(message);
+}
 
-    let body: unknown = null;
-    try {
-      body = await response.json();
-    } catch {
-      body = null;
-    }
-
-    const message = problemMessage(body, response.status, method, path);
-    notifyApiFailure(message, response.status, path, method);
-    throw new ApiError(message, response.status, path, method);
-  }
-
-  return response;
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function isAbortError(error: unknown): boolean {

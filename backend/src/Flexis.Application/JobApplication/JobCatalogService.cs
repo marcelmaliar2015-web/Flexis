@@ -44,7 +44,9 @@ public sealed class JobCatalogService
         JobCatalogWriteRequest request,
         CancellationToken cancellationToken)
     {
-        var title = JobCatalogRules.NormalizeTitle(request.Title);
+        var title = kind == JobCatalogKind.Profile
+            ? JobCatalogRules.NormalizeProfileTitle(request.Title)
+            : JobCatalogRules.NormalizeTitle(request.Title);
         if (await _items.TitleExistsAsync(userId, kind, title, null, cancellationToken))
         {
             throw new ConflictException($"A {KindLabel(kind)} with that title already exists.");
@@ -68,6 +70,14 @@ public sealed class JobCatalogService
         try
         {
             await _driveLayout.PlaceWorkbookAsync(access.AccessToken, spreadsheet.SpreadsheetId, kind, folders, cancellationToken);
+            if (kind == JobCatalogKind.Profile)
+            {
+                await _sheets.EnsureProfileInfoSheetAsync(
+                    access.AccessToken,
+                    spreadsheet.SpreadsheetId,
+                    cancellationToken);
+            }
+
             await _sheets.ProtectWorkbookAsync(
                 access.AccessToken,
                 spreadsheet.SpreadsheetId,
@@ -85,7 +95,7 @@ public sealed class JobCatalogService
                     ? $"Created profile {title}"
                     : $"Created source {title}",
                 kind == JobCatalogKind.Profile
-                    ? $"Opened a profile Google Sheet named {title} with a main tab of the same name. Spreadsheet {spreadsheet.SpreadsheetId}."
+                    ? $"Opened a profile Google Sheet named {title} with a main tab of the same name and a locked Profile info tab. Spreadsheet {spreadsheet.SpreadsheetId}."
                     : $"Opened a source Google Sheet named {title} with a first location tab {JobCatalogRules.DefaultSourceLocation}. Spreadsheet {spreadsheet.SpreadsheetId}.",
                 cancellationToken);
             return ToDto(item);
@@ -103,8 +113,10 @@ public sealed class JobCatalogService
         JobCatalogWriteRequest request,
         CancellationToken cancellationToken)
     {
-        var title = JobCatalogRules.NormalizeTitle(request.Title);
         var item = await RequireItem(userId, id, cancellationToken);
+        var title = item.Kind == JobCatalogKind.Profile
+            ? JobCatalogRules.NormalizeProfileTitle(request.Title)
+            : JobCatalogRules.NormalizeTitle(request.Title);
         if (await _items.TitleExistsAsync(userId, item.Kind, title, item.Id, cancellationToken))
         {
             throw new ConflictException($"A {KindLabel(item.Kind)} with that title already exists.");
@@ -112,17 +124,19 @@ public sealed class JobCatalogService
 
         if (!string.Equals(item.Title, title, StringComparison.Ordinal) && HasSpreadsheet(item))
         {
-            var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
-            await _sheets.RenameFileAsync(accessToken, item.SpreadsheetId, title, cancellationToken);
+            var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+            await _sheets.RenameFileAsync(access.AccessToken, item.SpreadsheetId, title, cancellationToken);
             if (item.Kind == JobCatalogKind.Profile)
             {
-                var sheets = await _sheets.ListSheetsAsync(accessToken, item.SpreadsheetId, cancellationToken);
-                if (sheets.Count == 1)
+                var sheets = await _sheets.ListSheetsAsync(access.AccessToken, item.SpreadsheetId, cancellationToken);
+                var previousMain = JobCatalogRules.SheetTabName(item.Title);
+                var main = sheets.FirstOrDefault(sheet => string.Equals(sheet.Name, previousMain, StringComparison.Ordinal));
+                if (main is not null)
                 {
                     await _sheets.RenameSheetAsync(
-                        accessToken,
+                        access.AccessToken,
                         item.SpreadsheetId,
-                        sheets[0].SheetId,
+                        main.SheetId,
                         JobCatalogRules.SheetTabName(title),
                         cancellationToken);
                 }
@@ -146,6 +160,50 @@ public sealed class JobCatalogService
         }
 
         return ToDto(item);
+    }
+
+    public async Task<ProfileInfoDto> GetProfileInfoAsync(
+        Guid userId,
+        Guid profileId,
+        CancellationToken cancellationToken)
+    {
+        var item = await RequireProfile(userId, profileId, cancellationToken);
+        var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
+        var values = await _sheets.ReadProfileInfoAsync(accessToken, item.SpreadsheetId, cancellationToken);
+        var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+        await _sheets.ProtectWorkbookAsync(
+            access.AccessToken,
+            item.SpreadsheetId,
+            access.OwnerEmail,
+            JobWorkbookKind.Profile,
+            cancellationToken);
+        return ToProfileInfoDto(values);
+    }
+
+    public async Task<ProfileInfoDto> UpdateProfileInfoAsync(
+        Guid userId,
+        Guid profileId,
+        ProfileInfoWriteRequest request,
+        CancellationToken cancellationToken)
+    {
+        var item = await RequireProfile(userId, profileId, cancellationToken);
+        var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+        var values = NormalizeProfileInfo(request);
+        await _sheets.WriteProfileInfoAsync(access.AccessToken, item.SpreadsheetId, values, cancellationToken);
+        await _sheets.ProtectWorkbookAsync(
+            access.AccessToken,
+            item.SpreadsheetId,
+            access.OwnerEmail,
+            JobWorkbookKind.Profile,
+            cancellationToken);
+        await _activity.WriteAsync(
+            userId,
+            "catalog",
+            "update-profile-info",
+            $"Updated profile info on {item.Title}",
+            $"Wrote optional profile fields onto the locked Profile tab of {item.Title}.",
+            cancellationToken);
+        return ToProfileInfoDto(values);
     }
 
     public async Task DeleteAsync(Guid userId, Guid id, CancellationToken cancellationToken)
@@ -304,6 +362,22 @@ public sealed class JobCatalogService
         return item;
     }
 
+    private async Task<JobCatalogItem> RequireProfile(Guid userId, Guid id, CancellationToken cancellationToken)
+    {
+        var item = await RequireItem(userId, id, cancellationToken);
+        if (item.Kind != JobCatalogKind.Profile)
+        {
+            throw new NotFoundException("Profile was not found.");
+        }
+
+        if (!HasSpreadsheet(item))
+        {
+            throw new ValidationFailedException("This profile has no Google Sheet.");
+        }
+
+        return item;
+    }
+
     private static bool HasSpreadsheet(JobCatalogItem item)
     {
         return !string.IsNullOrWhiteSpace(item.SpreadsheetId);
@@ -312,6 +386,54 @@ public sealed class JobCatalogService
     private static JobCatalogItemDto ToDto(JobCatalogItem item)
     {
         return new JobCatalogItemDto(item.Id, item.Title, item.CreatedAt, item.Url, item.SpreadsheetId);
+    }
+
+    private static ProfileInfoDto ToProfileInfoDto(IReadOnlyDictionary<string, string> values)
+    {
+        return new ProfileInfoDto(
+            ValueOrEmpty(values, "Name"),
+            ValueOrEmpty(values, "Address"),
+            ValueOrEmpty(values, "Mail"),
+            ValueOrEmpty(values, "Password"),
+            ValueOrEmpty(values, "LinkedIn"),
+            ValueOrEmpty(values, "Phone"),
+            ValueOrEmpty(values, "Sex"),
+            ValueOrEmpty(values, "Target Rate (Monthly)"),
+            ValueOrEmpty(values, "Race"),
+            ValueOrEmpty(values, "Veteran Status"));
+    }
+
+    private static Dictionary<string, string> NormalizeProfileInfo(ProfileInfoWriteRequest request)
+    {
+        return new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Name"] = ClipOptional(request.Name, 200),
+            ["Address"] = ClipOptional(request.Address, 500),
+            ["Mail"] = ClipOptional(request.Mail, 320),
+            ["Password"] = ClipOptional(request.Password, 200),
+            ["LinkedIn"] = ClipOptional(request.LinkedIn, 500),
+            ["Phone"] = ClipOptional(request.Phone, 80),
+            ["Sex"] = ClipOptional(request.Sex, 80),
+            ["Target Rate (Monthly)"] = ClipOptional(request.TargetRateMonthly, 80),
+            ["Race"] = ClipOptional(request.Race, 120),
+            ["Veteran Status"] = ClipOptional(request.VeteranStatus, 120),
+        };
+    }
+
+    private static string ClipOptional(string? value, int maxLength)
+    {
+        var trimmed = value?.Trim() ?? string.Empty;
+        if (trimmed.Length > maxLength)
+        {
+            throw new ValidationFailedException($"A profile info field must be at most {maxLength} characters.");
+        }
+
+        return trimmed;
+    }
+
+    private static string ValueOrEmpty(IReadOnlyDictionary<string, string> values, string key)
+    {
+        return values.TryGetValue(key, out var value) ? value : string.Empty;
     }
 
     private static string KindLabel(JobCatalogKind itemKind)

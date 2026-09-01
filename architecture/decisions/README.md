@@ -41,3 +41,5 @@ One file per significant architecture choice. Record a decision when you introdu
 | [019](019-mail-check.md) | Mail Check Gmail and OpenAI |
 | [020](020-issue-notifications.md) | Issue notifications |
 | [021](021-microsoft-client-in-settings.md) | Microsoft client in Settings |
+| [022](022-header-client-integrations.md) | Header client integration status |
+| [023](023-multi-mailbox-mail-check.md) | Multi-mailbox Mail Check |

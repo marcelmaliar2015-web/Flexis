@@ -39,14 +39,9 @@ public sealed class MailConnectionService
 
     public async Task<MailMailboxStatusDto> GetStatusAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var connection = await _connections.GetByUserIdAsync(userId, cancellationToken);
+        var connections = await _connections.ListByUserIdAsync(userId, cancellationToken);
         var outlookAvailable = await _microsoftOAuth.IsConfiguredAsync(cancellationToken);
-        return new MailMailboxStatusDto(
-            connection is not null,
-            connection is null ? null : ToProviderName(connection.Provider),
-            connection?.Email,
-            connection?.ConnectedAt,
-            outlookAvailable);
+        return new MailMailboxStatusDto(outlookAvailable, ToMailboxItems(connections));
     }
 
     public async Task<MailConnectStartDto> StartGmailConnectAsync(
@@ -127,7 +122,11 @@ public sealed class MailConnectionService
 
         var refreshProtected = _protector.Protect(tokens.RefreshToken);
         var accessProtected = _protector.Protect(tokens.AccessToken);
-        var existing = await _connections.GetByUserIdAsync(userId, cancellationToken);
+        var existing = await _connections.GetByUserProviderSubjectAsync(
+            userId,
+            MailProvider.Outlook,
+            profile.Subject,
+            cancellationToken);
         if (existing is null)
         {
             await _connections.AddAsync(
@@ -191,9 +190,9 @@ public sealed class MailConnectionService
         }
     }
 
-    public async Task DisconnectAsync(Guid userId, CancellationToken cancellationToken)
+    public async Task DisconnectAsync(Guid userId, Guid connectionId, CancellationToken cancellationToken)
     {
-        var connection = await _connections.GetByUserIdAsync(userId, cancellationToken);
+        var connection = await _connections.GetByIdForUserAsync(userId, connectionId, cancellationToken);
         if (connection is null)
         {
             return;
@@ -220,6 +219,27 @@ public sealed class MailConnectionService
         return origin + MailCheckPath.OriginalString;
     }
 
+    public static IReadOnlyList<MailMailboxItemDto> ToMailboxItems(IReadOnlyList<MailConnection> connections)
+    {
+        return connections
+            .Select(connection => new MailMailboxItemDto(
+                connection.Id,
+                ToProviderName(connection.Provider),
+                connection.Email,
+                connection.ConnectedAt))
+            .ToList();
+    }
+
+    public static string ToProviderName(MailProvider provider)
+    {
+        return provider switch
+        {
+            MailProvider.Gmail => "gmail",
+            MailProvider.Outlook => "outlook",
+            _ => "unknown",
+        };
+    }
+
     private async Task SaveGmailConnectionAsync(
         Guid userId,
         GoogleOAuthTokenSet tokens,
@@ -228,7 +248,11 @@ public sealed class MailConnectionService
     {
         var refreshProtected = _protector.Protect(tokens.RefreshToken);
         var accessProtected = _protector.Protect(tokens.AccessToken);
-        var existing = await _connections.GetByUserIdAsync(userId, cancellationToken);
+        var existing = await _connections.GetByUserProviderSubjectAsync(
+            userId,
+            MailProvider.Gmail,
+            profile.Subject,
+            cancellationToken);
         if (existing is null)
         {
             await _connections.AddAsync(
@@ -254,16 +278,6 @@ public sealed class MailConnectionService
         }
 
         await _connections.SaveChangesAsync(cancellationToken);
-    }
-
-    private static string ToProviderName(MailProvider provider)
-    {
-        return provider switch
-        {
-            MailProvider.Gmail => "gmail",
-            MailProvider.Outlook => "outlook",
-            _ => "unknown",
-        };
     }
 
     private string NormalizeReturnUrl(string returnUrl)

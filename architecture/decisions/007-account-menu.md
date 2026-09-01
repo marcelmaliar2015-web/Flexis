@@ -10,4 +10,4 @@ The AppBar shows the Flexis brand, and when signed in a Gmail status control the
 
 ## Consequences
 
-Do not add module links to the AppBar. Account actions go in `UserMenu`. Product modules go in `AuthenticatedLayout`. Gmail connection status is allowed in the AppBar per [014-header-google-status.md](014-header-google-status.md).
+Do not add module links to the AppBar. Account actions go in `UserMenu`. Product modules go in `AuthenticatedLayout`. Gmail connection status is allowed in the AppBar per [014-header-google-status.md](014-header-google-status.md). Client OAuth app readiness is allowed per [022-header-client-integrations.md](022-header-client-integrations.md).

@@ -60,9 +60,11 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
         <Typography variant="body2" color="text.secondary">
 
-          Auto-triage Gmail or Outlook for interview work. Connect one mailbox on Mail Check Settings.
+          Auto-triage Gmail or Outlook for interview work. Connect any number of mailboxes on Mail Check Settings.
 
-          The only cost is your OpenAI API key, which you paste on the same tab.
+          Outlook uses free Microsoft Graph app registration and OAuth, not a paid Graph mail plan.
+
+          Classification uses your OpenAI API key.
 
         </Typography>
 
@@ -86,7 +88,7 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                 primary="Gmail"
 
-                secondary="Uses the same Google Cloud client as Job Application. An admin saves it on product Settings. Each user connects their own Gmail on Mail Check Settings."
+                secondary="Uses the Flexis Google Cloud client. An admin saves it on product Settings. Each user connects Gmail on Mail Check Settings."
 
               />
 
@@ -98,7 +100,7 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                 primary="Outlook"
 
-                secondary="Uses the same Flexis Azure app for everyone. An admin saves Application ID and client secret on product Settings. Each user connects their own mailbox on Mail Check Settings."
+                secondary="Uses a free Azure app registration and Microsoft Graph OAuth. There is no paid Graph mail plan. An admin saves Application ID and client secret on product Settings. Each user connects Outlook on Mail Check Settings."
 
               />
 
@@ -190,9 +192,8 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                   <TableCell align="left">
 
-                    Check now, last-run counts, and why each message was labeled, trashed, or left
-
-                    alone. Auto-check runs about every two minutes while this browser tab is visible.
+                    Check all processes every inbox and junk candidate with live progress. Background
+                    auto-check still runs about every two minutes while Mail Check is open.
 
                   </TableCell>
 
@@ -308,13 +309,13 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
             <ListItem disableGutters>
 
-              <ListItemText primary="Connect Gmail or Connect Outlook. Only one mailbox at a time." />
+              <ListItemText primary="Add Gmail or Add Outlook. Connect as many accounts as you need." />
 
             </ListItem>
 
             <ListItem disableGutters>
 
-              <ListItemText primary="Sign in and accept permissions. Flexis returns to Mail Check with a connected chip." />
+              <ListItemText primary="Sign in and accept permissions. Flexis returns to Mail Check with the mailbox in the list." />
 
             </ListItem>
 

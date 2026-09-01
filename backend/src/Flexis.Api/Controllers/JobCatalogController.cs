@@ -52,6 +52,25 @@ public sealed class JobCatalogController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("profiles/{id:guid}/info")]
+    public Task<ProfileInfoDto> GetProfileInfo(
+        Guid id,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        return catalog.GetProfileInfoAsync(CurrentUserId(), id, cancellationToken);
+    }
+
+    [HttpPut("profiles/{id:guid}/info")]
+    public Task<ProfileInfoDto> UpdateProfileInfo(
+        Guid id,
+        [FromBody] ProfileInfoWriteRequest request,
+        [FromServices] JobCatalogService catalog,
+        CancellationToken cancellationToken)
+    {
+        return catalog.UpdateProfileInfoAsync(CurrentUserId(), id, request, cancellationToken);
+    }
+
     [HttpGet("sources")]
     public Task<IReadOnlyList<JobCatalogItemDto>> ListSources(
         [FromServices] JobCatalogService catalog,

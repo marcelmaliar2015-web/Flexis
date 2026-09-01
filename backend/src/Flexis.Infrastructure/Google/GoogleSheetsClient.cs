@@ -270,14 +270,14 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         var payload = await SendJson<SpreadsheetList>(
             accessToken,
             HttpMethod.Get,
-            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,gridProperties.rowCount)",
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,title,gridProperties.rowCount)",
             null,
             cancellationToken);
 
         var requests = new List<object>();
         foreach (var sheet in payload.Sheets ?? [])
         {
-            if (sheet.Properties is null)
+            if (sheet.Properties is null || JobSheetNames.IsProfileInfoTab(sheet.Properties.Title))
             {
                 continue;
             }
@@ -557,7 +557,9 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         var requests = new List<object>();
         foreach (var sheet in payload.Sheets ?? [])
         {
-            if (sheet.Properties is null)
+            if (sheet.Properties is null
+                || JobSheetNames.IsProfileInfoTab(sheet.Properties.Title)
+                || JobSheetNames.IsArchiveTab(sheet.Properties.Title))
             {
                 continue;
             }
@@ -656,6 +658,167 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             cancellationToken);
     }
 
+    public async Task EnsureProfileInfoSheetAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        var sheets = await ListSheetsAsync(accessToken, spreadsheetId, cancellationToken);
+        if (sheets.Any(sheet => JobSheetNames.IsProfileInfoTab(sheet.Name)))
+        {
+            return;
+        }
+
+        var fields = ProfileInfoFields;
+        var sheetId = Random.Shared.Next(1, int.MaxValue);
+        var rows = new List<object>
+        {
+            new
+            {
+                values = new[]
+                {
+                    HeaderCell(new Column("Field", 220)),
+                    HeaderCell(new Column("Value", 360))
+                }
+            }
+        };
+        foreach (var field in fields)
+        {
+            rows.Add(new
+            {
+                values = new object[]
+                {
+                    new { userEnteredValue = new { stringValue = field } },
+                    new { userEnteredValue = new { stringValue = string.Empty } }
+                }
+            });
+        }
+
+        var requests = new List<object>
+        {
+            new
+            {
+                addSheet = new
+                {
+                    properties = new
+                    {
+                        sheetId,
+                        title = JobSheetNames.ProfileInfoTab,
+                        index = 1,
+                        gridProperties = new
+                        {
+                            frozenRowCount = 1,
+                            rowCount = Math.Max(fields.Length + 5, 20),
+                            columnCount = 2
+                        }
+                    }
+                }
+            },
+            new
+            {
+                updateCells = new
+                {
+                    start = new { sheetId, rowIndex = 0, columnIndex = 0 },
+                    rows,
+                    fields = "userEnteredValue"
+                }
+            }
+        };
+        requests.AddRange(FormatRequests(sheetId, [new Column("Field", 220), new Column("Value", 360)]));
+        requests.Add(new
+        {
+            updateDimensionProperties = new
+            {
+                range = new
+                {
+                    sheetId,
+                    dimension = "ROWS",
+                    startIndex = 0,
+                    endIndex = fields.Length + 5
+                },
+                properties = new { pixelSize = 28 },
+                fields = "pixelSize"
+            }
+        });
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new { requests },
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<string, string>> ReadProfileInfoAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        await EnsureProfileInfoSheetAsync(accessToken, spreadsheetId, cancellationToken);
+        var payload = await SendJson<SheetValues>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(JobSheetNames.ProfileInfoTab, "A2:B20")}",
+            null,
+            cancellationToken);
+
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var field in ProfileInfoFields)
+        {
+            map[field] = string.Empty;
+        }
+
+        foreach (var row in payload.Values ?? [])
+        {
+            var label = Cell(row, 0).Trim();
+            if (label.Length == 0 || !map.ContainsKey(label))
+            {
+                continue;
+            }
+
+            map[label] = Cell(row, 1);
+        }
+
+        return map;
+    }
+
+    public async Task WriteProfileInfoAsync(
+        string accessToken,
+        string spreadsheetId,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken cancellationToken)
+    {
+        await EnsureProfileInfoSheetAsync(accessToken, spreadsheetId, cancellationToken);
+        var rows = ProfileInfoFields
+            .Select(field => new[]
+            {
+                field,
+                values.TryGetValue(field, out var value) ? value : string.Empty
+            })
+            .ToArray();
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Put,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(JobSheetNames.ProfileInfoTab, "A2:B11")}?valueInputOption=USER_ENTERED",
+            new { values = rows },
+            cancellationToken);
+    }
+
+    private static readonly string[] ProfileInfoFields =
+    [
+        "Name",
+        "Address",
+        "Mail",
+        "Password",
+        "LinkedIn",
+        "Phone",
+        "Sex",
+        "Target Rate (Monthly)",
+        "Race",
+        "Veteran Status"
+    ];
+
     private static Column[] ColumnsFor(JobWorkbookKind kind)
     {
         return kind == JobWorkbookKind.Profile
@@ -680,7 +843,8 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
 
     private static int[] InvitedEditColumnIndexes(JobWorkbookKind kind, string? sheetTitle)
     {
-        if (kind == JobWorkbookKind.Profile && JobSheetNames.IsArchiveTab(sheetTitle))
+        if (kind == JobWorkbookKind.Profile
+            && (JobSheetNames.IsArchiveTab(sheetTitle) || JobSheetNames.IsProfileInfoTab(sheetTitle)))
         {
             return [];
         }

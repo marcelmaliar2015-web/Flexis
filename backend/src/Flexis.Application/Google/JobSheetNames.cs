@@ -4,6 +4,13 @@ namespace Flexis.Application.Google;
 
 public static class JobSheetNames
 {
+    public const string ProfileInfoTab = "Profile";
+
+    public static bool IsProfileInfoTab(string? name)
+    {
+        return string.Equals(name, ProfileInfoTab, StringComparison.Ordinal);
+    }
+
     public static bool IsArchiveTab(string? name)
     {
         if (string.IsNullOrWhiteSpace(name))

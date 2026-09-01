@@ -22,6 +22,29 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Flexis.Domain.Google.GoogleClientCredentials", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ClientSecretProtected")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("google_client_credentials", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.Google.GoogleConnection", b =>
                 {
                     b.Property<Guid>("Id")
@@ -84,50 +107,43 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("google_connections", (string)null);
                 });
 
-            modelBuilder.Entity("Flexis.Domain.Google.GoogleClientCredentials", b =>
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobApplicationLog", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ClientId")
+                    b.Property<string>("Action")
                         .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
-                    b.Property<string>("ClientSecretProtected")
+                    b.Property<string>("Category")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<string>("Detail")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("Id");
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(240)
+                        .HasColumnType("character varying(240)");
 
-                    b.ToTable("google_client_credentials", (string)null);
-                });
-
-            modelBuilder.Entity("Flexis.Domain.Microsoft.MicrosoftClientCredentials", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ClientId")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("ClientSecretProtected")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.HasKey("Id");
 
-                    b.ToTable("microsoft_client_credentials", (string)null);
+                    b.HasIndex("UserId", "OccurredAt");
+
+                    b.ToTable("job_application_logs", (string)null);
                 });
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobCatalogItem", b =>
@@ -168,6 +184,61 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .IsUnique();
 
                     b.ToTable("job_catalog_items", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("ApplyRate")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)");
+
+                    b.Property<decimal>("BonusRate")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("job_financial_settings", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineBannedCompany", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MatchKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("PipelineEntryId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PipelineEntryId", "MatchKey")
+                        .IsUnique();
+
+                    b.ToTable("job_pipeline_banned_companies", (string)null);
                 });
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineEntry", b =>
@@ -212,49 +283,86 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("job_pipeline_entries", (string)null);
                 });
 
-            modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineBannedCompany", b =>
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckProcessedMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("CompanyName")
+                    b.Property<string>("Decision")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<Guid>("MailConnectionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MessageId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("MatchKey")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<Guid>("PipelineEntryId")
+                    b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PipelineEntryId", "MatchKey")
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("MailConnectionId", "MessageId")
                         .IsUnique();
 
-                    b.ToTable("job_pipeline_banned_companies", (string)null);
+                    b.ToTable("mail_check_processed_messages", (string)null);
                 });
 
-            modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSettings", b =>
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckSettings", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("ApplyRate")
-                        .HasPrecision(12, 4)
-                        .HasColumnType("numeric(12,4)");
+                    b.Property<string>("ApiKeyProtected")
+                        .HasColumnType("text");
 
-                    b.Property<decimal>("BonusRate")
-                        .HasPrecision(12, 4)
-                        .HasColumnType("numeric(12,4)");
+                    b.Property<string>("LastError")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("LastErrors")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("LastHasMore")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LastLabeled")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LastProcessed")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("LastRunAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LastSkipped")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LastTrashed")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("TotalLabeled")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalTrashed")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -264,46 +372,7 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("job_financial_settings", (string)null);
-                });
-
-            modelBuilder.Entity("Flexis.Domain.JobApplication.JobApplicationLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<string>("Detail")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<DateTimeOffset>("OccurredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Summary")
-                        .IsRequired()
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "OccurredAt");
-
-                    b.ToTable("job_application_logs", (string)null);
+                    b.ToTable("mail_check_settings", (string)null);
                 });
 
             modelBuilder.Entity("Flexis.Domain.MailCheck.MailConnection", b =>
@@ -312,12 +381,12 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset>("AccessTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("AccessTokenProtected")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("AccessTokenExpiresAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("ConnectedAt")
                         .HasColumnType("timestamp with time zone");
@@ -351,97 +420,35 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Provider", "ExternalSubject")
                         .IsUnique();
 
                     b.ToTable("mail_connections", (string)null);
                 });
 
-            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckSettings", b =>
+            modelBuilder.Entity("Flexis.Domain.Microsoft.MicrosoftClientCredentials", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ApiKeyProtected")
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ClientSecretProtected")
+                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTimeOffset?>("LastRunAt")
+                    b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastError")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("LastLabeled")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("LastTrashed")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("LastSkipped")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("LastProcessed")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("LastErrors")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("LastHasMore")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Model")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<int>("TotalLabeled")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TotalTrashed")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("mail_check_settings", (string)null);
-                });
-
-            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckProcessedMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Decision")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<string>("GmailMessageId")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<DateTimeOffset>("ProcessedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "GmailMessageId")
-                        .IsUnique();
-
-                    b.ToTable("mail_check_processed_messages", (string)null);
+                    b.ToTable("microsoft_client_credentials", (string)null);
                 });
 
             modelBuilder.Entity("Flexis.Domain.Users.User", b =>
@@ -493,6 +500,15 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobApplicationLog", b =>
+                {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobCatalogItem", b =>
                 {
                     b.HasOne("Flexis.Domain.Users.User", null)
@@ -502,7 +518,7 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineEntry", b =>
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSettings", b =>
                 {
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()
@@ -520,7 +536,7 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSettings", b =>
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineEntry", b =>
                 {
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()
@@ -529,17 +545,14 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Flexis.Domain.JobApplication.JobApplicationLog", b =>
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckProcessedMessage", b =>
                 {
-                    b.HasOne("Flexis.Domain.Users.User", null)
+                    b.HasOne("Flexis.Domain.MailCheck.MailConnection", null)
                         .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("MailConnectionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("Flexis.Domain.MailCheck.MailConnection", b =>
-                {
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -556,7 +569,7 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckProcessedMessage", b =>
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailConnection", b =>
                 {
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()

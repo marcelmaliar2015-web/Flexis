@@ -14,18 +14,18 @@ internal sealed class MailCheckProcessedMessageRepository : IMailCheckProcessedM
     }
 
     public async Task<IReadOnlySet<string>> FindExistingAsync(
-        Guid userId,
-        IReadOnlyCollection<string> gmailMessageIds,
+        Guid mailConnectionId,
+        IReadOnlyCollection<string> messageIds,
         CancellationToken cancellationToken)
     {
-        if (gmailMessageIds.Count == 0)
+        if (messageIds.Count == 0)
         {
             return new HashSet<string>(StringComparer.Ordinal);
         }
 
         var found = await _db.MailCheckProcessedMessages
-            .Where(item => item.UserId == userId && gmailMessageIds.Contains(item.GmailMessageId))
-            .Select(item => item.GmailMessageId)
+            .Where(item => item.MailConnectionId == mailConnectionId && messageIds.Contains(item.MessageId))
+            .Select(item => item.MessageId)
             .ToListAsync(cancellationToken);
         return found.ToHashSet(StringComparer.Ordinal);
     }

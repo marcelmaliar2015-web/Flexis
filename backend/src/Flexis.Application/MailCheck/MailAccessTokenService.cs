@@ -1,6 +1,5 @@
 using Flexis.Application.Common;
 using Flexis.Application.Google;
-using Flexis.Application.MailCheck;
 using Flexis.Application.Microsoft;
 using Flexis.Domain.MailCheck;
 
@@ -29,9 +28,10 @@ public sealed class MailAccessTokenService
 
     public async Task<(MailProvider Provider, string AccessToken)> GetAccessAsync(
         Guid userId,
+        Guid connectionId,
         CancellationToken cancellationToken)
     {
-        var connection = await _connections.GetByUserIdAsync(userId, cancellationToken)
+        var connection = await _connections.GetByIdForUserAsync(userId, connectionId, cancellationToken)
             ?? throw new ValidationFailedException("Connect a mailbox on Mail Check Settings first.");
 
         if (connection.AccessTokenExpiresAt > DateTimeOffset.UtcNow.Add(RefreshSkew))

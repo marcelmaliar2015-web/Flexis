@@ -17,7 +17,9 @@ internal sealed class MailConnectionConfiguration : IEntityTypeConfiguration<Mai
         builder.Property(connection => connection.RefreshTokenProtected).IsRequired();
         builder.Property(connection => connection.AccessTokenProtected).IsRequired();
         builder.Property(connection => connection.GrantedScopes).HasMaxLength(1000).IsRequired();
-        builder.HasIndex(connection => connection.UserId).IsUnique();
+        builder.HasIndex(connection => connection.UserId);
+        builder.HasIndex(connection => new { connection.UserId, connection.Provider, connection.ExternalSubject })
+            .IsUnique();
         builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(connection => connection.UserId)

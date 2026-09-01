@@ -8,8 +8,8 @@ namespace Flexis.Application.MailCheck;
 
 public sealed class MailCheckService
 {
-    private const int BatchSize = 20;
-    private const int MaxListPages = 3;
+    private const int BatchSize = 30;
+    private const int MaxListPages = 20;
     private static readonly TimeSpan AutoCooldown = TimeSpan.FromSeconds(60);
     private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> RunLocks = new();
 
@@ -87,10 +87,10 @@ public sealed class MailCheckService
         await _settings.SaveChangesAsync(cancellationToken);
         if (settings.HasApiKey)
         {
-            var connection = await _mailConnections.GetByUserIdAsync(userId, cancellationToken);
-            if (connection is not null)
+            var connections = await _mailConnections.ListByUserIdAsync(userId, cancellationToken);
+            foreach (var connection in connections)
             {
-                var access = await _mailTokens.GetAccessAsync(userId, cancellationToken);
+                var access = await _mailTokens.GetAccessAsync(userId, connection.Id, cancellationToken);
                 await _mailboxes.Resolve(access.Provider).EnsureLabelsAsync(access.AccessToken, cancellationToken);
             }
         }
@@ -145,14 +145,17 @@ public sealed class MailCheckService
         string? labelSlug,
         CancellationToken cancellationToken)
     {
-        var connection = await RequireConnectionAsync(userId, cancellationToken);
-        var access = await _mailTokens.GetAccessAsync(userId, cancellationToken);
-        var mailbox = _mailboxes.Resolve(access.Provider);
-        var labels = await mailbox.EnsureLabelsAsync(access.AccessToken, cancellationToken);
+        var connections = await RequireConnectionsAsync(userId, cancellationToken);
         var filter = MailCheckLabels.KeepFromSlug(labelSlug);
-        var listed = await mailbox.ListLabeledAsync(access.AccessToken, labels, filter, cancellationToken);
-        var items = listed
-            .Select(item => new MailCheckInboxItemDto(
+        var items = new List<MailCheckInboxItemDto>();
+        foreach (var connection in connections)
+        {
+            var access = await _mailTokens.GetAccessAsync(userId, connection.Id, cancellationToken);
+            var mailbox = _mailboxes.Resolve(access.Provider);
+            var labels = await mailbox.EnsureLabelsAsync(access.AccessToken, cancellationToken);
+            var listed = await mailbox.ListLabeledAsync(access.AccessToken, labels, filter, cancellationToken);
+            var providerName = MailConnectionService.ToProviderName(connection.Provider);
+            items.AddRange(listed.Select(item => new MailCheckInboxItemDto(
                 item.Id,
                 item.ThreadId,
                 item.Subject,
@@ -161,9 +164,16 @@ public sealed class MailCheckService
                 item.Snippet,
                 MailCheckLabels.NameFor(item.Decision),
                 MailCheckLabels.SlugFor(item.Decision),
-                item.Starred))
-            .ToList();
-        return new MailCheckInboxDto(items);
+                item.Starred,
+                connection.Id,
+                connection.Email,
+                providerName)));
+        }
+
+        return new MailCheckInboxDto(
+            items
+                .OrderByDescending(item => item.Date)
+                .ToList());
     }
 
     private async Task<MailCheckRunDto> RunLockedAsync(
@@ -176,12 +186,8 @@ public sealed class MailCheckService
             throw new ValidationFailedException("Save an OpenAI API key on Mail Check Settings.");
         }
 
-        await RequireConnectionAsync(userId, cancellationToken);
-        var access = await _mailTokens.GetAccessAsync(userId, cancellationToken);
-        var mailbox = _mailboxes.Resolve(access.Provider);
+        var connections = await RequireConnectionsAsync(userId, cancellationToken);
         var apiKey = _protector.Unprotect(settings.ApiKeyProtected!);
-        var labels = await mailbox.EnsureLabelsAsync(access.AccessToken, cancellationToken);
-        var ourLabelIds = labels.Values.ToHashSet(StringComparer.Ordinal);
         var items = new List<MailCheckRunItemDto>();
         var labeled = 0;
         var trashed = 0;
@@ -189,91 +195,122 @@ public sealed class MailCheckService
         var errors = 0;
         var processed = 0;
         var hasMore = false;
-        string? pageToken = null;
 
         try
         {
-            for (var page = 0; page < MaxListPages && processed < BatchSize; page++)
+            for (var index = 0; index < connections.Count; index++)
             {
-                var batch = await mailbox.ListCandidatesAsync(access.AccessToken, pageToken, cancellationToken);
-                pageToken = batch.NextPageToken;
-                if (batch.Messages.Count == 0)
+                if (processed >= BatchSize)
                 {
+                    hasMore = true;
                     break;
                 }
 
-                var existing = await _processed.FindExistingAsync(
-                    userId,
-                    batch.Messages.Select(item => item.Id).ToList(),
-                    cancellationToken);
-                var fresh = batch.Messages.Where(item => !existing.Contains(item.Id)).ToList();
-                hasMore = pageToken is not null || fresh.Count > BatchSize - processed;
-                foreach (var candidate in fresh)
+                var connection = connections[index];
+                var access = await _mailTokens.GetAccessAsync(userId, connection.Id, cancellationToken);
+                var mailbox = _mailboxes.Resolve(access.Provider);
+                var labels = await mailbox.EnsureLabelsAsync(access.AccessToken, cancellationToken);
+                var ourLabelIds = labels.Values.ToHashSet(StringComparer.Ordinal);
+                var providerName = MailConnectionService.ToProviderName(connection.Provider);
+                string? pageToken = null;
+                var mailboxHasMore = false;
+
+                for (var page = 0; page < MaxListPages && processed < BatchSize; page++)
                 {
-                    if (processed >= BatchSize)
+                    var batch = await mailbox.ListCandidatesAsync(access.AccessToken, pageToken, cancellationToken);
+                    pageToken = batch.NextPageToken;
+                    if (batch.Messages.Count == 0)
                     {
-                        hasMore = true;
                         break;
                     }
 
-                    try
+                    var existing = await _processed.FindExistingAsync(
+                        connection.Id,
+                        batch.Messages.Select(item => item.Id).ToList(),
+                        cancellationToken);
+                    var fresh = batch.Messages.Where(item => !existing.Contains(item.Id)).ToList();
+                    mailboxHasMore = pageToken is not null || fresh.Count > BatchSize - processed;
+                    foreach (var candidate in fresh)
                     {
-                        var message = await mailbox.GetMessageAsync(access.AccessToken, candidate.Id, cancellationToken);
-                        if (message.LabelIds.Any(ourLabelIds.Contains))
+                        if (processed >= BatchSize)
                         {
-                            await _processed.AddAsync(
-                                MailCheckProcessedMessage.Create(userId, message.Id, MailCheckDecision.Skip),
+                            mailboxHasMore = true;
+                            break;
+                        }
+
+                        try
+                        {
+                            var message = await mailbox.GetMessageAsync(access.AccessToken, candidate.Id, cancellationToken);
+                            if (message.LabelIds.Any(ourLabelIds.Contains))
+                            {
+                                await _processed.AddAsync(
+                                    MailCheckProcessedMessage.Create(
+                                        userId,
+                                        connection.Id,
+                                        message.Id,
+                                        MailCheckDecision.Skip),
+                                    cancellationToken);
+                                skipped++;
+                                processed++;
+                                continue;
+                            }
+
+                            var classification = await _openAi.ClassifyAsync(
+                                apiKey,
+                                settings.Model,
+                                FormatMail(message),
                                 cancellationToken);
-                            skipped++;
+                            await ApplyAsync(
+                                userId,
+                                connection,
+                                providerName,
+                                mailbox,
+                                access.AccessToken,
+                                message,
+                                labels,
+                                classification,
+                                items,
+                                cancellationToken);
+                            if (classification.Decision == MailCheckDecision.Discard)
+                            {
+                                trashed++;
+                            }
+                            else if (classification.Decision == MailCheckDecision.Skip)
+                            {
+                                skipped++;
+                            }
+                            else
+                            {
+                                labeled++;
+                            }
+
                             processed++;
-                            continue;
                         }
-
-                        var classification = await _openAi.ClassifyAsync(
-                            apiKey,
-                            settings.Model,
-                            FormatMail(message),
-                            cancellationToken);
-                        await ApplyAsync(
-                            userId,
-                            mailbox,
-                            access.AccessToken,
-                            message,
-                            labels,
-                            classification,
-                            items,
-                            cancellationToken);
-                        if (classification.Decision == MailCheckDecision.Discard)
+                        catch (Exception exception) when (exception is not OperationCanceledException)
                         {
-                            trashed++;
+                            errors++;
+                            items.Add(new MailCheckRunItemDto(
+                                candidate.Id,
+                                string.Empty,
+                                string.Empty,
+                                "error",
+                                exception.Message,
+                                string.Empty,
+                                connection.Id,
+                                connection.Email,
+                                providerName));
                         }
-                        else if (classification.Decision == MailCheckDecision.Skip)
-                        {
-                            skipped++;
-                        }
-                        else
-                        {
-                            labeled++;
-                        }
-
-                        processed++;
                     }
-                    catch (Exception exception) when (exception is not OperationCanceledException)
+
+                    if (processed >= BatchSize || pageToken is null)
                     {
-                        errors++;
-                        items.Add(new MailCheckRunItemDto(
-                            candidate.Id,
-                            string.Empty,
-                            string.Empty,
-                            "error",
-                            exception.Message,
-                            string.Empty));
+                        break;
                     }
                 }
 
-                if (processed >= BatchSize || pageToken is null)
+                if (mailboxHasMore || (processed >= BatchSize && index < connections.Count - 1))
                 {
-                    break;
+                    hasMore = true;
                 }
             }
 
@@ -294,6 +331,8 @@ public sealed class MailCheckService
 
     private async Task ApplyAsync(
         Guid userId,
+        MailConnection connection,
+        string providerName,
         IMailMailbox mailbox,
         string token,
         MailMessageContent message,
@@ -317,7 +356,7 @@ public sealed class MailCheckService
         }
 
         await _processed.AddAsync(
-            MailCheckProcessedMessage.Create(userId, message.Id, classification.Decision),
+            MailCheckProcessedMessage.Create(userId, connection.Id, message.Id, classification.Decision),
             cancellationToken);
         items.Add(new MailCheckRunItemDto(
             message.Id,
@@ -325,13 +364,23 @@ public sealed class MailCheckService
             message.From,
             MailCheckLabels.SlugFor(classification.Decision),
             classification.Reason,
-            MailCheckLabels.NameFor(classification.Decision)));
+            MailCheckLabels.NameFor(classification.Decision),
+            connection.Id,
+            connection.Email,
+            providerName));
     }
 
-    private async Task<MailConnection> RequireConnectionAsync(Guid userId, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<MailConnection>> RequireConnectionsAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
     {
-        return await _mailConnections.GetByUserIdAsync(userId, cancellationToken)
-            ?? throw new ValidationFailedException("Connect a mailbox on Mail Check Settings first.");
+        var connections = await _mailConnections.ListByUserIdAsync(userId, cancellationToken);
+        if (connections.Count == 0)
+        {
+            throw new ValidationFailedException("Connect a mailbox on Mail Check Settings first.");
+        }
+
+        return connections;
     }
 
     private async Task<MailCheckSettings> GetOrCreateSettingsAsync(Guid userId, CancellationToken cancellationToken)
@@ -364,7 +413,7 @@ public sealed class MailCheckService
         Guid userId,
         CancellationToken cancellationToken)
     {
-        var connection = await _mailConnections.GetByUserIdAsync(userId, cancellationToken);
+        var connections = await _mailConnections.ListByUserIdAsync(userId, cancellationToken);
         var outlookAvailable = await _microsoftOAuth.IsConfiguredAsync(cancellationToken);
         return new MailCheckSettingsDto(
             settings.HasApiKey,
@@ -379,9 +428,7 @@ public sealed class MailCheckService
             settings.LastHasMore,
             settings.TotalLabeled,
             settings.TotalTrashed,
-            connection is not null,
-            connection?.Email,
-            connection is null ? null : connection.Provider == MailProvider.Gmail ? "gmail" : "outlook",
+            MailConnectionService.ToMailboxItems(connections),
             outlookAvailable);
     }
 

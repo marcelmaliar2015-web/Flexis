@@ -49,12 +49,13 @@ public sealed class MailCheckController : ControllerBase
         return Redirect(redirectUrl);
     }
 
-    [HttpDelete("mailbox")]
+    [HttpDelete("mailbox/{id:guid}")]
     public async Task<IActionResult> DisconnectMailbox(
+        Guid id,
         [FromServices] MailConnectionService mailbox,
         CancellationToken cancellationToken)
     {
-        await mailbox.DisconnectAsync(CurrentUserId(), cancellationToken);
+        await mailbox.DisconnectAsync(CurrentUserId(), id, cancellationToken);
         return NoContent();
     }
 

@@ -5,8 +5,8 @@ namespace Flexis.Application.MailCheck;
 public interface IMailCheckProcessedMessageRepository
 {
     Task<IReadOnlySet<string>> FindExistingAsync(
-        Guid userId,
-        IReadOnlyCollection<string> gmailMessageIds,
+        Guid mailConnectionId,
+        IReadOnlyCollection<string> messageIds,
         CancellationToken cancellationToken);
 
     Task AddAsync(MailCheckProcessedMessage message, CancellationToken cancellationToken);

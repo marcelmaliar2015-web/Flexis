@@ -1,11 +1,14 @@
 namespace Flexis.Application.MailCheck;
 
+public sealed record MailMailboxItemDto(
+    Guid Id,
+    string Provider,
+    string Email,
+    DateTimeOffset ConnectedAt);
+
 public sealed record MailMailboxStatusDto(
-    bool Connected,
-    string? Provider,
-    string? Email,
-    DateTimeOffset? ConnectedAt,
-    bool OutlookAvailable);
+    bool OutlookAvailable,
+    IReadOnlyList<MailMailboxItemDto> Mailboxes);
 
 public sealed record MailConnectStartRequest(string ReturnUrl);
 

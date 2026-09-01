@@ -114,4 +114,21 @@ public interface IGoogleSheetsWorkspace
         string sheetName,
         IReadOnlyList<JobListingRow> rows,
         CancellationToken cancellationToken);
+
+    Task EnsureProfileInfoSheetAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyDictionary<string, string>> ReadProfileInfoAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken);
+
+    Task WriteProfileInfoAsync(
+        string accessToken,
+        string spreadsheetId,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken cancellationToken);
 }
+

@@ -13,10 +13,36 @@ internal sealed class MailConnectionRepository : IMailConnectionRepository
         _db = db;
     }
 
-    public Task<MailConnection?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<MailConnection>> ListByUserIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        return await _db.MailConnections
+            .Where(connection => connection.UserId == userId)
+            .OrderBy(connection => connection.ConnectedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<MailConnection?> GetByIdForUserAsync(
+        Guid userId,
+        Guid connectionId,
+        CancellationToken cancellationToken)
     {
         return _db.MailConnections.FirstOrDefaultAsync(
-            connection => connection.UserId == userId,
+            connection => connection.UserId == userId && connection.Id == connectionId,
+            cancellationToken);
+    }
+
+    public Task<MailConnection?> GetByUserProviderSubjectAsync(
+        Guid userId,
+        MailProvider provider,
+        string externalSubject,
+        CancellationToken cancellationToken)
+    {
+        return _db.MailConnections.FirstOrDefaultAsync(
+            connection => connection.UserId == userId
+                && connection.Provider == provider
+                && connection.ExternalSubject == externalSubject,
             cancellationToken);
     }
 
