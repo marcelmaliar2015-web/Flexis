@@ -18,6 +18,11 @@ internal sealed class MailCheckSettingsRepository : IMailCheckSettingsRepository
         return _db.MailCheckSettings.FirstOrDefaultAsync(item => item.UserId == userId, cancellationToken);
     }
 
+    public Task ReloadAsync(MailCheckSettings settings, CancellationToken cancellationToken)
+    {
+        return _db.Entry(settings).ReloadAsync(cancellationToken);
+    }
+
     public async Task AddAsync(MailCheckSettings settings, CancellationToken cancellationToken)
     {
         await _db.MailCheckSettings.AddAsync(settings, cancellationToken);

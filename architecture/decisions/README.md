@@ -44,3 +44,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [022](022-header-client-integrations.md) | Header client integration status |
 | [023](023-multi-mailbox-mail-check.md) | Multi-mailbox Mail Check |
 | [024](024-resume-generation-job-master.md) | Resume generation job-master sheet |
+| [025](025-ngrok-public-url.md) | Ngrok public URL |

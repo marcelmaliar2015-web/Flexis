@@ -29,7 +29,10 @@ backend/
   src/Flexis.Domain
   src/Flexis.Infrastructure
 frontend/
+tools/ngrok/
 docker-compose.yml
+run-public.bat
+stop-public.bat
 ```
 
 ## Local run
@@ -39,6 +42,7 @@ Requires .NET 10 SDK and Node.js with PostgreSQL and MongoDB available locally.
 - Frontend: [http://127.0.0.1:5173/](http://127.0.0.1:5173/)
 - API health: [http://localhost:5080/api/health](http://localhost:5080/api/health)
 - Sign in: `admin@flexis.local` / `FlexisAdmin1!`
+- Public HTTPS URL (optional): start API and frontend, then `run-public.bat` — see [backend/public-url-ngrok.md](backend/public-url-ngrok.md)
 
 ## Related
 

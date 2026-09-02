@@ -42,10 +42,11 @@ import {
 
 function buildLabelActions(
   source: Record<MailCheckLabelSlug, MailCheckMailboxAction> | undefined,
+  defaults?: Record<MailCheckLabelSlug, MailCheckMailboxAction>,
 ): Record<MailCheckLabelSlug, MailCheckMailboxAction> {
   const next = {} as Record<MailCheckLabelSlug, MailCheckMailboxAction>;
   for (const item of mailCheckLabels) {
-    next[item.slug] = source?.[item.slug] ?? "keep";
+    next[item.slug] = source?.[item.slug] ?? defaults?.[item.slug] ?? "keep";
   }
   return next;
 }
@@ -80,7 +81,9 @@ export function MailCheckSettingsTab() {
     if (settingsQuery.data) {
       setModel(settingsQuery.data.model);
       setClassifierPrompt(settingsQuery.data.classifierPrompt);
-      setLabelActions(buildLabelActions(settingsQuery.data.labelActions));
+      setLabelActions(
+        buildLabelActions(settingsQuery.data.labelActions, settingsQuery.data.defaultLabelActions),
+      );
       setNeedActionLabels(buildNeedActionLabels(settingsQuery.data.needActionLabels));
     }
   }, [settingsQuery.data]);
@@ -105,7 +108,7 @@ export function MailCheckSettingsTab() {
       setApiKey("");
       setModel(result.model);
       setClassifierPrompt(result.classifierPrompt);
-      setLabelActions(buildLabelActions(result.labelActions));
+      setLabelActions(buildLabelActions(result.labelActions, result.defaultLabelActions));
       setNeedActionLabels(buildNeedActionLabels(result.needActionLabels));
       setFormError(null);
       setSaved(true);

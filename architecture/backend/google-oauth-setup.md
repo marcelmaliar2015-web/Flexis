@@ -8,6 +8,8 @@ Flexis redirect (must match the client exactly, no trailing slash):
 
 `http://localhost:5080/api/google/connections/callback`
 
+For a temporary public URL via ngrok, also add the printed `{public}/api/google/connections/callback` from [public-url-ngrok.md](public-url-ngrok.md).
+
 After setup, sign in at `http://127.0.0.1:5173/sign-in` (`admin@flexis.local` / `FlexisAdmin1!`) and open `http://127.0.0.1:5173/job-application`.
 
 ## 1. Create a project

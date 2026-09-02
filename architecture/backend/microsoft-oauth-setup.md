@@ -8,6 +8,8 @@ Flexis redirect (exact, step 4 only):
 
 `http://localhost:5080/api/mail-check/mailbox/outlook/callback`
 
+For a temporary public URL via ngrok, also add the printed `{public}/api/mail-check/mailbox/outlook/callback` from [public-url-ngrok.md](public-url-ngrok.md).
+
 ## 1. Open a directory in Azure Portal
 
 Goal: App registrations must run inside a directory. This is free Microsoft account / app setup, **not** a paid Microsoft Graph plan. Outlook mail Graph calls are not metered mail APIs.

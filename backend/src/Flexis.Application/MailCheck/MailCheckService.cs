@@ -433,6 +433,7 @@ public sealed class MailCheckService
                         MailCheckLabelCatalog.All,
                         cancellationToken));
                 var ourLabelIds = labels.Values.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                settings = await GetFreshSettingsAsync(userId, cancellationToken);
                 var labelRules = MailCheckLabelActionRules.Resolve(settings);
                 Report("apply", $"Enforcing trash actions on labeled mail in {connection.Email}", connection.Email);
                 var enforced = await timing.TrackApplyAsync(() => EnforceTrashLabelsAsync(
@@ -460,7 +461,7 @@ public sealed class MailCheckService
 
                 while (processed < BatchSize && handledSkips < MailCheckAutoCheck.MaxAlreadyHandledSkipsPerRun)
                 {
-                    settings = await GetOrCreateSettingsAsync(userId, cancellationToken);
+                    settings = await GetFreshSettingsAsync(userId, cancellationToken);
                     var apiKey = _protector.Unprotect(settings.ApiKeyProtected!);
                     var classifierPrompt = ResolveClassifierPrompt(settings);
                     labelRules = MailCheckLabelActionRules.Resolve(settings);
@@ -786,6 +787,13 @@ public sealed class MailCheckService
         return created;
     }
 
+    private async Task<MailCheckSettings> GetFreshSettingsAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var settings = await GetOrCreateSettingsAsync(userId, cancellationToken);
+        await _settings.ReloadAsync(settings, cancellationToken);
+        return settings;
+    }
+
     private async Task<string> RequireApiKeyAsync(Guid userId, CancellationToken cancellationToken)
     {
         var settings = await GetOrCreateSettingsAsync(userId, cancellationToken);
@@ -982,7 +990,9 @@ public sealed class MailCheckService
         }
 
         var existingLabel = ResolveLabelOnMessage(message.LabelIds, labels);
-        var action = existingLabel is MailCheckLabel matchedLabel ? labelRules[matchedLabel] : null;
+        MailCheckMailboxAction? action = existingLabel is MailCheckLabel matchedLabel
+            ? labelRules[matchedLabel]
+            : null;
         var trashedNow = false;
         if (existingLabel is MailCheckLabel labelMatch
             && action == MailCheckMailboxAction.Trash
