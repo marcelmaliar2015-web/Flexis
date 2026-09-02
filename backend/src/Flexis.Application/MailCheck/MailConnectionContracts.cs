@@ -5,6 +5,7 @@ public sealed record MailMailboxItemDto(
     string Provider,
     string Email,
     DateTimeOffset ConnectedAt,
+    DateTimeOffset? CheckedNewestAt,
     DateTimeOffset? CheckedUntilAt,
     DateTimeOffset? LastScanAt,
     bool ScanCaughtUp);

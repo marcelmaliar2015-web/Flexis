@@ -9,5 +9,6 @@ public enum MailCheckLabel
     Assessment,
     Availability,
     Success,
-    Other
+    Other,
+    LessImportant
 }

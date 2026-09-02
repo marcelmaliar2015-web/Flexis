@@ -11,6 +11,8 @@ import { JobApplicationLogsTab } from "@/features/jobApplication/JobApplicationL
 import { JobApplicationOperationsTab } from "@/features/jobApplication/JobApplicationOperationsTab";
 import { JobApplicationResumeTab } from "@/features/jobApplication/JobApplicationResumeTab";
 import { JobApplicationSettingsTab } from "@/features/jobApplication/JobApplicationSettingsTab";
+import { PipelineBulkProgress } from "@/features/jobApplication/PipelineBulkProgress";
+import { usePipelineBulkRun } from "@/features/jobApplication/usePipelineBulkRun";
 
 const AccentRule = styled("span")(({ theme }) => ({
   display: "block",
@@ -30,6 +32,7 @@ export function JobApplicationPage() {
     logs: false,
     settings: false,
   });
+  const bulkRun = usePipelineBulkRun();
 
   return (
     <Box sx={{ py: { xs: 4, md: 6 } }}>
@@ -44,6 +47,9 @@ export function JobApplicationPage() {
             </Typography>
             <AccentRule />
           </Stack>
+
+          {bulkRun.session ? <PipelineBulkProgress session={bulkRun.session} /> : null}
+
           <Tabs
             value={tab}
             onChange={(_event, value: JobApplicationTab) => {
@@ -60,7 +66,7 @@ export function JobApplicationPage() {
             <Tab label="Settings" value="settings" />
           </Tabs>
           <Box role="tabpanel" hidden={tab !== "operations"}>
-            <JobApplicationOperationsTab />
+            <JobApplicationOperationsTab bulkRun={bulkRun} />
           </Box>
           {tab === "financial" || visited.financial ? (
             <Box role="tabpanel" hidden={tab !== "financial"}>

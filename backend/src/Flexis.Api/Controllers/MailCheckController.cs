@@ -96,6 +96,12 @@ public sealed class MailCheckController : ControllerBase
             cancellationToken);
     }
 
+    [HttpGet("run/progress")]
+    public MailCheckRunProgressDto GetRunProgress([FromServices] MailCheckService mailCheck)
+    {
+        return mailCheck.GetRunProgress(CurrentUserId());
+    }
+
     [HttpGet("inbox")]
     public Task<MailCheckInboxDto> GetInbox(
         [FromQuery] string? label,

@@ -22,6 +22,8 @@ public static class DependencyInjection
         services.AddScoped<JobApplicationLogService>();
         services.AddScoped<JobApplicationActivity>();
         services.AddScoped<GoogleDriveLayoutService>();
+        services.AddSingleton<MailCheckRunProgressStore>();
+        services.AddSingleton<MailCheckRunCoordinator>();
         services.AddScoped<MailCheckService>();
         services.AddScoped<MailConnectionService>();
         services.AddScoped<MailAccessTokenService>();

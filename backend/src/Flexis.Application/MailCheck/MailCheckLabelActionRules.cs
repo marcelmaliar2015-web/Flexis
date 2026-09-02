@@ -21,7 +21,8 @@ public static class MailCheckLabelActionRules
             [MailCheckLabel.Assessment] = MailCheckMailboxAction.Pin,
             [MailCheckLabel.Availability] = MailCheckMailboxAction.Pin,
             [MailCheckLabel.Success] = MailCheckMailboxAction.Pin,
-            [MailCheckLabel.Other] = MailCheckMailboxAction.Keep
+            [MailCheckLabel.Other] = MailCheckMailboxAction.Keep,
+            [MailCheckLabel.LessImportant] = MailCheckMailboxAction.Trash
         };
 
     public static string DefaultJson => Serialize(DefaultActions);
@@ -85,6 +86,14 @@ public static class MailCheckLabelActionRules
     {
         return MailCheckLabelCatalog.All
             .Where(label => rules[label] == MailCheckMailboxAction.Pin)
+            .ToList();
+    }
+
+    public static IReadOnlyList<MailCheckLabel> TrashLabels(
+        IReadOnlyDictionary<MailCheckLabel, MailCheckMailboxAction> rules)
+    {
+        return MailCheckLabelCatalog.All
+            .Where(label => rules[label] == MailCheckMailboxAction.Trash)
             .ToList();
     }
 

@@ -57,6 +57,7 @@ public sealed class MailConnectionService
                     ToProviderName(connection.Provider),
                     connection.Email,
                     connection.ConnectedAt,
+                    scan?.CheckedNewestAt,
                     scan?.CheckedUntilAt,
                     scan?.LastScanAt,
                     scan?.ScanCaughtUp ?? false);
@@ -268,6 +269,7 @@ public sealed class MailConnectionService
                 ToProviderName(connection.Provider),
                 connection.Email,
                 connection.ConnectedAt,
+                null,
                 null,
                 null,
                 false))

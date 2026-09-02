@@ -36,4 +36,10 @@ public sealed class MailCheckProcessedMessage
             ProcessedAt = DateTimeOffset.UtcNow
         };
     }
+
+    public void UpdateLabel(MailCheckLabel label)
+    {
+        Label = label.ToString().ToLowerInvariant();
+        ProcessedAt = DateTimeOffset.UtcNow;
+    }
 }

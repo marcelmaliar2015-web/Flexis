@@ -46,4 +46,18 @@ public sealed class GoogleAccessTokenService
         await _connections.SaveChangesAsync(cancellationToken);
         return new GoogleSheetAccess(tokens.AccessToken, connection.GoogleEmail);
     }
+
+    public async Task<GoogleSheetAccess> ForceRefreshSheetAccessAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var connection = await _connections.GetByUserIdAsync(userId, cancellationToken)
+            ?? throw new ValidationFailedException("Connect Gmail first.");
+
+        var refreshToken = _protector.Unprotect(connection.RefreshTokenProtected);
+        var tokens = await _oauth.RefreshAsync(refreshToken, cancellationToken);
+        connection.ReplaceAccessToken(_protector.Protect(tokens.AccessToken), tokens.AccessTokenExpiresAt);
+        await _connections.SaveChangesAsync(cancellationToken);
+        return new GoogleSheetAccess(tokens.AccessToken, connection.GoogleEmail);
+    }
 }

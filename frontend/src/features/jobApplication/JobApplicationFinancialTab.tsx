@@ -1,4 +1,3 @@
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -16,8 +15,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { isQueryLoading } from "@/shared/api/queryState";
 import { getJobFinancialBoard, jobFinancialQueryKey, updateJobFinancialRates } from "@/shared/api/financial";
-import { formatCount, formatPrice, formatRate, parseRate } from "@/features/jobApplication/financialUi";
+import {
+  FinancialMetricCell,
+  FinancialSummaryCards,
+} from "@/features/jobApplication/FinancialSummaryCards";
+import { formatFinancialMetrics, formatPrice, formatRate, parseRate } from "@/features/jobApplication/financialUi";
 import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
+import type { JobFinancialRow } from "@/shared/types/jobApplication";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -26,13 +30,11 @@ const Panel = styled(Box)(({ theme }) => ({
   overflow: "hidden",
 }));
 
-const SummaryCard = styled(Box)(({ theme }) => ({
-  flex: 1,
-  minWidth: 0,
+const SelectionCard = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
   backgroundColor: theme.palette.background.paper,
   borderRadius: theme.shape.borderRadius,
-  padding: theme.spacing(2.5),
+  padding: theme.spacing(2),
 }));
 
 const ScrollTable = styled(TableContainer)({
@@ -42,6 +44,15 @@ const ScrollTable = styled(TableContainer)({
 const RateField = styled(TextField)({
   width: 108,
 });
+
+const GroupHeader = styled(TableCell)(({ theme }) => ({
+  backgroundColor: theme.palette.action.hover,
+  fontWeight: 700,
+}));
+
+function sumRows(rows: JobFinancialRow[], pick: (row: JobFinancialRow) => number): number {
+  return rows.reduce((sum, row) => sum + pick(row), 0);
+}
 
 export function JobApplicationFinancialTab() {
   const queryClient = useQueryClient();
@@ -55,7 +66,6 @@ export function JobApplicationFinancialTab() {
   const boardLoading = isQueryLoading(boardQuery.data, boardQuery.isPending);
   const selectedSet = useMemo(() => new Set(selected.filter((id) => rows.some((row) => row.entryId === id))), [rows, selected]);
   const selectedRows = rows.filter((row) => selectedSet.has(row.entryId));
-  const selectedPrice = selectedRows.reduce((sum, row) => sum + row.price, 0);
   const allSelected = rows.length > 0 && selectedRows.length === rows.length;
   const someSelected = selectedRows.length > 0 && !allSelected;
 
@@ -89,43 +99,90 @@ export function JobApplicationFinancialTab() {
             Financial
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Counts come from each profile main tab. Price is applied times apply rate plus interviews times bonus
-            rate.
+            Today uses each profile main tab. Archived uses numbered sheets from Forward. Lifetime is both
+            combined.
           </Typography>
         </Stack>
         <Button variant="text" onClick={() => void boardQuery.refetch()} disabled={boardQuery.isFetching}>
           Refresh
         </Button>
       </Stack>
-      <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-        <SummaryCard>
-          <Typography variant="overline" color="text.secondary">
-            All sheets
-          </Typography>
-          <Typography variant="h4">
-            {boardLoading ? "…" : formatPrice(boardQuery.data?.allPrice ?? 0)}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {boardLoading
-              ? "Reading profile main tabs."
-              : `${formatCount(boardQuery.data?.allTotal ?? 0)} listings · ${formatCount(boardQuery.data?.allApplied ?? 0)} applied · ${formatCount(boardQuery.data?.allInterviews ?? 0)} interviews`}
-          </Typography>
-        </SummaryCard>
-        <SummaryCard>
-          <Typography variant="overline" color="text.secondary">
-            Selected rows
-          </Typography>
-          <Typography variant="h4">{selectedRows.length === 0 ? "—" : formatPrice(selectedPrice)}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {selectedRows.length === 0
-              ? "Select rows to price a subset."
-              : `${formatCount(selectedRows.length)} selected · ${formatCount(selectedRows.reduce((sum, row) => sum + row.total, 0))} listings · ${formatCount(selectedRows.reduce((sum, row) => sum + row.applied, 0))} applied · ${formatCount(selectedRows.reduce((sum, row) => sum + row.interviews, 0))} interviews`}
-          </Typography>
-        </SummaryCard>
-      </Stack>
+
+      <FinancialSummaryCards
+        loading={boardLoading}
+        todayPrice={boardQuery.data?.allPrice ?? 0}
+        todayTotal={boardQuery.data?.allTotal ?? 0}
+        todayApplied={boardQuery.data?.allApplied ?? 0}
+        todayInterviews={boardQuery.data?.allInterviews ?? 0}
+        archivedPrice={boardQuery.data?.archivedAllPrice ?? 0}
+        archivedTotal={boardQuery.data?.archivedAllTotal ?? 0}
+        archivedApplied={boardQuery.data?.archivedAllApplied ?? 0}
+        archivedInterviews={boardQuery.data?.archivedAllInterviews ?? 0}
+        lifetimePrice={boardQuery.data?.lifetimeAllPrice ?? 0}
+        lifetimeTotal={boardQuery.data?.lifetimeAllTotal ?? 0}
+        lifetimeApplied={boardQuery.data?.lifetimeAllApplied ?? 0}
+        lifetimeInterviews={boardQuery.data?.lifetimeAllInterviews ?? 0}
+      />
+
+      <SelectionCard>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          sx={{ alignItems: { md: "center" }, justifyContent: "space-between" }}
+        >
+          <Stack spacing={0.25}>
+            <Typography variant="subtitle2">Selected rows</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {selectedRows.length === 0
+                ? "Select rows to price a subset."
+                : `${selectedRows.length} selected`}
+            </Typography>
+          </Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ minWidth: 0 }}>
+            <Stack spacing={0.25}>
+              <Typography variant="caption" color="text.secondary">
+                Today
+              </Typography>
+              <Typography variant="body1" fontWeight={600}>
+                {selectedRows.length === 0 ? "—" : formatPrice(sumRows(selectedRows, (row) => row.price))}
+              </Typography>
+              {selectedRows.length > 0 ? (
+                <Typography variant="caption" color="text.secondary">
+                  {formatFinancialMetrics(
+                    sumRows(selectedRows, (row) => row.applied),
+                    sumRows(selectedRows, (row) => row.interviews),
+                    sumRows(selectedRows, (row) => row.total),
+                  )}
+                </Typography>
+              ) : null}
+            </Stack>
+            <Stack spacing={0.25}>
+              <Typography variant="caption" color="text.secondary">
+                Archived
+              </Typography>
+              <Typography variant="body1" fontWeight={600}>
+                {selectedRows.length === 0
+                  ? "—"
+                  : formatPrice(sumRows(selectedRows, (row) => row.archivedPrice))}
+              </Typography>
+            </Stack>
+            <Stack spacing={0.25}>
+              <Typography variant="caption" color="text.secondary">
+                Lifetime
+              </Typography>
+              <Typography variant="body1" fontWeight={700}>
+                {selectedRows.length === 0
+                  ? "—"
+                  : formatPrice(sumRows(selectedRows, (row) => row.lifetimePrice))}
+              </Typography>
+            </Stack>
+          </Stack>
+        </Stack>
+      </SelectionCard>
+
       <Panel>
         <ScrollTable>
-          <Table stickyHeader>
+          <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
                 <TableCell padding="checkbox">
@@ -139,18 +196,17 @@ export function JobApplicationFinancialTab() {
                 </TableCell>
                 <TableCell>Profile</TableCell>
                 <TableCell>Source</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Applied</TableCell>
-                <TableCell>Interviews</TableCell>
-                <TableCell>Apply Rate</TableCell>
-                <TableCell>Bonus Rate</TableCell>
-                <TableCell>Price</TableCell>
+                <GroupHeader>Today</GroupHeader>
+                <GroupHeader>Archived</GroupHeader>
+                <GroupHeader>Lifetime</GroupHeader>
+                <GroupHeader>Apply rate</GroupHeader>
+                <GroupHeader>Bonus rate</GroupHeader>
               </TableRow>
             </TableHead>
             <TableBody>
               {boardLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9}>
+                  <TableCell colSpan={8}>
                     <Typography variant="body2" color="text.secondary">
                       Loading…
                     </Typography>
@@ -158,7 +214,7 @@ export function JobApplicationFinancialTab() {
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9}>
+                  <TableCell colSpan={8}>
                     <Typography variant="body2" color="text.secondary">
                       Add pipeline rows on Operations to price listings.
                     </Typography>
@@ -176,9 +232,28 @@ export function JobApplicationFinancialTab() {
                     </TableCell>
                     <TableCell>{row.profileTitle}</TableCell>
                     <TableCell>{row.sourceLabel}</TableCell>
-                    <TableCell>{formatCount(row.total)}</TableCell>
-                    <TableCell>{formatCount(row.applied)}</TableCell>
-                    <TableCell>{formatCount(row.interviews)}</TableCell>
+                    <TableCell>
+                      <FinancialMetricCell
+                        applied={row.applied}
+                        interviews={row.interviews}
+                        price={row.price}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <FinancialMetricCell
+                        applied={row.archivedApplied}
+                        interviews={row.archivedInterviews}
+                        price={row.archivedPrice}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <FinancialMetricCell
+                        applied={row.lifetimeApplied}
+                        interviews={row.lifetimeInterviews}
+                        price={row.lifetimePrice}
+                        emphasize
+                      />
+                    </TableCell>
                     <TableCell>
                       <RateCell
                         value={row.applyRate}
@@ -207,7 +282,6 @@ export function JobApplicationFinancialTab() {
                         }
                       />
                     </TableCell>
-                    <TableCell>{formatPrice(row.price)}</TableCell>
                   </TableRow>
                 ))
               )}

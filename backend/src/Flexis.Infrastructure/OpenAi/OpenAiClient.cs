@@ -11,7 +11,7 @@ namespace Flexis.Infrastructure.OpenAi;
 
 internal sealed class OpenAiClient : IOpenAiGateway
 {
-    private const int OutputTokens = 1200;
+    private const int OutputTokens = 96;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,

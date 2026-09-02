@@ -12,6 +12,8 @@ public sealed class MailCheckScanState
 
     public Guid MailConnectionId { get; private set; }
 
+    public DateTimeOffset? CheckedNewestAt { get; private set; }
+
     public DateTimeOffset? CheckedUntilAt { get; private set; }
 
     public DateTimeOffset? LastScanAt { get; private set; }
@@ -32,6 +34,11 @@ public sealed class MailCheckScanState
     {
         LastScanAt = DateTimeOffset.UtcNow;
         ScanCaughtUp = false;
+        if (CheckedNewestAt is null || messageDate > CheckedNewestAt)
+        {
+            CheckedNewestAt = messageDate;
+        }
+
         if (CheckedUntilAt is null || messageDate < CheckedUntilAt)
         {
             CheckedUntilAt = messageDate;
@@ -51,6 +58,7 @@ public sealed class MailCheckScanState
 
     public void Reset()
     {
+        CheckedNewestAt = null;
         CheckedUntilAt = null;
         LastScanAt = null;
         ScanCaughtUp = false;

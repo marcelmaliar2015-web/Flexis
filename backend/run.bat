@@ -31,6 +31,15 @@ if errorlevel 1 (
   echo PostgreSQL is not accepting connections on port 5432.
   if exist "%FLEXIS_DB%\pgsql\bin\pg_ctl.exe" (
     echo flexis-db is installed but Postgres did not start.
+    if exist "%FLEXIS_DB%\postgres.log" (
+      echo.
+      echo Last lines from %FLEXIS_DB%\postgres.log:
+      powershell -NoProfile -Command "Get-Content -Path '%FLEXIS_DB%\postgres.log' -Tail 12"
+    )
+    echo.
+    echo Try: close other run.bat windows, then run backend\run.bat again.
+    echo Or manually: "%FLEXIS_DB%\pgsql\bin\pg_ctl.exe" -D "%FLEXIS_DB%\pgdata" -m fast stop
+    echo           then: "%FLEXIS_DB%\pgsql\bin\pg_ctl.exe" -D "%FLEXIS_DB%\pgdata" -l "%FLEXIS_DB%\postgres.log" start -w
   ) else (
     echo Install Docker Desktop or run the flexis-db setup once in Cursor.
   )
@@ -46,16 +55,27 @@ exit /b 0
 set "PG_CTL=%FLEXIS_DB%\pgsql\bin\pg_ctl.exe"
 set "PGDATA=%FLEXIS_DB%\pgdata"
 set "PGLOG=%FLEXIS_DB%\postgres.log"
+set "PG_ISREADY=%FLEXIS_DB%\pgsql\bin\pg_isready.exe"
 if not exist "%PG_CTL%" exit /b 1
+call :port_open 5432
+if not errorlevel 1 exit /b 0
 echo Starting flexis-db PostgreSQL...
 "%PG_CTL%" -D "%PGDATA%" -l "%PGLOG%" status >nul 2>&1
-if errorlevel 1 "%PG_CTL%" -D "%PGDATA%" -l "%PGLOG%" start
+if not errorlevel 1 goto wait_flexis_postgres
+"%PG_CTL%" -D "%PGDATA%" -l "%PGLOG%" start -w -t 60
+if errorlevel 1 (
+  echo Postgres did not start. Stopping stale server and retrying once...
+  "%PG_CTL%" -D "%PGDATA%" -m fast stop >nul 2>&1
+  timeout /t 2 /nobreak >nul
+  "%PG_CTL%" -D "%PGDATA%" -l "%PGLOG%" start -w -t 60
+)
+if errorlevel 1 exit /b 1
 set "ATTEMPTS=0"
 :wait_flexis_postgres
 call :port_open 5432
 if not errorlevel 1 exit /b 0
 set /a ATTEMPTS+=1
-if !ATTEMPTS! GEQ 30 exit /b 1
+if !ATTEMPTS! GEQ 60 exit /b 1
 timeout /t 1 /nobreak >nul
 goto wait_flexis_postgres
 
@@ -133,5 +153,9 @@ timeout /t 2 /nobreak >nul
 exit /b 0
 
 :port_open
+if exist "%FLEXIS_DB%\pgsql\bin\pg_isready.exe" (
+  "%FLEXIS_DB%\pgsql\bin\pg_isready.exe" -h 127.0.0.1 -p %~1 -q
+  exit /b %errorlevel%
+)
 powershell -NoProfile -Command "if ((Test-NetConnection -ComputerName 127.0.0.1 -Port %~1 -WarningAction SilentlyContinue).TcpTestSucceeded) { exit 0 } else { exit 1 }"
 exit /b %errorlevel%

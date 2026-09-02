@@ -24,10 +24,7 @@ import { useNavigate } from "react-router-dom";
 import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
 import { isQueryLoading } from "@/shared/api/queryState";
 import {
-  applyAllJobPipelineEntries,
   createJobPipelineEntry,
-  deleteAllJobPipelineEntries,
-  forwardAllJobPipelineEntries,
   getJobPipelineBoard,
   jobPipelineQueryKey,
 } from "@/shared/api/pipeline";
@@ -42,6 +39,7 @@ import {
   sourceLabel,
 } from "@/features/jobApplication/pipelineUi";
 import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
+import type { usePipelineBulkRun } from "@/features/jobApplication/usePipelineBulkRun";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -54,7 +52,13 @@ const ClickableRow = styled(TableRow)({
   cursor: "pointer",
 });
 
-export function JobApplicationOperationsTab() {
+type PipelineBulkRun = ReturnType<typeof usePipelineBulkRun>;
+
+type JobApplicationOperationsTabProps = {
+  bulkRun: PipelineBulkRun;
+};
+
+export function JobApplicationOperationsTab({ bulkRun }: JobApplicationOperationsTabProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const connectionQuery = useQuery({
@@ -83,40 +87,53 @@ export function JobApplicationOperationsTab() {
     onError: (error) => setFormError(errorMessage(error)),
   });
 
-  const applyAllMutation = useMutation({
-    mutationFn: applyAllJobPipelineEntries,
-    onSuccess: async (result) => {
-      setNotice(listingsNotice(result, true));
-      await refreshJobApplicationWorkspace(queryClient);
-    },
-  });
-
-  const forwardAllMutation = useMutation({
-    mutationFn: forwardAllJobPipelineEntries,
-    onSuccess: async (result) => {
-      setNotice(
-        result.forwarded === 1
-          ? "Forwarded 1 profile sheet."
-          : `Forwarded ${result.forwarded} profile sheets.`,
-      );
-      await refreshJobApplicationWorkspace(queryClient);
-    },
-  });
-
-  const deleteAllMutation = useMutation({
-    mutationFn: deleteAllJobPipelineEntries,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: jobPipelineQueryKey });
-      await refreshJobApplicationWorkspace(queryClient);
-      setDeleteAllOpen(false);
-    },
-  });
-
   const board = boardQuery.data;
   const boardLoading = isQueryLoading(boardQuery.data, boardQuery.isPending);
   const entries = board?.entries ?? [];
-  const actionsBusy = applyAllMutation.isPending || forwardAllMutation.isPending || deleteAllMutation.isPending;
+  const actionsBusy = bulkRun.running || createMutation.isPending;
   const sourceChoices = board ? sourceChoicesFromBoard(board) : [];
+
+  async function handleUpdateAll() {
+    if (!board) {
+      return;
+    }
+
+    setNotice(null);
+    bulkRun.clearError();
+    const result = await bulkRun.startUpdateAll(board);
+    if (result) {
+      setNotice(listingsNotice(result, true));
+    }
+  }
+
+  async function handleForwardAll() {
+    if (!board) {
+      return;
+    }
+
+    setNotice(null);
+    bulkRun.clearError();
+    const forwarded = await bulkRun.startForwardAll(board);
+    if (forwarded !== null) {
+      setNotice(
+        forwarded === 1 ? "Forwarded 1 profile sheet." : `Forwarded ${forwarded} profile sheets.`,
+      );
+    }
+  }
+
+  async function handleDeleteAll() {
+    setNotice(null);
+    bulkRun.clearError();
+    const removed = await bulkRun.startDeleteAll(entries.length);
+    if (removed) {
+      setDeleteAllOpen(false);
+      setNotice(
+        entries.length === 1
+          ? "Removed 1 pipeline entry."
+          : `Removed ${entries.length} pipeline entries.`,
+      );
+    }
+  }
 
   return (
     <Stack spacing={2}>
@@ -124,6 +141,7 @@ export function JobApplicationOperationsTab() {
         <Alert severity="info">Connect Gmail on the Settings tab before using the pipeline.</Alert>
       ) : null}
       {notice ? <Alert severity="success">{notice}</Alert> : null}
+      {bulkRun.error ? <Alert severity="error">{bulkRun.error}</Alert> : null}
       <Stack
         direction="row"
         spacing={2}
@@ -135,20 +153,18 @@ export function JobApplicationOperationsTab() {
         <Stack direction="row" spacing={1}>
           <Button
             disabled={!connected || entries.length === 0 || actionsBusy}
-            loading={applyAllMutation.isPending}
+            loading={bulkRun.running && bulkRun.session?.action === "update"}
             onClick={() => {
-              setNotice(null);
-              applyAllMutation.mutate();
+              void handleUpdateAll();
             }}
           >
             Update All
           </Button>
           <Button
             disabled={!connected || entries.length === 0 || actionsBusy}
-            loading={forwardAllMutation.isPending}
+            loading={bulkRun.running && bulkRun.session?.action === "forward"}
             onClick={() => {
-              setNotice(null);
-              forwardAllMutation.mutate();
+              void handleForwardAll();
             }}
           >
             Forward All
@@ -160,7 +176,7 @@ export function JobApplicationOperationsTab() {
             Delete All
           </Button>
           <Button
-            disabled={!connected || sourceChoices.length === 0 || (board?.profiles.length ?? 0) === 0}
+            disabled={!connected || sourceChoices.length === 0 || (board?.profiles.length ?? 0) === 0 || actionsBusy}
             onClick={() => {
               setFormError(null);
               setCreating(true);
@@ -227,7 +243,7 @@ export function JobApplicationOperationsTab() {
         />
       ) : null}
       {deleteAllOpen ? (
-        <Dialog open onClose={() => setDeleteAllOpen(false)} fullWidth maxWidth="xs">
+        <Dialog open onClose={() => !bulkRun.running && setDeleteAllOpen(false)} fullWidth maxWidth="xs">
           <DialogTitle>Delete all pipeline entries</DialogTitle>
           <DialogContent>
             <Typography variant="body2">
@@ -235,13 +251,15 @@ export function JobApplicationOperationsTab() {
             </Typography>
           </DialogContent>
           <DialogActions>
-            <Button variant="text" onClick={() => setDeleteAllOpen(false)} disabled={deleteAllMutation.isPending}>
+            <Button variant="text" onClick={() => setDeleteAllOpen(false)} disabled={bulkRun.running}>
               Cancel
             </Button>
             <Button
-              disabled={deleteAllMutation.isPending}
-              loading={deleteAllMutation.isPending}
-              onClick={() => deleteAllMutation.mutate()}
+              disabled={bulkRun.running}
+              loading={bulkRun.running && bulkRun.session?.action === "delete"}
+              onClick={() => {
+                void handleDeleteAll();
+              }}
             >
               Delete All
             </Button>

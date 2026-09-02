@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from "@/shared/config/env";
 import { getAccessToken } from "@/shared/api/accessToken";
+import { notifyUnauthorized } from "@/shared/auth/unauthorized";
 import { reportIssue } from "@/shared/notifications/issueStore";
 
 export class ApiError extends Error {
@@ -78,6 +79,10 @@ async function send(path: string, init?: RequestInit): Promise<Response> {
       }
 
       if (!response.ok && response.status !== 503) {
+        if (response.status === 401) {
+          notifyUnauthorized();
+        }
+
         if (response.status === 502 || response.status === 504) {
           const message =
             "Could not reach the API. Check backend/src/Flexis.Api is running on http://localhost:5080.";
@@ -159,7 +164,7 @@ function notifyApiFailure(
   if (path === "/api/diagnostics/events") {
     return;
   }
-  if (method === "GET" && path === "/api/auth/me" && status === 401) {
+  if (status === 401) {
     return;
   }
 

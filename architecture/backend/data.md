@@ -41,7 +41,7 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 
 `MailCheckProcessedMessage` in `Flexis.Domain.MailCheck`. Table `mail_check_processed_messages`. `MessageId` is `varchar(512)` so Outlook Graph ids fit. `Label` stores the classifier label slug. Unique (`MailConnectionId`, `MessageId`), cascade from `users` and from `mail_connections`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckProcessedMessageConfiguration.cs`.
 
-`MailCheckScanState` in `Flexis.Domain.MailCheck`. Table `mail_check_scan_states`. One row per mailbox connection. `CheckedUntilAt` is the oldest message date processed in the current scan. `LastScanAt` is the last scan time. `ScanCaughtUp` is true when inbox and junk folders are exhausted. Unique `MailConnectionId`, cascade from `users` and from `mail_connections`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckScanStateConfiguration.cs`.
+`MailCheckScanState` in `Flexis.Domain.MailCheck`. Table `mail_check_scan_states`. One row per mailbox connection. `CheckedNewestAt` is the newest message date processed. `CheckedUntilAt` is the oldest message date processed in the current scan. `LastScanAt` is the last scan time. `ScanCaughtUp` is true when inbox and junk folders are exhausted. Unique `MailConnectionId`, cascade from `users` and from `mail_connections`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckScanStateConfiguration.cs`.
 
 ## Migrations
 

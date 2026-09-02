@@ -8,17 +8,19 @@ export type MailCheckLabelSlug =
   | "assessment"
   | "availability"
   | "success"
-  | "other";
+  | "other"
+  | "less_important";
 
 export type MailCheckMailboxAction = "pin" | "trash" | "keep";
 
-export type MailCheckAction = MailCheckMailboxAction | "error";
+export type MailCheckAction = MailCheckMailboxAction | "already_checked" | "error";
 
 export type MailCheckMailboxItem = {
   id: string;
   provider: MailCheckMailboxProvider;
   email: string;
   connectedAt: string;
+  checkedNewestAt: string | null;
   checkedUntilAt: string | null;
   lastScanAt: string | null;
   scanCaughtUp: boolean;
@@ -85,6 +87,32 @@ export type MailCheckRunItem = {
   mailboxProvider: MailCheckMailboxProvider | string;
 };
 
+export type MailCheckRunTiming = {
+  totalMs: number;
+  lockMs: number;
+  tokenMs: number;
+  labelsMs: number;
+  scanMs: number;
+  fetchMs: number;
+  classifyMs: number;
+  applyMs: number;
+};
+
+export type MailCheckRunProgress = {
+  active: boolean;
+  stage: string;
+  message: string;
+  mailboxEmail: string | null;
+  processed: number;
+  scanned: number;
+  alreadySeen: number;
+  scanPage: number;
+  elapsedMs: number;
+  waitingForLock: boolean;
+  activeRunKind: string | null;
+  waitingRequestKind: string | null;
+};
+
 export type MailCheckRun = {
   busy: boolean;
   processed: number;
@@ -99,6 +127,7 @@ export type MailCheckRun = {
   mailboxEmail: string | null;
   mailboxProvider: MailCheckMailboxProvider | string | null;
   items: MailCheckRunItem[];
+  timing: MailCheckRunTiming;
 };
 
 export type MailCheckInboxItem = {
@@ -129,6 +158,7 @@ export const mailCheckLabels: { slug: MailCheckLabelSlug; name: string }[] = [
   { slug: "availability", name: "Availability" },
   { slug: "success", name: "Success" },
   { slug: "other", name: "Other" },
+  { slug: "less_important", name: "Less Important" },
 ];
 
 export const mailCheckMailboxActions: { value: MailCheckMailboxAction; label: string }[] = [

@@ -35,6 +35,21 @@ internal sealed class MailCheckProcessedMessageRepository : IMailCheckProcessedM
         await _db.MailCheckProcessedMessages.AddAsync(message, cancellationToken);
     }
 
+    public async Task UpsertAsync(MailCheckProcessedMessage message, CancellationToken cancellationToken)
+    {
+        var existing = await _db.MailCheckProcessedMessages
+            .FirstOrDefaultAsync(
+                item => item.MailConnectionId == message.MailConnectionId && item.MessageId == message.MessageId,
+                cancellationToken);
+        if (existing is null)
+        {
+            await AddAsync(message, cancellationToken);
+            return;
+        }
+
+        existing.UpdateLabel(MailCheckLabelCatalog.Parse(message.Label));
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         return _db.SaveChangesAsync(cancellationToken);

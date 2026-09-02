@@ -42,7 +42,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
     public GoogleSheetsClient(HttpClient http)
     {
         _http = http;
-        _http.Timeout = TimeSpan.FromSeconds(120);
+        _http.Timeout = TimeSpan.FromSeconds(300);
     }
 
     public async Task<CreatedSpreadsheet> CreateWorkbookAsync(
@@ -611,7 +611,9 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         var styleRequests = new List<object>();
         foreach (var sheet in payload.Sheets ?? [])
         {
-            if (sheet.Properties is null || JobSheetNames.IsProfileInfoTab(sheet.Properties.Title))
+            if (sheet.Properties is null
+                || JobSheetNames.IsProfileInfoTab(sheet.Properties.Title)
+                || JobSheetNames.IsArchiveTab(sheet.Properties.Title))
             {
                 continue;
             }

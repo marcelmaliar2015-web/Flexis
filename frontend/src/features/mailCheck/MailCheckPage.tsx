@@ -1,6 +1,8 @@
 import Badge from "@mui/material/Badge";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import Container from "@mui/material/Container";
+import LinearProgress from "@mui/material/LinearProgress";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
@@ -12,6 +14,7 @@ import { MailCheckCheckTab } from "@/features/mailCheck/MailCheckCheckTab";
 import { MailCheckInboxTab } from "@/features/mailCheck/MailCheckInboxTab";
 import { MailCheckNeedActionTab } from "@/features/mailCheck/MailCheckNeedActionTab";
 import { MailCheckSettingsTab } from "@/features/mailCheck/MailCheckSettingsTab";
+import { useMailCheckRun } from "@/features/mailCheck/useMailCheckRun";
 import {
   getMailCheckNeedAction,
   getMailCheckSettings,
@@ -27,6 +30,31 @@ const AccentRule = styled("span")(({ theme }) => ({
   backgroundColor: theme.palette.secondary.main,
 }));
 
+const MailCheckTabs = styled(Tabs)(({ theme }) => ({
+  overflow: "visible",
+  marginBottom: theme.spacing(0.5),
+  "& .MuiTabs-scroller": {
+    overflow: "visible !important",
+  },
+  "& .MuiTabs-flexContainer": {
+    overflow: "visible",
+  },
+}));
+
+const MailCheckTabItem = styled(Tab)(({ theme }) => ({
+  overflow: "visible",
+  minHeight: 48,
+  paddingRight: theme.spacing(3),
+  paddingLeft: theme.spacing(2),
+}));
+
+const TabLabelRoot = styled("span")(({ theme }) => ({
+  display: "inline-flex",
+  alignItems: "center",
+  position: "relative",
+  paddingRight: theme.spacing(2.5),
+}));
+
 type MailCheckTab = "need-action" | "inbox" | "check" | "settings";
 
 function TabLabel({ label, count }: { label: string; count: number }) {
@@ -35,13 +63,22 @@ function TabLabel({ label, count }: { label: string; count: number }) {
   }
 
   return (
-    <Badge
-      color="error"
-      badgeContent={count}
-      sx={{ "& .MuiBadge-badge": { right: -12, top: 2 } }}
-    >
-      <span>{label}</span>
-    </Badge>
+    <TabLabelRoot>
+      {label}
+      <Badge
+        color="error"
+        badgeContent={count}
+        sx={{
+          position: "absolute",
+          top: -6,
+          right: 0,
+          "& .MuiBadge-badge": {
+            position: "static",
+            transform: "none",
+          },
+        }}
+      />
+    </TabLabelRoot>
   );
 }
 
@@ -56,7 +93,10 @@ export function MailCheckPage() {
     queryKey: mailCheckSettingsQueryKey,
     queryFn: getMailCheckSettings,
   });
-  const hasMailbox = (settingsQuery.data?.mailboxes.length ?? 0) > 0;
+  const settings = settingsQuery.data;
+  const mailboxes = settings?.mailboxes ?? [];
+  const hasMailbox = mailboxes.length > 0;
+  const mailCheckRun = useMailCheckRun(mailboxes);
   const needActionQuery = useQuery({
     queryKey: mailCheckNeedActionQueryKey,
     queryFn: getMailCheckNeedAction,
@@ -82,7 +122,37 @@ export function MailCheckPage() {
               pins what matters, and trashes noise.
             </Typography>
           </Stack>
-          <Tabs
+
+          {mailCheckRun.checking ? (
+            <Box
+              sx={{
+                border: 1,
+                borderColor: "primary.main",
+                borderRadius: 1,
+                px: 2,
+                py: 1.5,
+                bgcolor: "action.hover",
+              }}
+            >
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                  <CircularProgress size={18} />
+                  <Stack spacing={0.25}>
+                    <Typography variant="body2">
+                      {mailCheckRun.session?.message ?? "Manual check running…"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {mailCheckRun.session?.stageMessage ??
+                        "Open the Check tab for stages, elapsed time, and server timing."}
+                    </Typography>
+                  </Stack>
+                </Stack>
+                <LinearProgress />
+              </Stack>
+            </Box>
+          ) : null}
+
+          <MailCheckTabs
             value={tab}
             onChange={(_event, value: MailCheckTab) => {
               setTab(value);
@@ -91,14 +161,14 @@ export function MailCheckPage() {
               }
             }}
           >
-            <Tab
+            <MailCheckTabItem
               label={<TabLabel label="Need action" count={needActionCount} />}
               value="need-action"
             />
-            <Tab label="Inbox" value="inbox" />
-            <Tab label="Check" value="check" />
-            <Tab label="Settings" value="settings" />
-          </Tabs>
+            <MailCheckTabItem label="Inbox" value="inbox" />
+            <MailCheckTabItem label="Check" value="check" />
+            <MailCheckTabItem label="Settings" value="settings" />
+          </MailCheckTabs>
           <Box role="tabpanel" hidden={tab !== "need-action"}>
             <MailCheckNeedActionTab />
           </Box>
@@ -109,7 +179,7 @@ export function MailCheckPage() {
           ) : null}
           {tab === "check" || visited.check ? (
             <Box role="tabpanel" hidden={tab !== "check"}>
-              <MailCheckCheckTab />
+              <MailCheckCheckTab settings={settings} mailCheckRun={mailCheckRun} />
             </Box>
           ) : null}
           {tab === "settings" || visited.settings ? (

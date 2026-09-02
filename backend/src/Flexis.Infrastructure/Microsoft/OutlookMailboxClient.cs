@@ -14,7 +14,10 @@ internal sealed class OutlookMailboxClient : IMailMailbox
     private const string GraphBase = "https://graph.microsoft.com/v1.0";
     private const int CandidatePageSize = 25;
     private const int LabeledPageSize = 40;
-    private const int BodyLimit = 8000;
+    private const int BodyLimit = 20_000;
+    private const string OutlookPinPropertyId1 = "SystemTime 0x0F01";
+    private const string OutlookPinPropertyId2 = "SystemTime 0x0F02";
+    private const string OutlookPinPropertyValue = "4500-09-01T00:00:00Z";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -23,10 +26,8 @@ internal sealed class OutlookMailboxClient : IMailMailbox
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private const string InboxFolder = "inbox";
-    private const string JunkFolder = "junkemail";
-
     private readonly HttpClient _http;
+    private HashSet<string>? _cachedExcludedFolderIds;
 
     public OutlookMailboxClient(HttpClient http)
     {
@@ -94,61 +95,38 @@ internal sealed class OutlookMailboxClient : IMailMailbox
         string? pageToken,
         CancellationToken cancellationToken)
     {
-        var (folder, graphUrl) = ParsePageToken(pageToken);
-        var url = graphUrl
-            ?? $"{GraphBase}/me/mailFolders/{folder}/messages?$top={CandidatePageSize}&$orderby=receivedDateTime desc&$select=id,categories";
-        var page = await FetchCandidatePageAsync(accessToken, url, cancellationToken);
-        if (!string.IsNullOrWhiteSpace(page.NextPageToken))
-        {
-            return new MailCandidatePage(page.Messages, EncodePageToken(folder, page.NextPageToken));
-        }
-
-        if (string.Equals(folder, InboxFolder, StringComparison.Ordinal))
-        {
-            if (page.Messages.Count == 0)
-            {
-                return await ListCandidatesAsync(accessToken, EncodePageToken(JunkFolder, null), cancellationToken);
-            }
-
-            return new MailCandidatePage(page.Messages, EncodePageToken(JunkFolder, null));
-        }
-
-        return new MailCandidatePage(page.Messages, null);
-    }
-
-    private static (string Folder, string? GraphUrl) ParsePageToken(string? pageToken)
-    {
         if (string.IsNullOrWhiteSpace(pageToken))
         {
-            return (InboxFolder, null);
+            _cachedExcludedFolderIds = null;
         }
 
-        var separator = pageToken.IndexOf('|');
-        if (separator <= 0)
-        {
-            if (string.Equals(pageToken, JunkFolder, StringComparison.Ordinal)
-                || string.Equals(pageToken, InboxFolder, StringComparison.Ordinal))
-            {
-                return (pageToken, null);
-            }
-
-            return (InboxFolder, pageToken);
-        }
-
-        var folder = pageToken[..separator];
-        var graphUrl = pageToken[(separator + 1)..];
-        if (!string.Equals(folder, InboxFolder, StringComparison.Ordinal)
-            && !string.Equals(folder, JunkFolder, StringComparison.Ordinal))
-        {
-            return (InboxFolder, pageToken);
-        }
-
-        return (folder, string.IsNullOrWhiteSpace(graphUrl) ? null : graphUrl);
+        _cachedExcludedFolderIds ??= await GetExcludedFolderIdsAsync(accessToken, cancellationToken);
+        var url = string.IsNullOrWhiteSpace(pageToken)
+            ? $"{GraphBase}/me/messages?$top={CandidatePageSize}&$orderby=receivedDateTime desc&$select=id,categories,receivedDateTime,parentFolderId&$filter=isDraft eq false"
+            : pageToken;
+        return await FetchCandidatePageAsync(accessToken, url, _cachedExcludedFolderIds, cancellationToken);
     }
 
-    private static string EncodePageToken(string folder, string? graphUrl)
+    private async Task<HashSet<string>> GetExcludedFolderIdsAsync(
+        string accessToken,
+        CancellationToken cancellationToken)
     {
-        return string.IsNullOrWhiteSpace(graphUrl) ? folder : $"{folder}|{graphUrl}";
+        var excluded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var folderName in new[] { "sentitems", "deleteditems", "drafts", "archive", "outbox" })
+        {
+            var folder = await SendJson<GraphFolder>(
+                accessToken,
+                HttpMethod.Get,
+                $"{GraphBase}/me/mailFolders/{folderName}?$select=id",
+                null,
+                cancellationToken);
+            if (!string.IsNullOrWhiteSpace(folder.Id))
+            {
+                excluded.Add(folder.Id);
+            }
+        }
+
+        return excluded;
     }
 
     public async Task<MailMessageContent> GetMessageAsync(
@@ -170,6 +148,13 @@ internal sealed class OutlookMailboxClient : IMailMailbox
             labels.Add("junkemail");
         }
 
+        var deletedFolderId = await GetDeletedFolderIdAsync(accessToken, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(deletedFolderId)
+            && string.Equals(payload.ParentFolderId, deletedFolderId, StringComparison.Ordinal))
+        {
+            labels.Add("TRASH");
+        }
+
         return ToContent(payload, labels);
     }
 
@@ -178,7 +163,8 @@ internal sealed class OutlookMailboxClient : IMailMailbox
         string messageId,
         string labelId,
         IReadOnlyList<string> currentLabelIds,
-        bool _,
+        bool gmailStar,
+        bool pinAction,
         CancellationToken cancellationToken)
     {
         var categories = currentLabelIds
@@ -186,12 +172,27 @@ internal sealed class OutlookMailboxClient : IMailMailbox
             .Append(labelId)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+        var patch = new Dictionary<string, object>
+        {
+            ["categories"] = categories,
+            ["isRead"] = true
+        };
+        if (pinAction)
+        {
+            patch["flag"] = new { flagStatus = "notFlagged" };
+        }
+
         await SendJson<object>(
             accessToken,
             HttpMethod.Patch,
             $"{GraphBase}/me/messages/{Uri.EscapeDataString(messageId)}",
-            new { categories },
+            patch,
             cancellationToken);
+
+        if (pinAction)
+        {
+            await ApplyOutlookPinAsync(accessToken, messageId, cancellationToken);
+        }
 
         if (currentLabelIds.Contains("junkemail", StringComparer.OrdinalIgnoreCase))
         {
@@ -202,6 +203,21 @@ internal sealed class OutlookMailboxClient : IMailMailbox
                 new { destinationId = "inbox" },
                 cancellationToken);
         }
+    }
+
+    public Task MarkAsReadAsync(
+        string accessToken,
+        string messageId,
+        IReadOnlyList<string> currentLabelIds,
+        CancellationToken cancellationToken)
+    {
+        _ = currentLabelIds;
+        return SendJson<object>(
+            accessToken,
+            HttpMethod.Patch,
+            $"{GraphBase}/me/messages/{Uri.EscapeDataString(messageId)}",
+            new { isRead = true },
+            cancellationToken);
     }
 
     public Task TrashAsync(string accessToken, string messageId, CancellationToken cancellationToken)
@@ -264,12 +280,20 @@ internal sealed class OutlookMailboxClient : IMailMailbox
             }
 
             var escaped = categoryName.Replace("'", "''", StringComparison.Ordinal);
+            var expand = Uri.EscapeDataString($"singleValueExtendedProperties($filter=id eq '{OutlookPinPropertyId2}')");
+            var deletedFolderId = await GetDeletedFolderIdAsync(accessToken, cancellationToken);
             var url =
-                $"{GraphBase}/me/messages?$top={LabeledPageSize}&$orderby=receivedDateTime desc&$select=id,conversationId,subject,from,receivedDateTime,bodyPreview,categories,flag&$filter=categories/any(c:c eq '{escaped}')";
+                $"{GraphBase}/me/messages?$top={LabeledPageSize}&$orderby=receivedDateTime desc&$select=id,conversationId,subject,from,receivedDateTime,bodyPreview,categories,parentFolderId&$expand={expand}&$filter=categories/any(c:c eq '{escaped}')";
             var listed = await SendJson<MessageList>(accessToken, HttpMethod.Get, url, null, cancellationToken);
             foreach (var row in listed.Value ?? [])
             {
                 if (string.IsNullOrWhiteSpace(row.Id))
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(deletedFolderId)
+                    && string.Equals(row.ParentFolderId, deletedFolderId, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -283,7 +307,7 @@ internal sealed class OutlookMailboxClient : IMailMailbox
                     content.Date,
                     content.Snippet,
                     label,
-                    string.Equals(row.Flag?.FlagStatus, "flagged", StringComparison.OrdinalIgnoreCase)));
+                    IsOutlookPinned(row)));
             }
         }
 
@@ -295,6 +319,7 @@ internal sealed class OutlookMailboxClient : IMailMailbox
     private async Task<MailCandidatePage> FetchCandidatePageAsync(
         string accessToken,
         string url,
+        IReadOnlySet<string> excludedFolderIds,
         CancellationToken cancellationToken)
     {
         var listed = await SendJson<MessageList>(accessToken, HttpMethod.Get, url, null, cancellationToken);
@@ -302,10 +327,50 @@ internal sealed class OutlookMailboxClient : IMailMailbox
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var messages = (listed.Value ?? [])
             .Where(item => !string.IsNullOrWhiteSpace(item.Id))
+            .Where(item => string.IsNullOrWhiteSpace(item.ParentFolderId) || !excludedFolderIds.Contains(item.ParentFolderId))
             .Where(item => item.Categories is null || !item.Categories.Any(ourNames.Contains))
-            .Select(item => new MailMessageRef(item.Id!))
+            .Select(item => new MailMessageRef(item.Id!, ParseSortDateMs(item.ReceivedDateTime)))
             .ToList();
         return new MailCandidatePage(messages, listed.NextLink);
+    }
+
+    private async Task ApplyOutlookPinAsync(
+        string accessToken,
+        string messageId,
+        CancellationToken cancellationToken)
+    {
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Patch,
+            $"{GraphBase}/me/messages/{Uri.EscapeDataString(messageId)}",
+            new
+            {
+                singleValueExtendedProperties = new[]
+                {
+                    new { id = OutlookPinPropertyId1, value = OutlookPinPropertyValue },
+                    new { id = OutlookPinPropertyId2, value = OutlookPinPropertyValue },
+                }
+            },
+            cancellationToken);
+    }
+
+    private static bool IsOutlookPinned(GraphMessage row)
+    {
+        foreach (var property in row.SingleValueExtendedProperties ?? [])
+        {
+            if (!string.Equals(property.Id, OutlookPinPropertyId2, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (DateTime.TryParse(property.Value, out var pinnedAt)
+                && pinnedAt >= new DateTime(4500, 9, 1, 0, 0, 0, DateTimeKind.Utc))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private async Task<T> SendJson<T>(
@@ -336,6 +401,13 @@ internal sealed class OutlookMailboxClient : IMailMailbox
 
         return JsonSerializer.Deserialize<T>(payload, JsonOptions)
             ?? throw new MicrosoftOAuthException("Outlook returned an empty payload.");
+    }
+
+    private static long ParseSortDateMs(string? receivedDateTime)
+    {
+        return DateTimeOffset.TryParse(receivedDateTime, out var parsed)
+            ? parsed.ToUnixTimeMilliseconds()
+            : 0L;
     }
 
     private static MailMessageContent ToContent(GraphMessage payload, IReadOnlyList<string>? labels = null)
@@ -370,6 +442,17 @@ internal sealed class OutlookMailboxClient : IMailMailbox
             accessToken,
             HttpMethod.Get,
             $"{GraphBase}/me/mailFolders/junkemail?$select=id",
+            null,
+            cancellationToken);
+        return folder.Id;
+    }
+
+    private async Task<string?> GetDeletedFolderIdAsync(string accessToken, CancellationToken cancellationToken)
+    {
+        var folder = await SendJson<GraphFolder>(
+            accessToken,
+            HttpMethod.Get,
+            $"{GraphBase}/me/mailFolders/deleteditems?$select=id",
             null,
             cancellationToken);
         return folder.Id;
@@ -437,6 +520,15 @@ internal sealed class OutlookMailboxClient : IMailMailbox
         public GraphFlag? Flag { get; set; }
 
         public string? ParentFolderId { get; set; }
+
+        public List<GraphExtendedProperty>? SingleValueExtendedProperties { get; set; }
+    }
+
+    private sealed class GraphExtendedProperty
+    {
+        public string? Id { get; set; }
+
+        public string? Value { get; set; }
     }
 
     private sealed class GraphFrom

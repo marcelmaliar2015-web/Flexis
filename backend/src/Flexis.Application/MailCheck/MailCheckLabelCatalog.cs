@@ -13,7 +13,8 @@ public static class MailCheckLabelCatalog
         MailCheckLabel.Assessment,
         MailCheckLabel.Availability,
         MailCheckLabel.Success,
-        MailCheckLabel.Other
+        MailCheckLabel.Other,
+        MailCheckLabel.LessImportant
     ];
 
     public static MailCheckLabel Parse(string? raw)
@@ -34,6 +35,7 @@ public static class MailCheckLabelCatalog
             "availability" => MailCheckLabel.Availability,
             "success" => MailCheckLabel.Success,
             "other" => MailCheckLabel.Other,
+            "less_important" or "lessimportant" => MailCheckLabel.LessImportant,
             _ => null
         };
     }
@@ -50,12 +52,17 @@ public static class MailCheckLabelCatalog
             MailCheckLabel.Availability => "Availability",
             MailCheckLabel.Success => "Success",
             MailCheckLabel.Other => "Other",
+            MailCheckLabel.LessImportant => "Less Important",
             _ => "Other"
         };
     }
 
     public static string SlugFor(MailCheckLabel label)
     {
-        return label.ToString().ToLowerInvariant();
+        return label switch
+        {
+            MailCheckLabel.LessImportant => "less_important",
+            _ => label.ToString().ToLowerInvariant()
+        };
     }
 }

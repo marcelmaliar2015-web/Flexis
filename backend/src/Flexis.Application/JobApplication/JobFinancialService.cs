@@ -62,9 +62,12 @@ public sealed class JobFinancialService
         catch (ValidationFailedException)
         {
         }
+        catch (GoogleOAuthException)
+        {
+        }
 
         var dropdownDone = new HashSet<string>(StringComparer.Ordinal);
-        var listingCache = new Dictionary<string, (int Total, int Applied, int Interviews)>(StringComparer.Ordinal);
+        var listingCache = new Dictionary<string, ProfileFinancialCounts>(StringComparer.Ordinal);
         var rows = new List<JobFinancialRowDto>(stored.Count);
         foreach (var entry in stored)
         {
@@ -84,7 +87,15 @@ public sealed class JobFinancialService
             rows.Sum(row => row.Price),
             rows.Sum(row => row.Total),
             rows.Sum(row => row.Applied),
-            rows.Sum(row => row.Interviews));
+            rows.Sum(row => row.Interviews),
+            rows.Sum(row => row.ArchivedPrice),
+            rows.Sum(row => row.ArchivedTotal),
+            rows.Sum(row => row.ArchivedApplied),
+            rows.Sum(row => row.ArchivedInterviews),
+            rows.Sum(row => row.LifetimePrice),
+            rows.Sum(row => row.LifetimeTotal),
+            rows.Sum(row => row.LifetimeApplied),
+            rows.Sum(row => row.LifetimeInterviews));
     }
 
     public async Task<JobFinancialDefaultsDto> UpdateDefaultsAsync(
@@ -141,13 +152,21 @@ public sealed class JobFinancialService
             ?? throw new NotFoundException("Pipeline entry was not found.");
     }
 
+    private sealed record ProfileFinancialCounts(
+        int CurrentTotal,
+        int CurrentApplied,
+        int CurrentInterviews,
+        int ArchivedTotal,
+        int ArchivedApplied,
+        int ArchivedInterviews);
+
     private async Task<JobFinancialRowDto> ToRowAsync(
         JobPipelineEntry entry,
         IReadOnlyDictionary<Guid, JobCatalogItem> profiles,
         IReadOnlyDictionary<Guid, JobCatalogItem> sources,
         GoogleSheetAccess? access,
         HashSet<string> dropdownDone,
-        Dictionary<string, (int Total, int Applied, int Interviews)> listingCache,
+        Dictionary<string, ProfileFinancialCounts> listingCache,
         CancellationToken cancellationToken)
     {
         var profileTitle = profiles.TryGetValue(entry.ProfileId, out var profile)
@@ -157,54 +176,110 @@ public sealed class JobFinancialService
             ? source.Title
             : "Unknown source";
         var sourceLabel = $"{sourceTitle} · {entry.LocationName}";
-        var total = 0;
-        var applied = 0;
-        var interviews = 0;
+        var currentTotal = 0;
+        var currentApplied = 0;
+        var currentInterviews = 0;
+        var archivedTotal = 0;
+        var archivedApplied = 0;
+        var archivedInterviews = 0;
         if (access is not null
             && profile is not null
             && !string.IsNullOrWhiteSpace(profile.SpreadsheetId))
         {
-            if (dropdownDone.Add(profile.SpreadsheetId))
+            try
             {
-                await _sheets.EnsureProfileStatusDropdownAsync(
-                    access.AccessToken,
-                    profile.SpreadsheetId,
-                    cancellationToken);
-            }
-
-            var cacheKey = profile.SpreadsheetId;
-            if (!listingCache.TryGetValue(cacheKey, out var counts))
-            {
-                var sheets = await _sheets.ListSheetsAsync(
-                    access.AccessToken,
-                    profile.SpreadsheetId,
-                    cancellationToken);
-                var main = sheets.FirstOrDefault(sheet => sheet.Name == JobCatalogRules.SheetTabName(profile.Title));
-                if (main is not null)
+                if (dropdownDone.Add(profile.SpreadsheetId))
                 {
-                    var listings = await _sheets.ReadProfileListingsAsync(
+                    await _sheets.EnsureProfileStatusDropdownAsync(
                         access.AccessToken,
                         profile.SpreadsheetId,
-                        main.Name,
                         cancellationToken);
-                    counts = JobFinancialRules.CountStatuses(listings);
                 }
 
-                listingCache[cacheKey] = counts;
-            }
+                var cacheKey = profile.SpreadsheetId;
+                if (!listingCache.TryGetValue(cacheKey, out var counts))
+                {
+                    var sheets = await _sheets.ListSheetsAsync(
+                        access.AccessToken,
+                        profile.SpreadsheetId,
+                        cancellationToken);
+                    var main = sheets.FirstOrDefault(sheet => sheet.Name == JobCatalogRules.SheetTabName(profile.Title));
+                    if (main is not null)
+                    {
+                        var listings = await _sheets.ReadProfileListingsAsync(
+                            access.AccessToken,
+                            profile.SpreadsheetId,
+                            main.Name,
+                            cancellationToken);
+                        (currentTotal, currentApplied, currentInterviews) = JobFinancialRules.CountStatuses(listings);
+                    }
 
-            (total, applied, interviews) = counts;
+                    foreach (var sheet in sheets.Where(item => JobSheetNames.IsArchiveTab(item.Name)))
+                    {
+                        try
+                        {
+                            var listings = await _sheets.ReadProfileListingsAsync(
+                                access.AccessToken,
+                                profile.SpreadsheetId,
+                                sheet.Name,
+                                cancellationToken);
+                            var archived = JobFinancialRules.CountStatuses(listings);
+                            archivedTotal += archived.Total;
+                            archivedApplied += archived.Applied;
+                            archivedInterviews += archived.Interviews;
+                        }
+                        catch (GoogleOAuthException)
+                        {
+                        }
+                    }
+
+                    counts = new ProfileFinancialCounts(
+                        currentTotal,
+                        currentApplied,
+                        currentInterviews,
+                        archivedTotal,
+                        archivedApplied,
+                        archivedInterviews);
+                    listingCache[cacheKey] = counts;
+                }
+
+                currentTotal = counts.CurrentTotal;
+                currentApplied = counts.CurrentApplied;
+                currentInterviews = counts.CurrentInterviews;
+                archivedTotal = counts.ArchivedTotal;
+                archivedApplied = counts.ArchivedApplied;
+                archivedInterviews = counts.ArchivedInterviews;
+            }
+            catch (GoogleOAuthException)
+            {
+            }
         }
+
+        var archivedPrice = JobFinancialRules.Price(
+            archivedApplied,
+            archivedInterviews,
+            entry.ApplyRate,
+            entry.BonusRate);
+        var lifetimeApplied = currentApplied + archivedApplied;
+        var lifetimeInterviews = currentInterviews + archivedInterviews;
 
         return new JobFinancialRowDto(
             entry.Id,
             profileTitle,
             sourceLabel,
-            total,
-            applied,
-            interviews,
+            currentTotal,
+            currentApplied,
+            currentInterviews,
             entry.ApplyRate,
             entry.BonusRate,
-            JobFinancialRules.Price(applied, interviews, entry.ApplyRate, entry.BonusRate));
+            JobFinancialRules.Price(currentApplied, currentInterviews, entry.ApplyRate, entry.BonusRate),
+            archivedTotal,
+            archivedApplied,
+            archivedInterviews,
+            archivedPrice,
+            currentTotal + archivedTotal,
+            lifetimeApplied,
+            lifetimeInterviews,
+            JobFinancialRules.Price(lifetimeApplied, lifetimeInterviews, entry.ApplyRate, entry.BonusRate));
     }
 }

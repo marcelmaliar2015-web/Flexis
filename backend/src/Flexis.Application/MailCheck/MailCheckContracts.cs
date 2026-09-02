@@ -50,6 +50,30 @@ public sealed record MailCheckRunItemDto(
     string MailboxEmail,
     string MailboxProvider);
 
+public sealed record MailCheckRunTimingDto(
+    int TotalMs,
+    int LockMs,
+    int TokenMs,
+    int LabelsMs,
+    int ScanMs,
+    int FetchMs,
+    int ClassifyMs,
+    int ApplyMs);
+
+public sealed record MailCheckRunProgressDto(
+    bool Active,
+    string Stage,
+    string Message,
+    string? MailboxEmail,
+    int Processed,
+    int Scanned,
+    int AlreadySeen,
+    int ScanPage,
+    long ElapsedMs,
+    bool WaitingForLock,
+    string? ActiveRunKind,
+    string? WaitingRequestKind);
+
 public sealed record MailCheckRunDto(
     bool Busy,
     int Processed,
@@ -63,7 +87,8 @@ public sealed record MailCheckRunDto(
     Guid? MailboxId,
     string? MailboxEmail,
     string? MailboxProvider,
-    IReadOnlyList<MailCheckRunItemDto> Items);
+    IReadOnlyList<MailCheckRunItemDto> Items,
+    MailCheckRunTimingDto Timing);
 
 public sealed record MailCheckInboxItemDto(
     string Id,

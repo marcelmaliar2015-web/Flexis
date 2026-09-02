@@ -7,6 +7,7 @@ import { theme } from "@/app/providers/theme";
 import { ErrorBoundary } from "@/app/providers/ErrorBoundary";
 import { GoogleSyncProvider } from "@/app/providers/GoogleSyncProvider";
 import { NotificationProvider } from "@/app/providers/NotificationProvider";
+import { SessionLifecycle } from "@/app/providers/SessionLifecycle";
 import { AuthProvider } from "@/shared/auth/AuthProvider";
 
 type AppProvidersProps = {
@@ -21,6 +22,7 @@ export function AppProviders({ children }: AppProvidersProps) {
         <NotificationProvider>
           <ErrorBoundary>
             <AuthProvider>
+              <SessionLifecycle />
               <GoogleSyncProvider>{children}</GoogleSyncProvider>
             </AuthProvider>
           </ErrorBoundary>

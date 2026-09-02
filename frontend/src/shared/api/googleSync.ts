@@ -90,9 +90,13 @@ export async function syncGoogleWorkspace(
       queryFn: getJobPipelineBoard,
     });
     reportProgress(onProgress, 38);
-    await syncAllProfileBannedMatches(queryClient, connection.connected, (completed, total) => {
-      reportProgress(onProgress, 38 + (42 * completed) / total);
-    });
+    if (mode === "manual") {
+      await syncAllProfileBannedMatches(queryClient, connection.connected, (completed, total) => {
+        reportProgress(onProgress, 38 + (42 * completed) / total);
+      });
+    } else {
+      reportProgress(onProgress, 80);
+    }
     await queryClient.fetchQuery({
       queryKey: jobFinancialQueryKey,
       queryFn: getJobFinancialBoard,

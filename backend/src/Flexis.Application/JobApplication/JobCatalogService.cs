@@ -564,11 +564,6 @@ public sealed class JobCatalogService
         var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
         var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
         var main = RequireMainProfileSheet(profileSheets, profile.Title);
-        await _sheets.EnsureProfileMainStatusColumnAsync(
-            access.AccessToken,
-            profile.SpreadsheetId,
-            main.Name,
-            cancellationToken);
         var profileRows = await _sheets.ReadProfileListingsAsync(
             access.AccessToken,
             profile.SpreadsheetId,
@@ -600,6 +595,11 @@ public sealed class JobCatalogService
 
         if (statusUpdates.Count > 0)
         {
+            await _sheets.EnsureProfileMainStatusColumnAsync(
+                access.AccessToken,
+                profile.SpreadsheetId,
+                main.Name,
+                cancellationToken);
             await _sheets.SetProfileListingStatusesAsync(
                 access.AccessToken,
                 profile.SpreadsheetId,

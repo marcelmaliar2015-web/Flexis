@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Panel } from "@/features/mailCheck/mailCheckLayout";
 import { formatMailboxScanStatus, providerLabel } from "@/features/mailCheck/mailCheckUi";
+import { copyText } from "@/features/help/helpUi";
 import {
   disconnectMailCheckMailbox,
   getMailCheckMailbox,
@@ -104,6 +105,26 @@ export function MailCheckMailboxCard() {
     },
   });
 
+  const copyGmailUrlMutation = useMutation({
+    mutationFn: async () => {
+      const result = await startMailCheckGmail(`${window.location.origin}${appPaths.mailCheck}`);
+      await copyText(result.authorizationUrl);
+    },
+    onSuccess: () => {
+      setNotice({ severity: "success", text: "Gmail connect URL copied. Paste it in another browser." });
+    },
+  });
+
+  const copyOutlookUrlMutation = useMutation({
+    mutationFn: async () => {
+      const result = await startMailCheckOutlook(`${window.location.origin}${appPaths.mailCheck}`);
+      await copyText(result.authorizationUrl);
+    },
+    onSuccess: () => {
+      setNotice({ severity: "success", text: "Outlook connect URL copied. Paste it in another browser." });
+    },
+  });
+
   const disconnectMutation = useMutation({
     mutationFn: (id: string) => disconnectMailCheckMailbox(id),
     onMutate: (id) => {
@@ -177,13 +198,23 @@ export function MailCheckMailboxCard() {
               <Typography variant="body2" color="text.secondary">
                 Uses Gmail labels and stars. Add another Gmail account any time.
               </Typography>
-              <Button
-                disabled={connectGmailMutation.isPending}
-                loading={connectGmailMutation.isPending}
-                onClick={() => connectGmailMutation.mutate()}
-              >
-                Add Gmail
-              </Button>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                <Button
+                  disabled={connectGmailMutation.isPending}
+                  loading={connectGmailMutation.isPending}
+                  onClick={() => connectGmailMutation.mutate()}
+                >
+                  Add Gmail
+                </Button>
+                <Button
+                  variant="outlined"
+                  disabled={copyGmailUrlMutation.isPending}
+                  loading={copyGmailUrlMutation.isPending}
+                  onClick={() => copyGmailUrlMutation.mutate()}
+                >
+                  Copy URL
+                </Button>
+              </Stack>
             </Stack>
           </ProviderCard>
           <ProviderCard sx={{ flex: 1, opacity: outlookAvailable ? 1 : 0.72 }}>
@@ -191,17 +222,26 @@ export function MailCheckMailboxCard() {
               <Typography variant="subtitle1">Outlook</Typography>
               <Typography variant="body2" color="text.secondary">
                 {outlookAvailable
-                  ? "Uses Outlook categories and flags. Add Microsoft 365 or Outlook.com accounts."
+                  ? "Uses Outlook categories and inbox pin. Add Microsoft 365 or Outlook.com accounts."
                   : "An admin must save the Microsoft client on Settings before Add Outlook is available."}
               </Typography>
-              <Button
-                variant="outlined"
-                disabled={!outlookAvailable || connectOutlookMutation.isPending}
-                loading={connectOutlookMutation.isPending}
-                onClick={() => connectOutlookMutation.mutate()}
-              >
-                Add Outlook
-              </Button>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                <Button
+                  disabled={!outlookAvailable || connectOutlookMutation.isPending}
+                  loading={connectOutlookMutation.isPending}
+                  onClick={() => connectOutlookMutation.mutate()}
+                >
+                  Add Outlook
+                </Button>
+                <Button
+                  variant="outlined"
+                  disabled={!outlookAvailable || copyOutlookUrlMutation.isPending}
+                  loading={copyOutlookUrlMutation.isPending}
+                  onClick={() => copyOutlookUrlMutation.mutate()}
+                >
+                  Copy URL
+                </Button>
+              </Stack>
             </Stack>
           </ProviderCard>
         </Stack>

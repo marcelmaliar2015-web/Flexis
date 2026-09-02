@@ -21,3 +21,7 @@ export function formatPrice(value: number): string {
 export function formatCount(value: number): string {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value);
 }
+
+export function formatFinancialMetrics(applied: number, interviews: number, total: number): string {
+  return `${formatCount(applied)} applied · ${formatCount(interviews)} interviews · ${formatCount(total)} listings`;
+}

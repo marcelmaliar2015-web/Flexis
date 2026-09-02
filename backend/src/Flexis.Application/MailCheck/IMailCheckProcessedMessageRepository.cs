@@ -11,5 +11,7 @@ public interface IMailCheckProcessedMessageRepository
 
     Task AddAsync(MailCheckProcessedMessage message, CancellationToken cancellationToken);
 
+    Task UpsertAsync(MailCheckProcessedMessage message, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

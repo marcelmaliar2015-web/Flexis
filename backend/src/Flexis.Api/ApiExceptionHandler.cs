@@ -32,8 +32,15 @@ internal sealed class ApiExceptionHandler : IExceptionHandler
             NotFoundException => (StatusCodes.Status404NotFound, exception.Message, false),
             ConflictException => (StatusCodes.Status409Conflict, exception.Message, false),
             DomainRuleException => (StatusCodes.Status409Conflict, exception.Message, false),
-            GoogleOAuthException => (StatusCodes.Status400BadRequest, exception.Message, false),
+            GoogleOAuthException oauth => (
+                StatusCodes.Status400BadRequest,
+                GoogleOAuthErrors.FriendlyMessage(oauth.Message),
+                false),
             MicrosoftOAuthException => (StatusCodes.Status400BadRequest, exception.Message, false),
+            TaskCanceledException => (
+                StatusCodes.Status504GatewayTimeout,
+                "The request took too long. Try again or reduce the amount of data being loaded.",
+                false),
             _ => (
                 StatusCodes.Status500InternalServerError,
                 _environment.IsDevelopment() ? exception.Message : "An unexpected error occurred.",

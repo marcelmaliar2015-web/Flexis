@@ -178,8 +178,8 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                   <TableCell align="left">
                     Mail Flexis labeled or categorized and pinned. Filter by Rejected, Applied,
-                    Schedule, Scheduled, Assessment, Availability, Success, or Other (pin-configured
-                    labels only).
+                    Schedule, Scheduled, Assessment, Availability, Success, Other, or Less Important
+                    (pin-configured labels only).
                   </TableCell>
 
                 </TableRow>
@@ -263,7 +263,7 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                 primary="Pins keepers"
 
-                secondary="Gmail stars labeled mail. Outlook flags categorized mail. Junk or spam keepers move back to the inbox."
+                secondary="Gmail stars pinned mail. Outlook pins mail to the top of the inbox and adds a category. Junk or spam keepers move back to the inbox."
 
               />
 

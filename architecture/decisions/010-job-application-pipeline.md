@@ -14,7 +14,7 @@ After Update or Forward, Flexis reapplies protection. On the named main tab the 
 
 ## Consequences
 
-Gmail must be connected. Pipeline entries live in `job_pipeline_entries`. Deleting an entry does not remove listings already written to the profile sheet. Update always writes to the named main tab, not a log tab. Banned company matching is in [012-pipeline-banned-companies.md](012-pipeline-banned-companies.md).
+Gmail must be connected. Pipeline entries live in `job_pipeline_entries`. Deleting an entry does not remove listings already written to the profile sheet. Update always writes to the named main tab, not a log tab. `GET /api/job-application/pipeline` still returns stored entries when Google credentials fail; source location tabs are empty until Gmail can read sheets again. Banned company matching is in [012-pipeline-banned-companies.md](012-pipeline-banned-companies.md).
 
 ## Related
 

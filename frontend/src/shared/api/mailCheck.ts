@@ -1,10 +1,12 @@
 import { deleteRequest, getJson, postJson, putJson } from "@/shared/api/client";
+import type { QueryClient } from "@tanstack/react-query";
 import type {
   MailCheckInbox,
   MailCheckLabelSlug,
   MailCheckMailboxStatus,
   MailCheckModels,
   MailCheckRun,
+  MailCheckRunProgress,
   MailCheckSettings,
   MailCheckSettingsWrite,
 } from "@/shared/types/mailCheck";
@@ -16,6 +18,8 @@ export const mailCheckModelsQueryKey = ["mail-check-models"] as const;
 
 export const mailCheckLastRunQueryKey = ["mail-check-last-run"] as const;
 
+export const mailCheckRunProgressQueryKey = ["mail-check-run-progress"] as const;
+
 export const mailCheckNeedActionQueryKey = ["mail-check-need-action"] as const;
 
 export const mailCheckInboxRootQueryKey = ["mail-check-inbox"] as const;
@@ -23,10 +27,17 @@ export const mailCheckInboxRootQueryKey = ["mail-check-inbox"] as const;
 export const mailCheckInboxQueryKey = (label: MailCheckLabelSlug | "all") =>
   [...mailCheckInboxRootQueryKey, label] as const;
 
+export const mailCheckSettingsRevisionQueryKey = ["mail-check-settings-revision"] as const;
+
 export const defaultAutoCheckIntervalSeconds = 20;
 
 export function mailCheckAutoIntervalMs(intervalSeconds: number): number {
   return Math.max(intervalSeconds, 1) * 1000;
+}
+
+export function bumpMailCheckSettingsRevision(queryClient: QueryClient): void {
+  const current = queryClient.getQueryData<number>(mailCheckSettingsRevisionQueryKey) ?? 0;
+  queryClient.setQueryData(mailCheckSettingsRevisionQueryKey, current + 1);
 }
 
 export function getMailCheckSettings(): Promise<MailCheckSettings> {
@@ -58,6 +69,10 @@ export function runMailCheck(options?: {
     },
     { signal: options?.signal },
   );
+}
+
+export function getMailCheckRunProgress(): Promise<MailCheckRunProgress> {
+  return getJson<MailCheckRunProgress>("/api/mail-check/run/progress");
 }
 
 export function getMailCheckInbox(label: MailCheckLabelSlug | "all"): Promise<MailCheckInbox> {

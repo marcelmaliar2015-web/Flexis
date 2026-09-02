@@ -25,6 +25,7 @@ import { MailCheckMailboxCard } from "@/features/mailCheck/MailCheckMailboxCard"
 import { Panel } from "@/features/mailCheck/mailCheckLayout";
 import { errorMessage } from "@/features/mailCheck/mailCheckUi";
 import {
+  bumpMailCheckSettingsRevision,
   getMailCheckSettings,
   listMailCheckModels,
   mailCheckModelsQueryKey,
@@ -64,7 +65,7 @@ export function MailCheckSettingsTab() {
     queryFn: getMailCheckSettings,
   });
   const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("gpt-4o-mini");
+  const [model, setModel] = useState("gpt-4.1-mini");
   const [classifierPrompt, setClassifierPrompt] = useState("");
   const [labelActions, setLabelActions] = useState<Record<MailCheckLabelSlug, MailCheckMailboxAction>>(
     () => buildLabelActions(undefined),
@@ -108,6 +109,7 @@ export function MailCheckSettingsTab() {
       setNeedActionLabels(buildNeedActionLabels(result.needActionLabels));
       setFormError(null);
       setSaved(true);
+      bumpMailCheckSettingsRevision(queryClient);
       await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
       await queryClient.invalidateQueries({ queryKey: mailCheckModelsQueryKey });
       await queryClient.invalidateQueries({ queryKey: mailCheckNeedActionQueryKey });
@@ -123,7 +125,7 @@ export function MailCheckSettingsTab() {
       updateMailCheckSettings({
         apiKey: null,
         clearApiKey: true,
-        model: model.trim() || "gpt-4o-mini",
+        model: model.trim() || "gpt-4.1-mini",
         classifierPrompt: classifierPrompt.trim(),
         labelActions,
         needActionLabels,
@@ -132,6 +134,7 @@ export function MailCheckSettingsTab() {
       setApiKey("");
       setFormError(null);
       setSaved(true);
+      bumpMailCheckSettingsRevision(queryClient);
       await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
       await queryClient.invalidateQueries({ queryKey: mailCheckModelsQueryKey });
       await queryClient.invalidateQueries({ queryKey: mailCheckNeedActionQueryKey });
@@ -147,11 +150,12 @@ export function MailCheckSettingsTab() {
       updateMailCheckSettings({
         apiKey: null,
         clearApiKey: false,
-        model: settings?.model ?? (model.trim() || "gpt-4o-mini"),
+        model: settings?.model ?? (model.trim() || "gpt-4.1-mini"),
         autoCheckEnabled: enabled,
       }),
     onSuccess: async () => {
       setFormError(null);
+      bumpMailCheckSettingsRevision(queryClient);
       await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
     },
     onError: (error) => {
@@ -200,8 +204,8 @@ export function MailCheckSettingsTab() {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               When enabled, Flexis checks new mail every {settings?.autoCheckIntervalSeconds ?? 20}{" "}
-              seconds while the Mail Check page is visible. One message per mailbox per run keeps
-              Gmail, Outlook, and OpenAI within free-tier rate limits.
+              seconds while the Mail Check page is visible. Each run classifies up to three messages
+              per mailbox when more mail is waiting.
             </Typography>
           </Stack>
           <FormControlLabel
@@ -268,7 +272,7 @@ export function MailCheckSettingsTab() {
                   helperText={
                     settings?.hasApiKey
                       ? "Recommended models are listed first. You can type any id."
-                      : "Save a key first to load models, or type an id such as gpt-4o-mini."
+                      : "Save a key first to load models, or type an id such as gpt-4.1-mini."
                   }
                 />
               )}
@@ -303,7 +307,7 @@ export function MailCheckSettingsTab() {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               After the classifier picks a label, Flexis applies pin, trash, or keep. Pin creates a
-              mailbox label or category and stars or flags the message. Trash moves it to trash.
+              mailbox label or category; Gmail also stars the message. Outlook also pins to the top of the inbox. Trash moves it to trash.
               Keep leaves the message untouched.
             </Typography>
           </Stack>

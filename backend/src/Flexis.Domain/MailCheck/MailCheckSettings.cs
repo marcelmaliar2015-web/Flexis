@@ -2,10 +2,10 @@ namespace Flexis.Domain.MailCheck;
 
 public sealed class MailCheckSettings
 {
-    public const string DefaultModel = "gpt-4o-mini";
+    public const string DefaultModel = "gpt-4.1-mini";
 
     public const string DefaultLabelActionsJson =
-        "{\"rejected\":\"trash\",\"applied\":\"keep\",\"schedule\":\"pin\",\"scheduled\":\"pin\",\"assessment\":\"pin\",\"availability\":\"pin\",\"success\":\"pin\",\"other\":\"keep\"}";
+        "{\"rejected\":\"trash\",\"applied\":\"keep\",\"schedule\":\"pin\",\"scheduled\":\"pin\",\"assessment\":\"pin\",\"availability\":\"pin\",\"success\":\"pin\",\"other\":\"keep\",\"less_important\":\"trash\"}";
 
     public const string DefaultNeedActionLabelsJson = "[\"schedule\",\"assessment\",\"availability\"]";
 

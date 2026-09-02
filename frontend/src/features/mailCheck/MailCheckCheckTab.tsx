@@ -13,30 +13,13 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useMailCheckAuto } from "@/app/providers/MailCheckProvider";
+import { MailCheckProgressPanel } from "@/features/mailCheck/MailCheckProgressPanel";
 import { EmptyState, Panel } from "@/features/mailCheck/mailCheckLayout";
-import {
-  applySessionRound,
-  createSession,
-  type MailCheckCheckSession,
-  type MailboxCheckStats,
-} from "@/features/mailCheck/mailCheckRunSession";
-import { actionLabel, errorMessage, formatMailboxScanStatus, providerLabel } from "@/features/mailCheck/mailCheckUi";
-import { isAbortError } from "@/shared/api/client";
-import {
-  getMailCheckSettings,
-  mailCheckInboxRootQueryKey,
-  mailCheckLastRunQueryKey,
-  mailCheckNeedActionQueryKey,
-  mailCheckSettingsQueryKey,
-  runMailCheck,
-} from "@/shared/api/mailCheck";
-import type { MailCheckMailboxItem } from "@/shared/types/mailCheck";
-
-const maxRounds = 500;
-const busyWaitMs = 1500;
-const maxBusyRetries = 20;
+import type { MailboxCheckStats } from "@/features/mailCheck/mailCheckRunSession";
+import { actionLabel, formatMailboxScanStatus, providerLabel } from "@/features/mailCheck/mailCheckUi";
+import type { useMailCheckRun } from "@/features/mailCheck/useMailCheckRun";
+import type { MailCheckMailboxItem, MailCheckSettings } from "@/shared/types/mailCheck";
 
 const MailboxCard = styled(Box, {
   shouldForwardProp: (prop) => prop !== "active",
@@ -55,188 +38,48 @@ const StatBlock = styled(Stack)(({ theme }) => ({
   gap: theme.spacing(0.25),
 }));
 
-function wait(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const id = window.setTimeout(resolve, ms);
-    if (!signal) {
-      return;
-    }
+type MailCheckRunState = ReturnType<typeof useMailCheckRun>;
 
-    if (signal.aborted) {
-      window.clearTimeout(id);
-      reject(new DOMException("Aborted", "AbortError"));
-      return;
-    }
+type MailCheckCheckTabProps = {
+  settings: MailCheckSettings | undefined;
+  mailCheckRun: MailCheckRunState;
+};
 
-    signal.addEventListener(
-      "abort",
-      () => {
-        window.clearTimeout(id);
-        reject(new DOMException("Aborted", "AbortError"));
-      },
-      { once: true },
-    );
-  });
-}
-
-async function runUntilCaughtUp(
-  mailboxes: MailCheckMailboxItem[],
-  mailboxId: string | null,
-  onProgress: (session: MailCheckCheckSession) => void,
-  signal?: AbortSignal,
-): Promise<MailCheckCheckSession> {
-  let session = createSession(mailboxes);
-  let rounds = 0;
-  let busyRetries = 0;
-
-  onProgress({
-    ...session,
-    phase: "scanning",
-    message: mailboxId ? "Starting mailbox check…" : "Starting check on all mailboxes…",
-  });
-
-  try {
-    while (rounds < maxRounds) {
-      if (signal?.aborted) {
-        break;
-      }
-
-      const next = await runMailCheck({
-        force: true,
-        mailboxId,
-        resetCursor: rounds === 0,
-        signal,
-      });
-
-      if (next.busy) {
-        busyRetries += 1;
-        if (busyRetries > maxBusyRetries) {
-          session = applySessionRound(session, { ...next, hasMore: true }, false);
-          onProgress(session);
-          return session;
-        }
-
-        session = applySessionRound(session, next, false);
-        onProgress(session);
-        await wait(busyWaitMs, signal);
-        continue;
-      }
-
-      busyRetries = 0;
-      if (next.processed > 0) {
-        rounds += 1;
-      }
-
-      session = applySessionRound(session, next, false);
-      onProgress(session);
-
-      if (!next.hasMore) {
-        break;
-      }
-    }
-  } catch (error) {
-    if (!isAbortError(error)) {
-      throw error;
-    }
-  }
-
-  if (signal?.aborted) {
-    session = {
-      ...session,
-      phase: "cancelled",
-      message:
-        session.totals.processed > 0
-          ? `Stopped after ${session.totals.processed} message${session.totals.processed === 1 ? "" : "s"}`
-          : "Stopped before any messages were processed",
-    };
-  } else if (session.phase !== "done") {
-    session = { ...session, phase: "done" };
-  }
-
-  onProgress(session);
-  return session;
-}
-
-export function MailCheckCheckTab() {
-  const queryClient = useQueryClient();
-  const settingsQuery = useQuery({
-    queryKey: mailCheckSettingsQueryKey,
-    queryFn: getMailCheckSettings,
-  });
-  const sessionQuery = useQuery({
-    queryKey: mailCheckLastRunQueryKey,
-    queryFn: async () => null as MailCheckCheckSession | null,
-    enabled: false,
-    staleTime: Infinity,
-  });
-  const [runError, setRunError] = useState<string | null>(null);
-  const [activeMailboxId, setActiveMailboxId] = useState<string | "all" | null>(null);
-  const [cancelling, setCancelling] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
-  const cancelledRef = useRef(false);
-  const settings = settingsQuery.data;
-  const session = sessionQuery.data;
+export function MailCheckCheckTab({ settings, mailCheckRun }: MailCheckCheckTabProps) {
+  const autoCheck = useMailCheckAuto();
+  const {
+    session,
+    runError,
+    activeMailboxId,
+    cancelling,
+    checking,
+    elapsedMs,
+    serverWaitMs,
+    liveProgress,
+    interruptedByRefresh,
+    cancelCheck,
+    startCheck,
+  } = mailCheckRun;
   const mailboxes = settings?.mailboxes ?? [];
-
-  const checkMutation = useMutation({
-    mutationFn: (mailboxId: string | null) =>
-      runUntilCaughtUp(
-        mailboxes,
-        mailboxId,
-        (nextSession) => {
-          queryClient.setQueryData(mailCheckLastRunQueryKey, nextSession);
-        },
-        abortRef.current?.signal,
-      ),
-    onMutate: (mailboxId) => {
-      cancelledRef.current = false;
-      setCancelling(false);
-      abortRef.current = new AbortController();
-      setRunError(null);
-      setActiveMailboxId(mailboxId ?? "all");
-      const initial = createSession(mailboxes);
-      queryClient.setQueryData(mailCheckLastRunQueryKey, {
-        ...initial,
-        phase: "scanning",
-        message: mailboxId ? "Starting mailbox check…" : "Starting check on all mailboxes…",
-      });
-    },
-    onSuccess: async (result) => {
-      queryClient.setQueryData(mailCheckLastRunQueryKey, result);
-      await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
-      await queryClient.invalidateQueries({ queryKey: mailCheckInboxRootQueryKey });
-      await queryClient.invalidateQueries({ queryKey: mailCheckNeedActionQueryKey });
-      setActiveMailboxId(null);
-      abortRef.current = null;
-      setCancelling(false);
-    },
-    onError: (error) => {
-      abortRef.current = null;
-      setActiveMailboxId(null);
-      setCancelling(false);
-      if (isAbortError(error)) {
-        return;
-      }
-
-      setRunError(errorMessage(error));
-      queryClient.setQueryData(mailCheckLastRunQueryKey, null);
-    },
-  });
-
-  function cancelCheck() {
-    cancelledRef.current = true;
-    setCancelling(true);
-    abortRef.current?.abort();
-  }
-
   const ready = Boolean(mailboxes.length > 0 && settings?.hasApiKey);
-  const checking = checkMutation.isPending;
   const hasMailbox = mailboxes.length > 0;
   const totals = session?.totals;
   const items = totals?.items ?? [];
-  const showSessionBanner = Boolean(session?.message && (checking || session.phase === "done" || session.phase === "cancelled"));
-  const hasSessionStats = Boolean(session && (checking || session.totals.processed > 0));
+  const showSessionBanner = Boolean(
+    session?.message && !checking && (session.phase === "done" || session.phase === "cancelled"),
+  );
+  const showProgress = Boolean(
+    session &&
+      (checking ||
+        interruptedByRefresh ||
+        session.totals.processed > 0 ||
+        session.totals.scanned > 0 ||
+        session.phase === "done" ||
+        session.phase === "cancelled"),
+  );
   const sessionTotals = session?.totals;
+  const activeMailboxKey =
+    session?.activeMailboxId ?? (activeMailboxId === "all" ? null : activeMailboxId);
 
   return (
     <Stack spacing={2}>
@@ -248,22 +91,38 @@ export function MailCheckCheckTab() {
       ) : null}
       {runError ? <Alert severity="error">{runError}</Alert> : null}
 
-      {hasSessionStats && sessionTotals ? (
+      {autoCheck.isLive ? (
+        <Alert severity="info">
+          Auto-check runs every {autoCheck.intervalSeconds} seconds while Mail Check stays open
+          {autoCheck.isRunning ? " and is classifying mail now" : ""}. The AppBar pill shows live
+          status. Manual Check cancels the in-flight auto request and takes the server lock.
+        </Alert>
+      ) : null}
+
+      {showProgress && session && sessionTotals ? (
         <Panel>
           <Stack spacing={1.5}>
-            <Stack spacing={0.25}>
-              <Typography variant="h6" component="h2">
-                This check session
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Totals since you clicked Check or Check all. Cleared when you start a new check.
-              </Typography>
-            </Stack>
+            <MailCheckProgressPanel
+              session={session}
+              checking={checking}
+              elapsedMs={elapsedMs}
+              serverWaitMs={serverWaitMs}
+              liveProgress={liveProgress}
+              autoCheckLive={autoCheck.isLive}
+              interruptedByRefresh={interruptedByRefresh}
+            />
             <SessionStatsRow
-              processed={sessionTotals.processed}
+              processed={
+                sessionTotals.processed +
+                (liveProgress?.active && !liveProgress.waitingForLock ? liveProgress.processed : 0)
+              }
               labeled={sessionTotals.labeled}
               trashed={sessionTotals.trashed}
               skipped={sessionTotals.skipped}
+              alreadySeen={
+                sessionTotals.alreadySeen +
+                (liveProgress?.active && !liveProgress.waitingForLock ? liveProgress.alreadySeen : 0)
+              }
               errors={sessionTotals.errors}
             />
           </Stack>
@@ -278,8 +137,11 @@ export function MailCheckCheckTab() {
                 Last background check
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                One message per auto-check while Mail Check is open (about every 2 minutes). Ran at{" "}
-                {new Date(settings.lastRunAt).toLocaleString()}.
+                Up to three messages per auto-check API call (every{" "}
+                {settings.autoCheckIntervalSeconds ?? 20} seconds). Ran at{" "}
+                {new Date(settings.lastRunAt).toLocaleString()}. Trashed mail is in Gmail Trash or
+                Outlook Deleted Items. Left in inbox mail stays in the inbox with a Flexis category
+                or label.
               </Typography>
             </Stack>
             <SessionStatsRow
@@ -287,6 +149,7 @@ export function MailCheckCheckTab() {
               labeled={settings.lastLabeled}
               trashed={settings.lastTrashed}
               skipped={settings.lastSkipped}
+              alreadySeen={0}
               errors={settings.lastErrors}
             />
             <Typography variant="caption" color="text.secondary">
@@ -308,8 +171,11 @@ export function MailCheckCheckTab() {
                 Manual check
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Run Check or Check all to classify mail one message at a time. Counts below labeled
-                &quot;This check session&quot; reset when you start a new check.
+                Newest unprocessed message first. No date limit. Outlook sorts by received time;
+                Gmail skips mail that already has a Flexis label. Each server round handles up to
+                three messages; Check all repeats until caught up. Trashed moves mail to Gmail Trash
+                or Outlook Deleted Items. Left in inbox keeps mail in place with a Flexis label or
+                category. Open the progress panel above for live stages and timing.
               </Typography>
             </Stack>
             <Button
@@ -322,22 +188,12 @@ export function MailCheckCheckTab() {
                   return;
                 }
 
-                checkMutation.mutate(null);
+                startCheck(null);
               }}
             >
               {checking ? "Cancel" : "Check all"}
             </Button>
           </Stack>
-
-          {checking ? (
-            <Stack spacing={1}>
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                <CircularProgress size={18} />
-                <Typography variant="body2">{session?.message ?? "Working…"}</Typography>
-              </Stack>
-              <LinearProgress />
-            </Stack>
-          ) : null}
 
           {!checking && showSessionBanner && session?.message ? (
             <Alert severity={session.phase === "cancelled" ? "warning" : "success"}>{session.message}</Alert>
@@ -351,13 +207,13 @@ export function MailCheckCheckTab() {
                 key={mailbox.id}
                 mailbox={mailbox}
                 stats={session?.mailboxStats[mailbox.id]}
-                active={checking && session?.activeMailboxId === mailbox.id}
+                active={checking && activeMailboxKey === mailbox.id}
                 checking={checking}
                 isTarget={checking && (activeMailboxId === "all" || activeMailboxId === mailbox.id)}
                 canRun={ready}
-                showCancel={checking && (activeMailboxId === mailbox.id || (activeMailboxId === "all" && active))}
+                showCancel={checking && (activeMailboxId === mailbox.id || (activeMailboxId === "all" && activeMailboxKey === mailbox.id))}
                 cancelling={cancelling}
-                onRun={() => checkMutation.mutate(mailbox.id)}
+                onRun={() => startCheck(mailbox.id)}
                 onCancel={cancelCheck}
               />
             ))}
@@ -443,6 +299,7 @@ function MailboxRunCard({
     labeled: 0,
     trashed: 0,
     skipped: 0,
+    alreadySeen: 0,
     errors: 0,
   };
 
@@ -500,7 +357,12 @@ function MailboxRunCard({
           <MailboxStat label="Processed" value={values.processed} emphasize={active} />
           <MailboxStat label="Pinned" value={values.labeled} emphasize={active && values.labeled > 0} />
           <MailboxStat label="Trashed" value={values.trashed} emphasize={active && values.trashed > 0} />
-          <MailboxStat label="Kept" value={values.skipped} emphasize={active && values.skipped > 0} />
+          <MailboxStat label="Left in inbox" value={values.skipped} emphasize={active && values.skipped > 0} />
+          <MailboxStat
+            label="Already labeled"
+            value={values.alreadySeen}
+            emphasize={active && values.alreadySeen > 0}
+          />
           <MailboxStat
             label="Errors"
             value={values.errors}
@@ -519,12 +381,14 @@ function SessionStatsRow({
   labeled,
   trashed,
   skipped,
+  alreadySeen,
   errors,
 }: {
   processed: number;
   labeled: number;
   trashed: number;
   skipped: number;
+  alreadySeen: number;
   errors: number;
 }) {
   return (
@@ -532,7 +396,8 @@ function SessionStatsRow({
       <MailboxStat label="Processed" value={processed} />
       <MailboxStat label="Pinned" value={labeled} />
       <MailboxStat label="Trashed" value={trashed} />
-      <MailboxStat label="Kept" value={skipped} />
+      <MailboxStat label="Left in inbox" value={skipped} />
+      <MailboxStat label="Already labeled" value={alreadySeen} />
       <MailboxStat label="Errors" value={errors} tone={errors > 0 ? "error" : "default"} />
     </Stack>
   );

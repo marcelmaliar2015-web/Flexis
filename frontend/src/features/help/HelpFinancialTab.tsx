@@ -20,9 +20,9 @@ export function HelpFinancialTab() {
           Financial
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Financial prices each Operations row from the profile main tab. Open it after listings have
-          a Status of Applied or Interview. Dashboard repeats workspace price, listing mix, and
-          pipeline contribution from the same counts.
+          Financial prices each Operations row from the profile main tab and numbered archive tabs.
+          Today is the current main tab. Archived is sheets named 1, 2, 3 after Forward. Lifetime is
+          both combined. Dashboard workspace KPIs still use today main-tab counts.
         </Typography>
       </Stack>
       <Panel>
@@ -48,28 +48,24 @@ export function HelpFinancialTab() {
                   <TableCell align="left">Source title · location</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell align="left">Total</TableCell>
-                  <TableCell align="left">Non-empty listing rows on the named profile main tab</TableCell>
+                  <TableCell align="left">Today</TableCell>
+                  <TableCell align="left">Applied, interviews, and price from the named profile main tab</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell align="left">Applied</TableCell>
-                  <TableCell align="left">Rows whose Status is Applied</TableCell>
+                  <TableCell align="left">Archived</TableCell>
+                  <TableCell align="left">Applied, interviews, and price from numbered sheets created by Forward</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell align="left">Interviews</TableCell>
-                  <TableCell align="left">Rows whose Status is Interview</TableCell>
+                  <TableCell align="left">Lifetime</TableCell>
+                  <TableCell align="left">Today plus archived combined for that row</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell align="left">Apply Rate</TableCell>
+                  <TableCell align="left">Apply rate</TableCell>
                   <TableCell align="left">Price per Applied row. Editable per pipeline row. Saved on blur.</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell align="left">Bonus Rate</TableCell>
+                  <TableCell align="left">Bonus rate</TableCell>
                   <TableCell align="left">Price per Interview row. Editable per pipeline row. Saved on blur.</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell align="left">Price</TableCell>
-                  <TableCell align="left">Applied times apply rate plus interviews times bonus rate, rounded to 2 decimals</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -90,14 +86,14 @@ export function HelpFinancialTab() {
             </ListItem>
             <ListItem disableGutters>
               <ListItemText
-                primary="All sheets"
-                secondary="Sum of price, total, applied, and interviews across every pipeline row on the table."
+                primary="Summary cards"
+                secondary="Today, Archived, and Lifetime show workspace price and listing counts for every pipeline row."
               />
             </ListItem>
             <ListItem disableGutters>
               <ListItemText
                 primary="Selected rows"
-                secondary="Check rows, or use the header checkbox, to price a subset. The selected card appears as a dash until at least one row is checked."
+                secondary="Check rows, or use the header checkbox, to price a subset. The selected card shows today, archived, and lifetime totals."
               />
             </ListItem>
           </List>

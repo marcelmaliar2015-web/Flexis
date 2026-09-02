@@ -18,6 +18,14 @@ export type JobFinancialRow = {
   applyRate: number;
   bonusRate: number;
   price: number;
+  archivedTotal: number;
+  archivedApplied: number;
+  archivedInterviews: number;
+  archivedPrice: number;
+  lifetimeTotal: number;
+  lifetimeApplied: number;
+  lifetimeInterviews: number;
+  lifetimePrice: number;
 };
 
 export type JobFinancialBoard = {
@@ -27,6 +35,14 @@ export type JobFinancialBoard = {
   allTotal: number;
   allApplied: number;
   allInterviews: number;
+  archivedAllPrice: number;
+  archivedAllTotal: number;
+  archivedAllApplied: number;
+  archivedAllInterviews: number;
+  lifetimeAllPrice: number;
+  lifetimeAllTotal: number;
+  lifetimeAllApplied: number;
+  lifetimeAllInterviews: number;
 };
 
 export type JobApplicationLog = {

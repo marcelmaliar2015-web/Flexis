@@ -14,7 +14,7 @@ internal sealed class GmailMailboxClient : IMailMailbox
     private const string Base = "https://gmail.googleapis.com/gmail/v1/users/me";
     private const int CandidatePageSize = 25;
     private const int LabeledPageSize = 40;
-    private const int BodyLimit = 8000;
+    private const int BodyLimit = 20_000;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -25,8 +25,7 @@ internal sealed class GmailMailboxClient : IMailMailbox
 
     private static string BuildCandidateQuery()
     {
-        var excludes = MailCheckLabelCatalog.All
-            .Select(MailCheckMailboxNames.For)
+        var excludes = MailCheckMailboxNames.AllLookupNames()
             .Select(name => $"-label:\"{name}\"");
         return string.Join(
             ' ',
@@ -125,11 +124,52 @@ internal sealed class GmailMailboxClient : IMailMailbox
         }
 
         var listed = await SendJson<MessageList>(accessToken, HttpMethod.Get, url, null, cancellationToken);
-        var messages = (listed.Messages ?? [])
+        var messageIds = (listed.Messages ?? [])
             .Where(item => !string.IsNullOrWhiteSpace(item.Id))
-            .Select(item => new MailMessageRef(item.Id!))
+            .Select(item => item.Id!)
             .ToList();
+        var messages = await SortMessageRefsNewestFirst(accessToken, messageIds, cancellationToken);
         return new MailCandidatePage(messages, listed.NextPageToken);
+    }
+
+    private async Task<IReadOnlyList<MailMessageRef>> SortMessageRefsNewestFirst(
+        string accessToken,
+        IReadOnlyList<string> messageIds,
+        CancellationToken cancellationToken)
+    {
+        if (messageIds.Count == 0)
+        {
+            return [];
+        }
+
+        if (messageIds.Count == 1)
+        {
+            var singleDate = await LoadInternalDateAsync(accessToken, messageIds[0], cancellationToken);
+            return [new MailMessageRef(messageIds[0], singleDate.InternalDateMs)];
+        }
+
+        var dated = await Task.WhenAll(
+            messageIds.Select(id => LoadInternalDateAsync(accessToken, id, cancellationToken)));
+        return dated
+            .OrderByDescending(item => item.InternalDateMs)
+            .ThenByDescending(item => item.Id, StringComparer.Ordinal)
+            .Select(item => new MailMessageRef(item.Id, item.InternalDateMs))
+            .ToList();
+    }
+
+    private async Task<(string Id, long InternalDateMs)> LoadInternalDateAsync(
+        string accessToken,
+        string messageId,
+        CancellationToken cancellationToken)
+    {
+        var meta = await SendJson<GmailMessage>(
+            accessToken,
+            HttpMethod.Get,
+            $"{Base}/messages/{Uri.EscapeDataString(messageId)}?format=metadata&fields=id,internalDate",
+            null,
+            cancellationToken);
+        var internalDateMs = long.TryParse(meta.InternalDate, out var parsed) ? parsed : 0L;
+        return (messageId, internalDateMs);
     }
 
     public async Task<MailMessageContent> GetMessageAsync(
@@ -151,11 +191,12 @@ internal sealed class GmailMailboxClient : IMailMailbox
         string messageId,
         string labelId,
         IReadOnlyList<string> currentLabelIds,
-        bool star,
+        bool gmailStar,
+        bool pinAction,
         CancellationToken cancellationToken)
     {
         var add = new List<string> { labelId };
-        if (star)
+        if (gmailStar && !currentLabelIds.Contains("STARRED", StringComparer.Ordinal))
         {
             add.Add("STARRED");
         }
@@ -169,11 +210,35 @@ internal sealed class GmailMailboxClient : IMailMailbox
             }
         }
 
+        if (currentLabelIds.Contains("UNREAD", StringComparer.Ordinal))
+        {
+            remove.Add("UNREAD");
+        }
+
         return SendJson<object>(
             accessToken,
             HttpMethod.Post,
             $"{Base}/messages/{Uri.EscapeDataString(messageId)}/modify",
             new { addLabelIds = add.Distinct(StringComparer.Ordinal).ToArray(), removeLabelIds = remove.ToArray() },
+            cancellationToken);
+    }
+
+    public Task MarkAsReadAsync(
+        string accessToken,
+        string messageId,
+        IReadOnlyList<string> currentLabelIds,
+        CancellationToken cancellationToken)
+    {
+        if (!currentLabelIds.Contains("UNREAD", StringComparer.Ordinal))
+        {
+            return Task.CompletedTask;
+        }
+
+        return SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"{Base}/messages/{Uri.EscapeDataString(messageId)}/modify",
+            new { removeLabelIds = new[] { "UNREAD" } },
             cancellationToken);
     }
 
@@ -242,6 +307,11 @@ internal sealed class GmailMailboxClient : IMailMailbox
                     null,
                     cancellationToken);
                 var content = ToContent(payload);
+                if (MailCheckMessageState.IsTrashed(content))
+                {
+                    continue;
+                }
+
                 results.Add(new MailLabeledMessage(
                     content.Id,
                     content.ThreadId,

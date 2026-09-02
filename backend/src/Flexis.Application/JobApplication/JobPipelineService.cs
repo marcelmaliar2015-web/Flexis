@@ -37,13 +37,15 @@ public sealed class JobPipelineService
 
     public async Task<JobPipelineBoardDto> GetBoardAsync(Guid userId, CancellationToken cancellationToken)
     {
-        GoogleSheetAccess? access = null;
         try
         {
-            access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
+            var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
             await _driveLayout.EnsureFoldersAsync(userId, access.AccessToken, cancellationToken);
         }
         catch (ValidationFailedException)
+        {
+        }
+        catch (GoogleOAuthException)
         {
         }
 
@@ -56,7 +58,7 @@ public sealed class JobPipelineService
             IReadOnlyList<SourceLocationDto> locations = [];
             if (!string.IsNullOrWhiteSpace(source.SpreadsheetId))
             {
-                locations = await ListSourceLocations(userId, source, cancellationToken);
+                locations = await ListSourceLocations(userId, source, cancellationToken, tolerateGoogleErrors: true);
             }
 
             sourceOptions.Add(new JobPipelineSourceOptionDto(source.Id, source.Title, locations));
@@ -411,11 +413,36 @@ public sealed class JobPipelineService
     private async Task<IReadOnlyList<SourceLocationDto>> ListSourceLocations(
         Guid userId,
         JobCatalogItem source,
+        CancellationToken cancellationToken,
+        bool tolerateGoogleErrors = false)
+    {
+        try
+        {
+            return await ListSourceLocationsCore(userId, source, cancellationToken);
+        }
+        catch (GoogleOAuthException) when (tolerateGoogleErrors)
+        {
+            return [];
+        }
+    }
+
+    private async Task<IReadOnlyList<SourceLocationDto>> ListSourceLocationsCore(
+        Guid userId,
+        JobCatalogItem source,
         CancellationToken cancellationToken)
     {
-        var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
-        var sheets = await _sheets.ListSheetsAsync(accessToken, source.SpreadsheetId, cancellationToken);
-        return sheets.Select(sheet => new SourceLocationDto(sheet.SheetId, sheet.Name)).ToArray();
+        try
+        {
+            var accessToken = await _tokens.GetAccessTokenAsync(userId, cancellationToken);
+            var sheets = await _sheets.ListSheetsAsync(accessToken, source.SpreadsheetId, cancellationToken);
+            return sheets.Select(sheet => new SourceLocationDto(sheet.SheetId, sheet.Name)).ToArray();
+        }
+        catch (GoogleOAuthException exception) when (GoogleOAuthErrors.IsCredentialFailure(exception.Message))
+        {
+            var access = await _tokens.ForceRefreshSheetAccessAsync(userId, cancellationToken);
+            var sheets = await _sheets.ListSheetsAsync(access.AccessToken, source.SpreadsheetId, cancellationToken);
+            return sheets.Select(sheet => new SourceLocationDto(sheet.SheetId, sheet.Name)).ToArray();
+        }
     }
 
     private async Task<JobPipelineEntry> RequireEntry(Guid userId, Guid id, CancellationToken cancellationToken)

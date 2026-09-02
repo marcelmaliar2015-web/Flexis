@@ -5,7 +5,6 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import { styled } from "@mui/material/styles";
 import { Link as RouterLink, Outlet, useLocation } from "react-router-dom";
-import { MailCheckProvider } from "@/app/providers/MailCheckProvider";
 import { appPaths } from "@/shared/config/paths";
 
 const AuthenticatedRoot = styled(Box)({
@@ -65,9 +64,7 @@ export function AuthenticatedLayout() {
         </List>
       </SidePanel>
       <MainPane>
-        <MailCheckProvider>
-          <Outlet />
-        </MailCheckProvider>
+        <Outlet />
       </MainPane>
     </AuthenticatedRoot>
   );

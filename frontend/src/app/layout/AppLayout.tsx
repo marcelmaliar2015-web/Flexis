@@ -6,9 +6,11 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { Link as RouterLink, Outlet } from "react-router-dom";
+import { MailCheckProvider } from "@/app/providers/MailCheckProvider";
 import { ClientIntegrationsStatus } from "@/app/layout/ClientIntegrationsStatus";
 import { GoogleConnectStatus } from "@/app/layout/GoogleConnectStatus";
 import { GoogleSyncStatus } from "@/app/layout/GoogleSyncStatus";
+import { MailCheckAutoStatus } from "@/app/layout/MailCheckAutoStatus";
 import { NotificationCenter } from "@/app/layout/NotificationCenter";
 import { UserMenu } from "@/app/layout/UserMenu";
 import { useAuth } from "@/shared/auth/AuthProvider";
@@ -56,49 +58,52 @@ export function AppLayout() {
   const auth = useAuth();
 
   return (
-    <ShellRoot>
-      <ShellBar position="sticky">
-        <Toolbar>
-          <Box
-            component={RouterLink}
-            to={auth.user ? appPaths.dashboard : appPaths.home}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.25,
-              flexGrow: 1,
-              minWidth: 0,
-              textDecoration: "none",
-              color: "inherit",
-            }}
-          >
-            <BrandMark />
-            <Typography variant="h6" component="span">
-              Flexis
-            </Typography>
-          </Box>
-          {auth.user ? (
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexShrink: 0 }}>
-              <NotificationCenter />
-              <ClientIntegrationsStatus />
-              <GoogleSyncStatus />
-              <GoogleConnectStatus />
-              <HeaderRail />
-              <UserMenu />
-            </Stack>
-          ) : (
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexShrink: 0 }}>
-              <NotificationCenter />
-              <Button color="inherit" component={RouterLink} to={appPaths.signIn} variant="text">
-                Sign in
-              </Button>
-            </Stack>
-          )}
-        </Toolbar>
-      </ShellBar>
-      <ShellMain>
-        <Outlet />
-      </ShellMain>
-    </ShellRoot>
+    <MailCheckProvider>
+      <ShellRoot>
+        <ShellBar position="sticky">
+          <Toolbar>
+            <Box
+              component={RouterLink}
+              to={auth.user ? appPaths.dashboard : appPaths.home}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.25,
+                flexGrow: 1,
+                minWidth: 0,
+                textDecoration: "none",
+                color: "inherit",
+              }}
+            >
+              <BrandMark />
+              <Typography variant="h6" component="span">
+                Flexis
+              </Typography>
+            </Box>
+            {auth.user ? (
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexShrink: 0 }}>
+                <NotificationCenter />
+                <MailCheckAutoStatus />
+                <ClientIntegrationsStatus />
+                <GoogleSyncStatus />
+                <GoogleConnectStatus />
+                <HeaderRail />
+                <UserMenu />
+              </Stack>
+            ) : (
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexShrink: 0 }}>
+                <NotificationCenter />
+                <Button color="inherit" component={RouterLink} to={appPaths.signIn} variant="text">
+                  Sign in
+                </Button>
+              </Stack>
+            )}
+          </Toolbar>
+        </ShellBar>
+        <ShellMain>
+          <Outlet />
+        </ShellMain>
+      </ShellRoot>
+    </MailCheckProvider>
   );
 }

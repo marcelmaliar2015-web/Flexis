@@ -2,7 +2,7 @@ using Flexis.Domain.MailCheck;
 
 namespace Flexis.Application.MailCheck;
 
-public sealed record MailMessageRef(string Id);
+public sealed record MailMessageRef(string Id, long SortDateMs = 0);
 
 public sealed record MailCandidatePage(IReadOnlyList<MailMessageRef> Messages, string? NextPageToken);
 
@@ -48,7 +48,14 @@ public interface IMailMailbox
         string messageId,
         string labelId,
         IReadOnlyList<string> currentLabelIds,
-        bool star,
+        bool gmailStar,
+        bool pinAction,
+        CancellationToken cancellationToken);
+
+    Task MarkAsReadAsync(
+        string accessToken,
+        string messageId,
+        IReadOnlyList<string> currentLabelIds,
         CancellationToken cancellationToken);
 
     Task TrashAsync(string accessToken, string messageId, CancellationToken cancellationToken);
