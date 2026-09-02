@@ -35,11 +35,13 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 
 `JobApplicationLog` in `Flexis.Domain.JobApplication`. Table `job_application_logs`. Cascade from `users`. Newest 200 rows are listed per user. EF configuration: `Persistence/Postgres/JobApplication/JobApplicationLogConfiguration.cs`.
 
-`MailCheckSettings` in `Flexis.Domain.MailCheck`. Table `mail_check_settings`. Unique `UserId`, cascade from `users`. OpenAI key stored protected. Default model `gpt-4o-mini`. Optional `ClassifierPrompt` text; empty uses the built-in default. EF configuration: `Persistence/Postgres/MailCheck/MailCheckSettingsConfiguration.cs`.
+`MailCheckSettings` in `Flexis.Domain.MailCheck`. Table `mail_check_settings`. Unique `UserId`, cascade from `users`. OpenAI key stored protected. Default model `gpt-4o-mini`. Optional `ClassifierPrompt` text; empty uses the built-in default. `LabelActionsJson` text maps each classifier label slug to `pin`, `trash`, or `keep`. `NeedActionLabelsJson` text lists label slugs shown on the Need action tab. `AutoCheckEnabled` bool defaults true. EF configuration: `Persistence/Postgres/MailCheck/MailCheckSettingsConfiguration.cs`.
 
 `MailConnection` in `Flexis.Domain.MailCheck`. Table `mail_connections`. Unique (`UserId`, `Provider`, `ExternalSubject`), cascade from `users`. Provider is `Gmail` or `Outlook`. Refresh and access tokens are stored protected. EF configuration: `Persistence/Postgres/MailCheck/MailConnectionConfiguration.cs`.
 
-`MailCheckProcessedMessage` in `Flexis.Domain.MailCheck`. Table `mail_check_processed_messages`. Unique (`MailConnectionId`, `MessageId`), cascade from `users` and from `mail_connections`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckProcessedMessageConfiguration.cs`.
+`MailCheckProcessedMessage` in `Flexis.Domain.MailCheck`. Table `mail_check_processed_messages`. `MessageId` is `varchar(512)` so Outlook Graph ids fit. `Label` stores the classifier label slug. Unique (`MailConnectionId`, `MessageId`), cascade from `users` and from `mail_connections`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckProcessedMessageConfiguration.cs`.
+
+`MailCheckScanState` in `Flexis.Domain.MailCheck`. Table `mail_check_scan_states`. One row per mailbox connection. `CheckedUntilAt` is the oldest message date processed in the current scan. `LastScanAt` is the last scan time. `ScanCaughtUp` is true when inbox and junk folders are exhausted. Unique `MailConnectionId`, cascade from `users` and from `mail_connections`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckScanStateConfiguration.cs`.
 
 ## Migrations
 

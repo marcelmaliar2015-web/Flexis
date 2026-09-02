@@ -17,6 +17,7 @@ public sealed class MailConnectionService
     private readonly IMicrosoftOAuthStateStore _microsoftStates;
     private readonly IGoogleTokenProtector _protector;
     private readonly IMailConnectionRepository _connections;
+    private readonly IMailCheckScanStateRepository _scanStates;
     private readonly IFrontendOrigins _frontendOrigins;
 
     public MailConnectionService(
@@ -26,6 +27,7 @@ public sealed class MailConnectionService
         IMicrosoftOAuthStateStore microsoftStates,
         IGoogleTokenProtector protector,
         IMailConnectionRepository connections,
+        IMailCheckScanStateRepository scanStates,
         IFrontendOrigins frontendOrigins)
     {
         _googleOAuth = googleOAuth;
@@ -34,6 +36,7 @@ public sealed class MailConnectionService
         _microsoftStates = microsoftStates;
         _protector = protector;
         _connections = connections;
+        _scanStates = scanStates;
         _frontendOrigins = frontendOrigins;
     }
 
@@ -41,7 +44,25 @@ public sealed class MailConnectionService
     {
         var connections = await _connections.ListByUserIdAsync(userId, cancellationToken);
         var outlookAvailable = await _microsoftOAuth.IsConfiguredAsync(cancellationToken);
-        return new MailMailboxStatusDto(outlookAvailable, ToMailboxItems(connections));
+        var scanStates = await _scanStates.ListByConnectionIdsAsync(
+            userId,
+            connections.Select(connection => connection.Id).ToList(),
+            cancellationToken);
+        var mailboxes = connections
+            .Select(connection =>
+            {
+                scanStates.TryGetValue(connection.Id, out var scan);
+                return new MailMailboxItemDto(
+                    connection.Id,
+                    ToProviderName(connection.Provider),
+                    connection.Email,
+                    connection.ConnectedAt,
+                    scan?.CheckedUntilAt,
+                    scan?.LastScanAt,
+                    scan?.ScanCaughtUp ?? false);
+            })
+            .ToList();
+        return new MailMailboxStatusDto(outlookAvailable, mailboxes);
     }
 
     public async Task<MailConnectStartDto> StartGmailConnectAsync(
@@ -246,7 +267,10 @@ public sealed class MailConnectionService
                 connection.Id,
                 ToProviderName(connection.Provider),
                 connection.Email,
-                connection.ConnectedAt))
+                connection.ConnectedAt,
+                null,
+                null,
+                false))
             .ToList();
     }
 

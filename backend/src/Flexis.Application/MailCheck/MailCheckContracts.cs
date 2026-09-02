@@ -5,6 +5,12 @@ public sealed record MailCheckSettingsDto(
     string Model,
     string ClassifierPrompt,
     string DefaultClassifierPrompt,
+    IReadOnlyDictionary<string, string> LabelActions,
+    IReadOnlyDictionary<string, string> DefaultLabelActions,
+    IReadOnlyList<string> NeedActionLabels,
+    IReadOnlyList<string> DefaultNeedActionLabels,
+    bool AutoCheckEnabled,
+    int AutoCheckIntervalSeconds,
     DateTimeOffset? LastRunAt,
     string LastError,
     int LastLabeled,
@@ -22,7 +28,10 @@ public sealed record MailCheckSettingsWriteRequest(
     string? ApiKey,
     bool ClearApiKey,
     string Model,
-    string? ClassifierPrompt);
+    string? ClassifierPrompt,
+    IReadOnlyDictionary<string, string>? LabelActions,
+    IReadOnlyList<string>? NeedActionLabels,
+    bool? AutoCheckEnabled);
 
 public sealed record MailCheckModelDto(string Id, bool Recommended);
 
@@ -51,6 +60,9 @@ public sealed record MailCheckRunDto(
     bool HasMore,
     int Scanned,
     int AlreadySeen,
+    Guid? MailboxId,
+    string? MailboxEmail,
+    string? MailboxProvider,
     IReadOnlyList<MailCheckRunItemDto> Items);
 
 public sealed record MailCheckInboxItemDto(

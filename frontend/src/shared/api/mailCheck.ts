@@ -16,12 +16,18 @@ export const mailCheckModelsQueryKey = ["mail-check-models"] as const;
 
 export const mailCheckLastRunQueryKey = ["mail-check-last-run"] as const;
 
+export const mailCheckNeedActionQueryKey = ["mail-check-need-action"] as const;
+
 export const mailCheckInboxRootQueryKey = ["mail-check-inbox"] as const;
 
 export const mailCheckInboxQueryKey = (label: MailCheckLabelSlug | "all") =>
   [...mailCheckInboxRootQueryKey, label] as const;
 
-export const mailCheckIntervalMs = 120_000;
+export const defaultAutoCheckIntervalSeconds = 20;
+
+export function mailCheckAutoIntervalMs(intervalSeconds: number): number {
+  return Math.max(intervalSeconds, 1) * 1000;
+}
 
 export function getMailCheckSettings(): Promise<MailCheckSettings> {
   return getJson<MailCheckSettings>("/api/mail-check/settings");
@@ -41,17 +47,26 @@ export function runMailCheck(options?: {
   force?: boolean;
   mailboxId?: string | null;
   resetCursor?: boolean;
+  signal?: AbortSignal;
 }): Promise<MailCheckRun> {
-  return postJson<MailCheckRun>("/api/mail-check/run", {
-    force: options?.force ?? false,
-    mailboxId: options?.mailboxId ?? null,
-    resetCursor: options?.resetCursor ?? false,
-  });
+  return postJson<MailCheckRun>(
+    "/api/mail-check/run",
+    {
+      force: options?.force ?? false,
+      mailboxId: options?.mailboxId ?? null,
+      resetCursor: options?.resetCursor ?? false,
+    },
+    { signal: options?.signal },
+  );
 }
 
 export function getMailCheckInbox(label: MailCheckLabelSlug | "all"): Promise<MailCheckInbox> {
   const query = label === "all" ? "" : `?label=${encodeURIComponent(label)}`;
   return getJson<MailCheckInbox>(`/api/mail-check/inbox${query}`);
+}
+
+export function getMailCheckNeedAction(): Promise<MailCheckInbox> {
+  return getJson<MailCheckInbox>("/api/mail-check/need-action");
 }
 
 export function getMailCheckMailbox(): Promise<MailCheckMailboxStatus> {

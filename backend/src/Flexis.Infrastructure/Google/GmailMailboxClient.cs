@@ -23,15 +23,22 @@ internal sealed class GmailMailboxClient : IMailMailbox
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private static readonly string CandidateQuery = string.Join(
-        ' ',
-        "(in:inbox OR in:spam OR category:updates OR category:promotions OR category:forums OR category:social)",
-        "-in:trash -in:draft -in:sent",
-        $"-label:\"{MailCheckLabels.InterviewSchedule}\"",
-        $"-label:\"{MailCheckLabels.AvailabilityRequest}\"",
-        $"-label:\"{MailCheckLabels.AssessmentRequest}\"",
-        $"-label:\"{MailCheckLabels.HrTeamMessage}\"",
-        $"-label:\"{MailCheckLabels.ReplyRequired}\"");
+    private static string BuildCandidateQuery()
+    {
+        var excludes = MailCheckLabelCatalog.All
+            .Select(MailCheckMailboxNames.For)
+            .Select(name => $"-label:\"{name}\"");
+        return string.Join(
+            ' ',
+            "(in:inbox OR in:spam OR category:updates OR category:promotions OR category:forums OR category:social)",
+            "-in:trash -in:draft -in:sent",
+            string.Join(' ', excludes));
+    }
+
+    private static IEnumerable<string> LookupLabelNames(MailCheckLabel label)
+    {
+        return MailCheckMailboxNames.LookupNames(label);
+    }
 
     private readonly HttpClient _http;
 
@@ -41,8 +48,9 @@ internal sealed class GmailMailboxClient : IMailMailbox
         _http.Timeout = TimeSpan.FromSeconds(60);
     }
 
-    public async Task<IReadOnlyDictionary<MailCheckDecision, string>> EnsureLabelsAsync(
+    public async Task<IReadOnlyDictionary<MailCheckLabel, string>> EnsureLabelsAsync(
         string accessToken,
+        IReadOnlyCollection<MailCheckLabel> labels,
         CancellationToken cancellationToken)
     {
         var listed = await SendJson<LabelList>(
@@ -53,18 +61,18 @@ internal sealed class GmailMailboxClient : IMailMailbox
             cancellationToken);
         var byName = (listed.Labels ?? [])
             .Where(item => !string.IsNullOrWhiteSpace(item.Id) && !string.IsNullOrWhiteSpace(item.Name))
-            .GroupBy(item => item.Name!, StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.First().Id!, StringComparer.Ordinal);
-        var map = new Dictionary<MailCheckDecision, string>();
-        foreach (var decision in MailCheckLabels.KeepDecisions)
+            .GroupBy(item => item.Name!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First().Id!, StringComparer.OrdinalIgnoreCase);
+        var map = new Dictionary<MailCheckLabel, string>();
+        foreach (var label in labels)
         {
-            var name = MailCheckLabels.NameFor(decision);
-            if (byName.TryGetValue(name, out var existing))
+            if (TryResolveExistingLabelId(byName, label, out var existing))
             {
-                map[decision] = existing;
+                map[label] = existing;
                 continue;
             }
 
+            var name = MailCheckMailboxNames.For(label);
             var created = await SendJson<GmailLabel>(
                 accessToken,
                 HttpMethod.Post,
@@ -81,10 +89,28 @@ internal sealed class GmailMailboxClient : IMailMailbox
                 throw new GoogleOAuthException($"Gmail did not create the {name} label.");
             }
 
-            map[decision] = created.Id;
+            map[label] = created.Id;
         }
 
         return map;
+    }
+
+    private static bool TryResolveExistingLabelId(
+        IReadOnlyDictionary<string, string> byName,
+        MailCheckLabel label,
+        out string labelId)
+    {
+        foreach (var name in LookupLabelNames(label))
+        {
+            if (byName.TryGetValue(name, out var existing) && !string.IsNullOrWhiteSpace(existing))
+            {
+                labelId = existing;
+                return true;
+            }
+        }
+
+        labelId = string.Empty;
+        return false;
     }
 
     public async Task<MailCandidatePage> ListCandidatesAsync(
@@ -92,7 +118,7 @@ internal sealed class GmailMailboxClient : IMailMailbox
         string? pageToken,
         CancellationToken cancellationToken)
     {
-        var url = $"{Base}/messages?maxResults={CandidatePageSize}&includeSpamTrash=true&q={Uri.EscapeDataString(CandidateQuery)}";
+        var url = $"{Base}/messages?maxResults={CandidatePageSize}&includeSpamTrash=true&q={Uri.EscapeDataString(BuildCandidateQuery())}";
         if (!string.IsNullOrWhiteSpace(pageToken))
         {
             url += $"&pageToken={Uri.EscapeDataString(pageToken)}";
@@ -120,14 +146,19 @@ internal sealed class GmailMailboxClient : IMailMailbox
         return ToContent(payload);
     }
 
-    public Task ApplyLabelAndPinAsync(
+    public Task ApplyLabelAsync(
         string accessToken,
         string messageId,
         string labelId,
         IReadOnlyList<string> currentLabelIds,
+        bool star,
         CancellationToken cancellationToken)
     {
-        var add = new List<string> { labelId, "STARRED" };
+        var add = new List<string> { labelId };
+        if (star)
+        {
+            add.Add("STARRED");
+        }
         var remove = new List<string>();
         if (currentLabelIds.Contains("SPAM", StringComparer.Ordinal))
         {
@@ -180,17 +211,17 @@ internal sealed class GmailMailboxClient : IMailMailbox
 
     public async Task<IReadOnlyList<MailLabeledMessage>> ListLabeledAsync(
         string accessToken,
-        IReadOnlyDictionary<MailCheckDecision, string> labels,
-        MailCheckDecision? filter,
+        IReadOnlyDictionary<MailCheckLabel, string> labels,
+        MailCheckLabel? filter,
         CancellationToken cancellationToken)
     {
-        var wanted = filter is MailCheckDecision one
+        var wanted = filter is MailCheckLabel one
             ? new[] { one }
-            : MailCheckLabels.KeepDecisions.ToArray();
+            : labels.Keys.ToArray();
         var results = new List<MailLabeledMessage>();
-        foreach (var decision in wanted)
+        foreach (var label in wanted)
         {
-            if (!labels.TryGetValue(decision, out var labelId))
+            if (!labels.TryGetValue(label, out var labelId))
             {
                 continue;
             }
@@ -218,7 +249,7 @@ internal sealed class GmailMailboxClient : IMailMailbox
                     content.From,
                     content.Date,
                     content.Snippet,
-                    decision,
+                    label,
                     content.LabelIds.Contains("STARRED", StringComparer.Ordinal)));
             }
         }

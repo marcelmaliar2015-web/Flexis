@@ -29,16 +29,35 @@ export function providerLabel(provider: MailCheckMailboxProvider | string): stri
 }
 
 export const mailCheckActionLabels: Record<string, string> = {
-  interviewSchedule: "Interview Schedule",
-  availabilityRequest: "Availability Request",
-  assessmentRequest: "Assessment Request",
-  hrTeamMessage: "HR Team Message",
-  replyRequired: "Reply required",
-  discard: "Trashed",
-  skip: "Left in place",
+  pin: "Pinned",
+  trash: "Trashed",
+  keep: "Left in place",
   error: "Error",
 };
 
 export function actionLabel(action: MailCheckAction | string): string {
   return mailCheckActionLabels[action] ?? action;
+}
+
+function formatScanTimestamp(value: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+export function formatMailboxScanStatus(mailbox: {
+  checkedUntilAt: string | null;
+  scanCaughtUp: boolean;
+}): string {
+  if (mailbox.checkedUntilAt) {
+    const until = `Checked until ${formatScanTimestamp(mailbox.checkedUntilAt)}`;
+    return mailbox.scanCaughtUp ? `${until} · caught up` : until;
+  }
+
+  if (mailbox.scanCaughtUp) {
+    return "Caught up";
+  }
+
+  return "Not checked yet";
 }

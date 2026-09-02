@@ -82,7 +82,7 @@ Goal: allow this app to read and organize mail for the signed-in user.
 1. Stay on the same app.
 2. Left menu: **API permissions**.
 3. **Add a permission** → **Microsoft Graph** → **Delegated permissions**.
-4. Add: `Mail.ReadWrite`, `MailboxSettings.ReadWrite`, `openid`, `profile`, `email`, `offline_access`.
+4. Add: `User.Read`, `Mail.ReadWrite`, `MailboxSettings.ReadWrite`, `openid`, `profile`, `email`, `offline_access`.
 5. **Add permissions**.
 6. **Grant admin consent** if shown. Personal accounts often skip this.
 7. Do not add Application permissions.

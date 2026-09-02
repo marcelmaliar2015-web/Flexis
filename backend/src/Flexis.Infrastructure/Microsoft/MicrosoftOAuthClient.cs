@@ -194,6 +194,18 @@ internal sealed class MicrosoftOAuthClient : IMicrosoftOAuthGateway
     {
         try
         {
+            var graph = JsonSerializer.Deserialize<GraphErrorEnvelope>(payload, JsonOptions);
+            if (!string.IsNullOrWhiteSpace(graph?.Error?.Message))
+            {
+                return graph.Error.Message;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        try
+        {
             var error = JsonSerializer.Deserialize<ErrorEnvelope>(payload, JsonOptions);
             if (!string.IsNullOrWhiteSpace(error?.ErrorDescription))
             {
@@ -246,5 +258,15 @@ internal sealed class MicrosoftOAuthClient : IMicrosoftOAuthGateway
 
         [JsonPropertyName("error_description")]
         public string? ErrorDescription { get; set; }
+    }
+
+    private sealed class GraphErrorEnvelope
+    {
+        public GraphErrorBody? Error { get; set; }
+    }
+
+    private sealed class GraphErrorBody
+    {
+        public string? Message { get; set; }
     }
 }

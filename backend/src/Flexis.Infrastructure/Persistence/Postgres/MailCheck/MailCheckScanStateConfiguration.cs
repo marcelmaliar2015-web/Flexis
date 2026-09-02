@@ -5,15 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Flexis.Infrastructure.Persistence.Postgres.MailCheck;
 
-internal sealed class MailCheckProcessedMessageConfiguration : IEntityTypeConfiguration<MailCheckProcessedMessage>
+internal sealed class MailCheckScanStateConfiguration : IEntityTypeConfiguration<MailCheckScanState>
 {
-    public void Configure(EntityTypeBuilder<MailCheckProcessedMessage> builder)
+    public void Configure(EntityTypeBuilder<MailCheckScanState> builder)
     {
-        builder.ToTable("mail_check_processed_messages");
+        builder.ToTable("mail_check_scan_states");
         builder.HasKey(item => item.Id);
-        builder.Property(item => item.MessageId).HasMaxLength(512).IsRequired();
-        builder.Property(item => item.Label).HasMaxLength(32).IsRequired();
-        builder.HasIndex(item => new { item.MailConnectionId, item.MessageId }).IsUnique();
+        builder.HasIndex(item => item.MailConnectionId).IsUnique();
         builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(item => item.UserId)

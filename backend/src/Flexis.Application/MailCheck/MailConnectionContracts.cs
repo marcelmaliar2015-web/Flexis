@@ -4,7 +4,10 @@ public sealed record MailMailboxItemDto(
     Guid Id,
     string Provider,
     string Email,
-    DateTimeOffset ConnectedAt);
+    DateTimeOffset ConnectedAt,
+    DateTimeOffset? CheckedUntilAt,
+    DateTimeOffset? LastScanAt,
+    bool ScanCaughtUp);
 
 public sealed record MailMailboxStatusDto(
     bool OutlookAvailable,

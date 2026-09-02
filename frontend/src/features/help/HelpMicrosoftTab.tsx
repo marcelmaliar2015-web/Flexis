@@ -11,6 +11,7 @@ import { ExternalLink, Panel, RedirectUriBlock, outlookRedirectUri } from "@/fea
 import { appPaths } from "@/shared/config/paths";
 
 const permissionNames = [
+  "User.Read",
   "Mail.ReadWrite",
   "MailboxSettings.ReadWrite",
   "openid",

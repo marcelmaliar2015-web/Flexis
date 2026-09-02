@@ -9,7 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Panel } from "@/features/mailCheck/mailCheckLayout";
-import { providerLabel } from "@/features/mailCheck/mailCheckUi";
+import { formatMailboxScanStatus, providerLabel } from "@/features/mailCheck/mailCheckUi";
 import {
   disconnectMailCheckMailbox,
   getMailCheckMailbox,
@@ -155,7 +155,7 @@ export function MailCheckMailboxCard() {
                     {providerLabel(mailbox.provider)} · {mailbox.email}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Connected {formatConnectedAt(mailbox.connectedAt)}
+                    Connected {formatConnectedAt(mailbox.connectedAt)} · {formatMailboxScanStatus(mailbox)}
                   </Typography>
                 </Stack>
                 <Button

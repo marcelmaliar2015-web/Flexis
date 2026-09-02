@@ -20,8 +20,12 @@ export async function getJson<T>(path: string): Promise<T> {
   return requestJson<T>(path);
 }
 
-export async function postJson<T>(path: string, body: unknown): Promise<T> {
-  return requestJson<T>(path, { method: "POST", body: JSON.stringify(body) });
+export async function postJson<T>(
+  path: string,
+  body: unknown,
+  init?: Pick<RequestInit, "signal">,
+): Promise<T> {
+  return requestJson<T>(path, { method: "POST", body: JSON.stringify(body), ...init });
 }
 
 export async function putJson<T>(path: string, body: unknown): Promise<T> {
@@ -138,7 +142,7 @@ function wait(ms: number): Promise<void> {
   });
 }
 
-function isAbortError(error: unknown): boolean {
+export function isAbortError(error: unknown): boolean {
   if (error instanceof DOMException && error.name === "AbortError") {
     return true;
   }

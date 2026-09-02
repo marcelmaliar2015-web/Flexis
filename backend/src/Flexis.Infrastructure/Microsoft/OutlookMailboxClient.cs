@@ -34,8 +34,9 @@ internal sealed class OutlookMailboxClient : IMailMailbox
         _http.Timeout = TimeSpan.FromSeconds(60);
     }
 
-    public async Task<IReadOnlyDictionary<MailCheckDecision, string>> EnsureLabelsAsync(
+    public async Task<IReadOnlyDictionary<MailCheckLabel, string>> EnsureLabelsAsync(
         string accessToken,
+        IReadOnlyCollection<MailCheckLabel> labels,
         CancellationToken cancellationToken)
     {
         var listed = await SendJson<CategoryList>(
@@ -46,28 +47,46 @@ internal sealed class OutlookMailboxClient : IMailMailbox
             cancellationToken);
         var byName = (listed.Value ?? [])
             .Where(item => !string.IsNullOrWhiteSpace(item.DisplayName))
-            .GroupBy(item => item.DisplayName!, StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.Key, StringComparer.Ordinal);
-        var map = new Dictionary<MailCheckDecision, string>();
-        foreach (var decision in MailCheckLabels.KeepDecisions)
+            .GroupBy(item => item.DisplayName!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.Key, StringComparer.OrdinalIgnoreCase);
+        var map = new Dictionary<MailCheckLabel, string>();
+        foreach (var label in labels)
         {
-            var name = MailCheckLabels.NameFor(decision);
-            if (byName.ContainsKey(name))
+            if (TryResolveExistingCategory(byName, label, out var existing))
             {
-                map[decision] = name;
+                map[label] = existing;
                 continue;
             }
 
+            var name = MailCheckMailboxNames.For(label);
             await SendJson<object>(
                 accessToken,
                 HttpMethod.Post,
                 $"{GraphBase}/me/outlook/masterCategories",
                 new { displayName = name, color = "preset0" },
                 cancellationToken);
-            map[decision] = name;
+            map[label] = name;
         }
 
         return map;
+    }
+
+    private static bool TryResolveExistingCategory(
+        IReadOnlyDictionary<string, string> byName,
+        MailCheckLabel label,
+        out string categoryName)
+    {
+        foreach (var name in MailCheckMailboxNames.LookupNames(label))
+        {
+            if (byName.TryGetValue(name, out var existing) && !string.IsNullOrWhiteSpace(existing))
+            {
+                categoryName = existing;
+                return true;
+            }
+        }
+
+        categoryName = string.Empty;
+        return false;
     }
 
     public async Task<MailCandidatePage> ListCandidatesAsync(
@@ -154,15 +173,16 @@ internal sealed class OutlookMailboxClient : IMailMailbox
         return ToContent(payload, labels);
     }
 
-    public async Task ApplyLabelAndPinAsync(
+    public async Task ApplyLabelAsync(
         string accessToken,
         string messageId,
         string labelId,
         IReadOnlyList<string> currentLabelIds,
+        bool _,
         CancellationToken cancellationToken)
     {
         var categories = currentLabelIds
-            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Where(item => !string.IsNullOrWhiteSpace(item) && !string.Equals(item, "junkemail", StringComparison.OrdinalIgnoreCase))
             .Append(labelId)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
@@ -170,11 +190,7 @@ internal sealed class OutlookMailboxClient : IMailMailbox
             accessToken,
             HttpMethod.Patch,
             $"{GraphBase}/me/messages/{Uri.EscapeDataString(messageId)}",
-            new
-            {
-                categories,
-                flag = new { flagStatus = "flagged" }
-            },
+            new { categories },
             cancellationToken);
 
         if (currentLabelIds.Contains("junkemail", StringComparer.OrdinalIgnoreCase))
@@ -232,17 +248,17 @@ internal sealed class OutlookMailboxClient : IMailMailbox
 
     public async Task<IReadOnlyList<MailLabeledMessage>> ListLabeledAsync(
         string accessToken,
-        IReadOnlyDictionary<MailCheckDecision, string> labels,
-        MailCheckDecision? filter,
+        IReadOnlyDictionary<MailCheckLabel, string> labels,
+        MailCheckLabel? filter,
         CancellationToken cancellationToken)
     {
-        var wanted = filter is MailCheckDecision one
+        var wanted = filter is MailCheckLabel one
             ? new[] { one }
-            : MailCheckLabels.KeepDecisions.ToArray();
+            : labels.Keys.ToArray();
         var results = new List<MailLabeledMessage>();
-        foreach (var decision in wanted)
+        foreach (var label in wanted)
         {
-            if (!labels.TryGetValue(decision, out var categoryName))
+            if (!labels.TryGetValue(label, out var categoryName))
             {
                 continue;
             }
@@ -266,7 +282,7 @@ internal sealed class OutlookMailboxClient : IMailMailbox
                     content.From,
                     content.Date,
                     content.Snippet,
-                    decision,
+                    label,
                     string.Equals(row.Flag?.FlagStatus, "flagged", StringComparison.OrdinalIgnoreCase)));
             }
         }
@@ -282,8 +298,7 @@ internal sealed class OutlookMailboxClient : IMailMailbox
         CancellationToken cancellationToken)
     {
         var listed = await SendJson<MessageList>(accessToken, HttpMethod.Get, url, null, cancellationToken);
-        var ourNames = MailCheckLabels.KeepDecisions
-            .Select(MailCheckLabels.NameFor)
+        var ourNames = MailCheckMailboxNames.AllLookupNames()
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var messages = (listed.Value ?? [])
             .Where(item => !string.IsNullOrWhiteSpace(item.Id))

@@ -5,7 +5,7 @@ public sealed class MailCheckProcessedMessage
     private MailCheckProcessedMessage()
     {
         MessageId = string.Empty;
-        Decision = string.Empty;
+        Label = string.Empty;
     }
 
     public Guid Id { get; private set; }
@@ -16,7 +16,7 @@ public sealed class MailCheckProcessedMessage
 
     public string MessageId { get; private set; }
 
-    public string Decision { get; private set; }
+    public string Label { get; private set; }
 
     public DateTimeOffset ProcessedAt { get; private set; }
 
@@ -24,7 +24,7 @@ public sealed class MailCheckProcessedMessage
         Guid userId,
         Guid mailConnectionId,
         string messageId,
-        MailCheckDecision decision)
+        MailCheckLabel label)
     {
         return new MailCheckProcessedMessage
         {
@@ -32,7 +32,7 @@ public sealed class MailCheckProcessedMessage
             UserId = userId,
             MailConnectionId = mailConnectionId,
             MessageId = messageId,
-            Decision = decision.ToString(),
+            Label = label.ToString().ToLowerInvariant(),
             ProcessedAt = DateTimeOffset.UtcNow
         };
     }

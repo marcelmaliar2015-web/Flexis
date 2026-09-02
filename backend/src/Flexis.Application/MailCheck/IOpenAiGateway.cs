@@ -2,7 +2,7 @@ using Flexis.Domain.MailCheck;
 
 namespace Flexis.Application.MailCheck;
 
-public sealed record MailCheckClassification(MailCheckDecision Decision, string Reason, string? DraftReply);
+public sealed record MailCheckClassification(MailCheckLabel Label);
 
 public sealed record OpenAiModelInfo(string Id);
 

@@ -273,114 +273,7 @@ internal sealed class OpenAiClient : IOpenAiGateway
         {
         }
 
-        if (parsed?.JobApplicationRelated == false)
-        {
-            return new MailCheckClassification(MailCheckDecision.Skip, ReadReason(parsed), null);
-        }
-
-        var action = parsed?.Action?.Trim().ToLowerInvariant().Replace('-', '_') ?? string.Empty;
-        if (action is "skip" or "ignore" or "none")
-        {
-            return new MailCheckClassification(MailCheckDecision.Skip, ReadReason(parsed), null);
-        }
-
-        if (action is "delete" or "discard" or "trash")
-        {
-            return new MailCheckClassification(MailCheckDecision.Discard, ReadReason(parsed), null);
-        }
-
-        var messageType = parsed?.MessageType?.Trim().ToLowerInvariant().Replace('-', '_') ?? string.Empty;
-        var decision = MapMessageType(messageType);
-        if (decision == MailCheckDecision.Discard)
-        {
-            return new MailCheckClassification(MailCheckDecision.Discard, ReadReason(parsed), null);
-        }
-
-        if (decision is null && !string.IsNullOrWhiteSpace(parsed?.Decision))
-        {
-            decision = MapLegacyDecision(parsed.Decision);
-        }
-
-        if (action is "draft" && decision is null)
-        {
-            decision = MailCheckDecision.ReplyRequired;
-        }
-
-        if (decision is null && action is "pin" or "draft" or "keep" or "label")
-        {
-            decision = MailCheckDecision.ReplyRequired;
-        }
-
-        if (decision is null)
-        {
-            decision = MailCheckDecision.Skip;
-        }
-
-        var draft = ReadDraft(parsed);
-        return new MailCheckClassification(decision.Value, ReadReason(parsed), draft);
-    }
-
-    private static MailCheckDecision? MapMessageType(string messageType)
-    {
-        return messageType switch
-        {
-            "interview_schedule" or "interview_scheduled" => MailCheckDecision.InterviewSchedule,
-            "availability_request" or "need_to_schedule" or "availability" => MailCheckDecision.AvailabilityRequest,
-            "assessment_request" or "assessment" or "take_home" => MailCheckDecision.AssessmentRequest,
-            "hr_team_message" or "hr_message" or "recruiter" => MailCheckDecision.HrTeamMessage,
-            "reply_required" or "waiting_for_answer" => MailCheckDecision.ReplyRequired,
-            "application_noise" or "noise" => MailCheckDecision.Discard,
-            _ => null
-        };
-    }
-
-    private static MailCheckDecision? MapLegacyDecision(string? rawDecision)
-    {
-        var raw = rawDecision?.Trim().ToLowerInvariant().Replace('-', '_') ?? string.Empty;
-        return raw switch
-        {
-            "interview_scheduled" => MailCheckDecision.InterviewSchedule,
-            "waiting_for_answer" => MailCheckDecision.ReplyRequired,
-            "need_to_schedule" => MailCheckDecision.AvailabilityRequest,
-            "others" or "other" => MailCheckDecision.HrTeamMessage,
-            "discard" or "trash" or "delete" => MailCheckDecision.Discard,
-            "skip" or "ignore" => MailCheckDecision.Skip,
-            _ => null
-        };
-    }
-
-    private static string ReadReason(ClassifierPayload? parsed)
-    {
-        var reason = string.IsNullOrWhiteSpace(parsed?.Reason)
-            ? "Classifier did not explain this decision."
-            : parsed.Reason.Trim();
-        if (reason.Length > 240)
-        {
-            reason = reason[..240];
-        }
-
-        return reason;
-    }
-
-    private static string? ReadDraft(ClassifierPayload? parsed)
-    {
-        if (parsed?.NeedsReply != true && parsed?.Action?.Trim().ToLowerInvariant() is not ("draft" or "reply"))
-        {
-            return null;
-        }
-
-        var draft = parsed?.DraftReply?.Trim();
-        if (string.IsNullOrWhiteSpace(draft))
-        {
-            return null;
-        }
-
-        if (draft.Length > 4000)
-        {
-            draft = draft[..4000];
-        }
-
-        return draft;
+        return new MailCheckClassification(MailCheckLabelCatalog.Parse(parsed?.Label));
     }
 
     private static string ExtractJson(string content)
@@ -512,19 +405,7 @@ internal sealed class OpenAiClient : IOpenAiGateway
 
     private sealed class ClassifierPayload
     {
-        public bool? JobApplicationRelated { get; set; }
-
-        public string? Action { get; set; }
-
-        public string? MessageType { get; set; }
-
-        public bool? NeedsReply { get; set; }
-
-        public string? DraftReply { get; set; }
-
-        public string? Decision { get; set; }
-
-        public string? Reason { get; set; }
+        public string? Label { get; set; }
     }
 
     private sealed class OpenAiErrorEnvelope

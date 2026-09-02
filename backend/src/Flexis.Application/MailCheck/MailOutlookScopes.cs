@@ -6,6 +6,7 @@ public static class MailOutlookScopes
     public const string Profile = "profile";
     public const string Email = "email";
     public const string OfflineAccess = "offline_access";
+    public const string UserRead = "User.Read";
     public const string MailReadWrite = "Mail.ReadWrite";
     public const string MailboxSettingsReadWrite = "MailboxSettings.ReadWrite";
 
@@ -15,6 +16,7 @@ public static class MailOutlookScopes
         Profile,
         Email,
         OfflineAccess,
+        UserRead,
         MailReadWrite,
         MailboxSettingsReadWrite);
 }

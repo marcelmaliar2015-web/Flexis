@@ -177,11 +177,9 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
                   <TableCell align="left">Inbox</TableCell>
 
                   <TableCell align="left">
-
-                    Mail Flexis labeled or categorized and pinned. Filter by Interview Schedule,
-
-                    Availability Request, Assessment Request, HR Team Message, or Reply required.
-
+                    Mail Flexis labeled or categorized and pinned. Filter by Rejected, Applied,
+                    Schedule, Scheduled, Assessment, Availability, Success, or Other (pin-configured
+                    labels only).
                   </TableCell>
 
                 </TableRow>
@@ -206,8 +204,8 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                   <TableCell align="left">
 
-                    Connect Gmail or Outlook, OpenAI key and model, and the classifier prompt. Pick
-                    any chat or reasoning model; Flexis adapts the request.
+                    Connect Gmail or Outlook, OpenAI key and model, label actions, and the classifier
+                    prompt. Pick any chat or reasoning model; Flexis adapts the request.
 
                   </TableCell>
 
@@ -239,9 +237,9 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
               <ListItemText
 
-                primary="Creates five keep groups"
+                primary="Creates pin labels"
 
-                secondary="Interview Schedule, Availability Request, Assessment Request, HR Team Message, and Reply required. Gmail labels or Outlook master categories. Created when you save a key with a mailbox connected, and on each check."
+                secondary="Gmail labels or Outlook master categories for labels you configure as Pin. Created when you save settings with a mailbox connected, and on each check."
 
               />
 
@@ -275,9 +273,9 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
               <ListItemText
 
-                primary="Saves reply drafts"
+                primary="Classifies then acts"
 
-                secondary="When the classifier marks a message as needing a reply, Flexis writes a draft in your mailbox. Nothing is sent automatically."
+                secondary="OpenAI returns one label per message. Settings choose pin, trash, or keep for each label."
 
               />
 
@@ -287,9 +285,9 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
               <ListItemText
 
-                primary="Trashes noise only"
+                primary="Trashes on request"
 
-                secondary="Application-received receipts, mass rejections, and job-board alerts go to trash. Personal mail is never trashed."
+                secondary="Labels configured as Trash move mail to trash. Keep leaves messages untouched."
 
               />
 

@@ -3,7 +3,20 @@ import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
+import Checkbox from "@mui/material/Checkbox";
+import FormControl from "@mui/material/FormControl";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormGroup from "@mui/material/FormGroup";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
+import Switch from "@mui/material/Switch";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,9 +28,34 @@ import {
   getMailCheckSettings,
   listMailCheckModels,
   mailCheckModelsQueryKey,
+  mailCheckNeedActionQueryKey,
   mailCheckSettingsQueryKey,
   updateMailCheckSettings,
 } from "@/shared/api/mailCheck";
+import {
+  mailCheckLabels,
+  mailCheckMailboxActions,
+  type MailCheckLabelSlug,
+  type MailCheckMailboxAction,
+} from "@/shared/types/mailCheck";
+
+function buildLabelActions(
+  source: Record<MailCheckLabelSlug, MailCheckMailboxAction> | undefined,
+): Record<MailCheckLabelSlug, MailCheckMailboxAction> {
+  const next = {} as Record<MailCheckLabelSlug, MailCheckMailboxAction>;
+  for (const item of mailCheckLabels) {
+    next[item.slug] = source?.[item.slug] ?? "keep";
+  }
+  return next;
+}
+
+function buildNeedActionLabels(source: MailCheckLabelSlug[] | undefined): MailCheckLabelSlug[] {
+  if (!source || source.length === 0) {
+    return ["schedule", "assessment", "availability"];
+  }
+
+  return source;
+}
 
 export function MailCheckSettingsTab() {
   const queryClient = useQueryClient();
@@ -28,6 +66,12 @@ export function MailCheckSettingsTab() {
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("gpt-4o-mini");
   const [classifierPrompt, setClassifierPrompt] = useState("");
+  const [labelActions, setLabelActions] = useState<Record<MailCheckLabelSlug, MailCheckMailboxAction>>(
+    () => buildLabelActions(undefined),
+  );
+  const [needActionLabels, setNeedActionLabels] = useState<MailCheckLabelSlug[]>(() =>
+    buildNeedActionLabels(undefined),
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -35,6 +79,8 @@ export function MailCheckSettingsTab() {
     if (settingsQuery.data) {
       setModel(settingsQuery.data.model);
       setClassifierPrompt(settingsQuery.data.classifierPrompt);
+      setLabelActions(buildLabelActions(settingsQuery.data.labelActions));
+      setNeedActionLabels(buildNeedActionLabels(settingsQuery.data.needActionLabels));
     }
   }, [settingsQuery.data]);
 
@@ -51,15 +97,20 @@ export function MailCheckSettingsTab() {
         clearApiKey: false,
         model: model.trim(),
         classifierPrompt: classifierPrompt.trim(),
+        labelActions,
+        needActionLabels,
       }),
     onSuccess: async (result) => {
       setApiKey("");
       setModel(result.model);
       setClassifierPrompt(result.classifierPrompt);
+      setLabelActions(buildLabelActions(result.labelActions));
+      setNeedActionLabels(buildNeedActionLabels(result.needActionLabels));
       setFormError(null);
       setSaved(true);
       await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
       await queryClient.invalidateQueries({ queryKey: mailCheckModelsQueryKey });
+      await queryClient.invalidateQueries({ queryKey: mailCheckNeedActionQueryKey });
     },
     onError: (error) => {
       setSaved(false);
@@ -74,6 +125,8 @@ export function MailCheckSettingsTab() {
         clearApiKey: true,
         model: model.trim() || "gpt-4o-mini",
         classifierPrompt: classifierPrompt.trim(),
+        labelActions,
+        needActionLabels,
       }),
     onSuccess: async () => {
       setApiKey("");
@@ -81,9 +134,27 @@ export function MailCheckSettingsTab() {
       setSaved(true);
       await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
       await queryClient.invalidateQueries({ queryKey: mailCheckModelsQueryKey });
+      await queryClient.invalidateQueries({ queryKey: mailCheckNeedActionQueryKey });
     },
     onError: (error) => {
       setSaved(false);
+      setFormError(errorMessage(error));
+    },
+  });
+
+  const autoCheckMutation = useMutation({
+    mutationFn: (enabled: boolean) =>
+      updateMailCheckSettings({
+        apiKey: null,
+        clearApiKey: false,
+        model: settings?.model ?? (model.trim() || "gpt-4o-mini"),
+        autoCheckEnabled: enabled,
+      }),
+    onSuccess: async () => {
+      setFormError(null);
+      await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
+    },
+    onError: (error) => {
       setFormError(errorMessage(error));
     },
   });
@@ -107,6 +178,12 @@ export function MailCheckSettingsTab() {
       return;
     }
 
+    if (needActionLabels.length === 0) {
+      setSaved(false);
+      setFormError("Choose at least one Need action label.");
+      return;
+    }
+
     saveMutation.mutate();
   }
 
@@ -115,6 +192,30 @@ export function MailCheckSettingsTab() {
       {formError ? <Alert severity="error">{formError}</Alert> : null}
       {saved && !formError ? <Alert severity="success">Mail Check settings saved.</Alert> : null}
       <MailCheckMailboxCard />
+      <Panel>
+        <Stack spacing={2}>
+          <Stack spacing={0.5}>
+            <Typography variant="h6" component="h2">
+              Auto check
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              When enabled, Flexis checks new mail every {settings?.autoCheckIntervalSeconds ?? 20}{" "}
+              seconds while the Mail Check page is visible. One message per mailbox per run keeps
+              Gmail, Outlook, and OpenAI within free-tier rate limits.
+            </Typography>
+          </Stack>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={settings?.autoCheckEnabled ?? true}
+                onChange={(event) => autoCheckMutation.mutate(event.target.checked)}
+                disabled={autoCheckMutation.isPending || settingsQuery.isLoading}
+              />
+            }
+            label={settings?.autoCheckEnabled ? "Enabled" : "Disabled"}
+          />
+        </Stack>
+      </Panel>
       <Panel>
         <Box component="form" onSubmit={handleSubmit}>
           <Stack spacing={2}>
@@ -198,13 +299,139 @@ export function MailCheckSettingsTab() {
         <Stack spacing={2}>
           <Stack spacing={0.5}>
             <Typography variant="h6" component="h2">
+              Label actions
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              After the classifier picks a label, Flexis applies pin, trash, or keep. Pin creates a
+              mailbox label or category and stars or flags the message. Trash moves it to trash.
+              Keep leaves the message untouched.
+            </Typography>
+          </Stack>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell align="left">Label</TableCell>
+                  <TableCell align="left">Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {mailCheckLabels.map((item) => (
+                  <TableRow key={item.slug}>
+                    <TableCell align="left">{item.name}</TableCell>
+                    <TableCell align="left">
+                      <FormControl size="small" sx={{ minWidth: 140 }}>
+                        <Select
+                          value={labelActions[item.slug]}
+                          onChange={(event) => {
+                            setSaved(false);
+                            setLabelActions((current) => ({
+                              ...current,
+                              [item.slug]: event.target.value as MailCheckMailboxAction,
+                            }));
+                          }}
+                          disabled={saveMutation.isPending || clearMutation.isPending}
+                        >
+                          {mailCheckMailboxActions.map((action) => (
+                            <MenuItem key={action.value} value={action.value}>
+                              {action.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <Stack direction="row" spacing={1}>
+            <Button
+              disabled={saveMutation.isPending || clearMutation.isPending || settingsQuery.isLoading}
+              loading={saveMutation.isPending}
+              onClick={() => {
+                setSaved(false);
+                setLabelActions(buildLabelActions(settings?.defaultLabelActions));
+              }}
+            >
+              Reset to defaults
+            </Button>
+            <Button
+              disabled={saveMutation.isPending || clearMutation.isPending || settingsQuery.isLoading}
+              loading={saveMutation.isPending}
+              onClick={() => saveMutation.mutate()}
+            >
+              Save actions
+            </Button>
+          </Stack>
+        </Stack>
+      </Panel>
+      <Panel>
+        <Stack spacing={2}>
+          <Stack spacing={0.5}>
+            <Typography variant="h6" component="h2">
+              Need action labels
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Choose which classifier labels appear on the Need action tab. Only pinned mail in your
+              mailbox is shown. The tab badge counts matching messages across all connected
+              mailboxes.
+            </Typography>
+          </Stack>
+          <FormGroup>
+            {mailCheckLabels.map((item) => (
+              <FormControlLabel
+                key={item.slug}
+                control={
+                  <Checkbox
+                    checked={needActionLabels.includes(item.slug)}
+                    onChange={(event) => {
+                      setSaved(false);
+                      setNeedActionLabels((current) => {
+                        if (event.target.checked) {
+                          return [...current, item.slug];
+                        }
+
+                        return current.filter((slug) => slug !== item.slug);
+                      });
+                    }}
+                    disabled={saveMutation.isPending || clearMutation.isPending}
+                  />
+                }
+                label={item.name}
+              />
+            ))}
+          </FormGroup>
+          <Stack direction="row" spacing={1}>
+            <Button
+              disabled={saveMutation.isPending || clearMutation.isPending || settingsQuery.isLoading}
+              loading={saveMutation.isPending}
+              onClick={() => {
+                setSaved(false);
+                setNeedActionLabels(buildNeedActionLabels(settings?.defaultNeedActionLabels));
+              }}
+            >
+              Reset to defaults
+            </Button>
+            <Button
+              disabled={saveMutation.isPending || clearMutation.isPending || settingsQuery.isLoading}
+              loading={saveMutation.isPending}
+              onClick={() => saveMutation.mutate()}
+            >
+              Save Need action
+            </Button>
+          </Stack>
+        </Stack>
+      </Panel>
+      <Panel>
+        <Stack spacing={2}>
+          <Stack spacing={0.5}>
+            <Typography variant="h6" component="h2">
               Classifier prompt
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Flexis classifies one message at a time and expects JSON with criteria flags
-              (job_application_related, action, message_type, needs_reply, draft_reply). Edit the
-              prompt here; non-job mail is left untouched, job mail is pinned or trashed, and reply
-              drafts are saved without sending.
+              Flexis classifies one message at a time and expects JSON with a single label field.
+              Edit the prompt here to refine how messages are labeled before actions run.
             </Typography>
           </Stack>
           <TextField

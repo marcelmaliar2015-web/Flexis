@@ -42,6 +42,8 @@ public sealed class FlexisDbContext : DbContext
 
     public DbSet<MailConnection> MailConnections => Set<MailConnection>();
 
+    public DbSet<MailCheckScanState> MailCheckScanStates => Set<MailCheckScanState>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FlexisDbContext).Assembly);

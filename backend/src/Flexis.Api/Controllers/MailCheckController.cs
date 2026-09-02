@@ -105,6 +105,14 @@ public sealed class MailCheckController : ControllerBase
         return mailCheck.GetInboxAsync(CurrentUserId(), label, cancellationToken);
     }
 
+    [HttpGet("need-action")]
+    public Task<MailCheckInboxDto> GetNeedActionInbox(
+        [FromServices] MailCheckService mailCheck,
+        CancellationToken cancellationToken)
+    {
+        return mailCheck.GetNeedActionInboxAsync(CurrentUserId(), cancellationToken);
+    }
+
     private Guid CurrentUserId()
     {
         var subject = User.FindFirstValue(ClaimTypes.NameIdentifier)

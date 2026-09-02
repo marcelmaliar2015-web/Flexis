@@ -4,11 +4,19 @@ public sealed class MailCheckSettings
 {
     public const string DefaultModel = "gpt-4o-mini";
 
+    public const string DefaultLabelActionsJson =
+        "{\"rejected\":\"trash\",\"applied\":\"keep\",\"schedule\":\"pin\",\"scheduled\":\"pin\",\"assessment\":\"pin\",\"availability\":\"pin\",\"success\":\"pin\",\"other\":\"keep\"}";
+
+    public const string DefaultNeedActionLabelsJson = "[\"schedule\",\"assessment\",\"availability\"]";
+
     private MailCheckSettings()
     {
         Model = DefaultModel;
         LastError = string.Empty;
         ClassifierPrompt = string.Empty;
+        LabelActionsJson = MailCheckSettings.DefaultLabelActionsJson;
+        NeedActionLabelsJson = MailCheckSettings.DefaultNeedActionLabelsJson;
+        AutoCheckEnabled = true;
     }
 
     public Guid Id { get; private set; }
@@ -20,6 +28,12 @@ public sealed class MailCheckSettings
     public string Model { get; private set; }
 
     public string ClassifierPrompt { get; private set; }
+
+    public string LabelActionsJson { get; private set; }
+
+    public string NeedActionLabelsJson { get; private set; }
+
+    public bool AutoCheckEnabled { get; private set; }
 
     public DateTimeOffset? LastRunAt { get; private set; }
 
@@ -48,7 +62,10 @@ public sealed class MailCheckSettings
             Id = Guid.NewGuid(),
             UserId = userId,
             Model = DefaultModel,
-            LastError = string.Empty
+            LastError = string.Empty,
+            LabelActionsJson = DefaultLabelActionsJson,
+            NeedActionLabelsJson = DefaultNeedActionLabelsJson,
+            AutoCheckEnabled = true
         };
     }
 
@@ -72,6 +89,21 @@ public sealed class MailCheckSettings
     public void SetClassifierPrompt(string prompt)
     {
         ClassifierPrompt = prompt;
+    }
+
+    public void SetLabelActionsJson(string json)
+    {
+        LabelActionsJson = json;
+    }
+
+    public void SetNeedActionLabelsJson(string json)
+    {
+        NeedActionLabelsJson = json;
+    }
+
+    public void SetAutoCheckEnabled(bool enabled)
+    {
+        AutoCheckEnabled = enabled;
     }
 
     public void RecordRun(

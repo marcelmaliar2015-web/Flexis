@@ -1,19 +1,27 @@
 export type MailCheckMailboxProvider = "gmail" | "outlook";
 
 export type MailCheckLabelSlug =
-  | "interviewSchedule"
-  | "availabilityRequest"
-  | "assessmentRequest"
-  | "hrTeamMessage"
-  | "replyRequired";
+  | "rejected"
+  | "applied"
+  | "schedule"
+  | "scheduled"
+  | "assessment"
+  | "availability"
+  | "success"
+  | "other";
 
-export type MailCheckAction = MailCheckLabelSlug | "discard" | "skip" | "error";
+export type MailCheckMailboxAction = "pin" | "trash" | "keep";
+
+export type MailCheckAction = MailCheckMailboxAction | "error";
 
 export type MailCheckMailboxItem = {
   id: string;
   provider: MailCheckMailboxProvider;
   email: string;
   connectedAt: string;
+  checkedUntilAt: string | null;
+  lastScanAt: string | null;
+  scanCaughtUp: boolean;
 };
 
 export type MailCheckSettings = {
@@ -21,6 +29,12 @@ export type MailCheckSettings = {
   model: string;
   classifierPrompt: string;
   defaultClassifierPrompt: string;
+  labelActions: Record<MailCheckLabelSlug, MailCheckMailboxAction>;
+  defaultLabelActions: Record<MailCheckLabelSlug, MailCheckMailboxAction>;
+  needActionLabels: MailCheckLabelSlug[];
+  defaultNeedActionLabels: MailCheckLabelSlug[];
+  autoCheckEnabled: boolean;
+  autoCheckIntervalSeconds: number;
   lastRunAt: string | null;
   lastError: string;
   lastLabeled: number;
@@ -45,6 +59,9 @@ export type MailCheckSettingsWrite = {
   clearApiKey: boolean;
   model: string;
   classifierPrompt?: string | null;
+  labelActions?: Record<MailCheckLabelSlug, MailCheckMailboxAction> | null;
+  needActionLabels?: MailCheckLabelSlug[] | null;
+  autoCheckEnabled?: boolean | null;
 };
 
 export type MailCheckModel = {
@@ -78,6 +95,9 @@ export type MailCheckRun = {
   hasMore: boolean;
   scanned: number;
   alreadySeen: number;
+  mailboxId: string | null;
+  mailboxEmail: string | null;
+  mailboxProvider: MailCheckMailboxProvider | string | null;
   items: MailCheckRunItem[];
 };
 
@@ -100,10 +120,31 @@ export type MailCheckInbox = {
   items: MailCheckInboxItem[];
 };
 
-export const mailCheckKeepLabels: { slug: MailCheckLabelSlug; name: string }[] = [
-  { slug: "interviewSchedule", name: "Interview Schedule" },
-  { slug: "availabilityRequest", name: "Availability Request" },
-  { slug: "assessmentRequest", name: "Assessment Request" },
-  { slug: "hrTeamMessage", name: "HR Team Message" },
-  { slug: "replyRequired", name: "Reply required" },
+export const mailCheckLabels: { slug: MailCheckLabelSlug; name: string }[] = [
+  { slug: "rejected", name: "Rejected" },
+  { slug: "applied", name: "Applied" },
+  { slug: "schedule", name: "Schedule" },
+  { slug: "scheduled", name: "Scheduled" },
+  { slug: "assessment", name: "Assessment" },
+  { slug: "availability", name: "Availability" },
+  { slug: "success", name: "Success" },
+  { slug: "other", name: "Other" },
 ];
+
+export const mailCheckMailboxActions: { value: MailCheckMailboxAction; label: string }[] = [
+  { value: "pin", label: "Pin" },
+  { value: "trash", label: "Trash" },
+  { value: "keep", label: "Keep" },
+];
+
+export function mailCheckPinLabelFilters(
+  labelActions: Record<MailCheckLabelSlug, MailCheckMailboxAction> | undefined,
+): { slug: MailCheckLabelSlug; name: string }[] {
+  if (!labelActions) {
+    return mailCheckLabels.filter((item) =>
+      ["schedule", "scheduled", "assessment", "availability", "success"].includes(item.slug),
+    );
+  }
+
+  return mailCheckLabels.filter((item) => labelActions[item.slug] === "pin");
+}

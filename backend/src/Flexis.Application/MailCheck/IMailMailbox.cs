@@ -23,13 +23,14 @@ public sealed record MailLabeledMessage(
     string From,
     string Date,
     string Snippet,
-    MailCheckDecision Decision,
+    MailCheckLabel Label,
     bool Starred);
 
 public interface IMailMailbox
 {
-    Task<IReadOnlyDictionary<MailCheckDecision, string>> EnsureLabelsAsync(
+    Task<IReadOnlyDictionary<MailCheckLabel, string>> EnsureLabelsAsync(
         string accessToken,
+        IReadOnlyCollection<MailCheckLabel> labels,
         CancellationToken cancellationToken);
 
     Task<MailCandidatePage> ListCandidatesAsync(
@@ -42,11 +43,12 @@ public interface IMailMailbox
         string messageId,
         CancellationToken cancellationToken);
 
-    Task ApplyLabelAndPinAsync(
+    Task ApplyLabelAsync(
         string accessToken,
         string messageId,
         string labelId,
         IReadOnlyList<string> currentLabelIds,
+        bool star,
         CancellationToken cancellationToken);
 
     Task TrashAsync(string accessToken, string messageId, CancellationToken cancellationToken);
@@ -59,7 +61,7 @@ public interface IMailMailbox
 
     Task<IReadOnlyList<MailLabeledMessage>> ListLabeledAsync(
         string accessToken,
-        IReadOnlyDictionary<MailCheckDecision, string> labels,
-        MailCheckDecision? filter,
+        IReadOnlyDictionary<MailCheckLabel, string> labels,
+        MailCheckLabel? filter,
         CancellationToken cancellationToken);
 }
