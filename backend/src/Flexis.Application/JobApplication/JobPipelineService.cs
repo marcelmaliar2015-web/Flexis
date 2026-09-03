@@ -236,12 +236,17 @@ public sealed class JobPipelineService
             source.SpreadsheetId,
             location.Name,
             cancellationToken);
-        var existing = await _sheets.ReadListingsAsync(
+        var existingRows = await _sheets.CompactListingRowsAsync(
             access.AccessToken,
             profile.SpreadsheetId,
             main.Name,
             cancellationToken);
-        var seen = new HashSet<string>(existing.Select(ListingKey), StringComparer.Ordinal);
+        var sourceKeys = new HashSet<string>(
+            incoming.Where(listing => !listing.IsEmpty).Select(ListingKey),
+            StringComparer.Ordinal);
+        var seen = new HashSet<string>(
+            existingRows.Select(row => ListingKey(row.Listing)),
+            StringComparer.Ordinal);
         var fresh = new List<JobListingRow>();
         var skipped = 0;
         var banned = 0;
@@ -267,6 +272,10 @@ public sealed class JobPipelineService
             fresh.Add(listing);
         }
 
+        var lastDataRow = existingRows.Count == 0
+            ? 1
+            : existingRows.Max(row => row.RowNumber);
+        var appendedRowNumbers = new List<int>();
         if (fresh.Count > 0)
         {
             await _sheets.AppendListingsAsync(
@@ -275,13 +284,26 @@ public sealed class JobPipelineService
                 main.Name,
                 fresh,
                 cancellationToken);
+            for (var offset = 1; offset <= fresh.Count; offset++)
+            {
+                appendedRowNumbers.Add(lastDataRow + offset);
+            }
         }
 
-        await _sheets.ProtectWorkbookAsync(
+        var sourceMatchedRows = existingRows
+            .Where(row => !row.Listing.IsEmpty && sourceKeys.Contains(ListingKey(row.Listing)))
+            .Select(row => row.RowNumber)
+            .Concat(appendedRowNumbers)
+            .Distinct()
+            .OrderBy(row => row)
+            .ToArray();
+
+        await _sheets.ProtectProfileMainAfterUpdateAsync(
             access.AccessToken,
             profile.SpreadsheetId,
             access.OwnerEmail,
-            JobWorkbookKind.Profile,
+            main.Name,
+            sourceMatchedRows,
             cancellationToken);
         await _sheets.ProtectWorkbookAsync(
             access.AccessToken,

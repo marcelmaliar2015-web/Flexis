@@ -24,7 +24,7 @@ export function HelpOperationsTab() {
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Operations is the pipeline. Each row pairs one profile workbook with one source location
-          tab. Update copies listings onto the profile main tab. Forward archives that tab as a
+          tab. Update copies listings onto the profile main tab after the last filled row. Forward archives that tab as a
           numbered log and opens a new empty main tab.
         </Typography>
       </Stack>
@@ -67,7 +67,7 @@ export function HelpOperationsTab() {
           </Typography>
           <List disablePadding>
             <ListItem disableGutters>
-              <ListItemText primary="Update" secondary="Copies Company Name, Position, Link, and JD from the source location onto the named profile main tab. Skips rows already on that tab (same company, position, and link). Skips banned companies. Result counts added, skipped, and banned." />
+              <ListItemText primary="Update" secondary="Copies Company Name, Position, Link, and JD from the source location onto the named profile main tab, written right after the last filled listing row. Removes blank rows between filled listings first. Skips rows already on that tab (same company, position, and link). Skips banned companies. Result counts added, skipped, and banned. Then locks rows that are no longer in the source so invited editors cannot edit them; Status and Issue stay editable only on rows still present in the source." />
             </ListItem>
             <ListItem disableGutters>
               <ListItemText primary="Forward" secondary="Renames the current main tab to the next unused positive integer (1, 2, 3, …) and creates a new empty main tab with the original profile name. Numbered tabs are locked logs. Update always writes to the named main tab, never a numbered tab." />

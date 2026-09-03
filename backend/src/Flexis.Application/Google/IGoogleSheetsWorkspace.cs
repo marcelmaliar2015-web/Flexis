@@ -26,6 +26,8 @@ public sealed record JobListingRow(
 
 public sealed record ProfileListingStatusUpdate(int RowNumber, string Status);
 
+public sealed record JobListingSheetRow(int RowNumber, JobListingRow Listing);
+
 public interface IGoogleSheetsWorkspace
 {
     Task<CreatedSpreadsheet> CreateWorkbookAsync(
@@ -93,7 +95,27 @@ public interface IGoogleSheetsWorkspace
         JobWorkbookKind kind,
         CancellationToken cancellationToken);
 
+    Task ProtectProfileMainAfterUpdateAsync(
+        string accessToken,
+        string spreadsheetId,
+        string ownerEmail,
+        string mainSheetName,
+        IReadOnlyList<int> sourceMatchedRowNumbers,
+        CancellationToken cancellationToken);
+
     Task<IReadOnlyList<JobListingRow>> ReadListingsAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<JobListingSheetRow>> ReadListingSheetRowsAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<JobListingSheetRow>> CompactListingRowsAsync(
         string accessToken,
         string spreadsheetId,
         string sheetName,

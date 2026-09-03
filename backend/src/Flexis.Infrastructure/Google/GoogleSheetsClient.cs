@@ -408,6 +408,42 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                     spreadsheetId,
                     ownerEmail,
                     kind,
+                    mainSheetName: null,
+                    sourceMatchedRowNumbers: null,
+                    cancellationToken);
+                return;
+            }
+            catch (GoogleOAuthException exception)
+                when (attempt < 2 && IsStaleProtectedRangeError(exception.Message))
+            {
+            }
+        }
+    }
+
+    public async Task ProtectProfileMainAfterUpdateAsync(
+        string accessToken,
+        string spreadsheetId,
+        string ownerEmail,
+        string mainSheetName,
+        IReadOnlyList<int> sourceMatchedRowNumbers,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(ownerEmail))
+        {
+            return;
+        }
+
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            try
+            {
+                await ApplyWorkbookProtectionAsync(
+                    accessToken,
+                    spreadsheetId,
+                    ownerEmail,
+                    JobWorkbookKind.Profile,
+                    mainSheetName,
+                    sourceMatchedRowNumbers,
                     cancellationToken);
                 return;
             }
@@ -423,6 +459,8 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         string spreadsheetId,
         string ownerEmail,
         JobWorkbookKind kind,
+        string? mainSheetName,
+        IReadOnlyList<int>? sourceMatchedRowNumbers,
         CancellationToken cancellationToken)
     {
         var payload = await SendJson<SpreadsheetList>(
@@ -442,7 +480,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             }
 
             var sheetId = sheet.Properties.SheetId;
-            var invitedColumns = InvitedEditColumnIndexes(kind, sheet.Properties.Title);
+            var title = sheet.Properties.Title;
             foreach (var range in sheet.ProtectedRanges ?? [])
             {
                 if (!string.Equals(range.Description, FlexisLockDescription, StringComparison.Ordinal))
@@ -453,16 +491,12 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                 deleteRequests.Add(new { deleteProtectedRange = new { protectedRangeId = range.ProtectedRangeId } });
             }
 
-            object? unprotectedRanges = invitedColumns.Length == 0
-                ? null
-                : invitedColumns
-                    .Select(index => new
-                    {
-                        sheetId,
-                        startColumnIndex = index,
-                        endColumnIndex = index + 1
-                    })
-                    .ToArray();
+            object? unprotectedRanges = BuildInvitedUnprotectedRanges(
+                kind,
+                sheetId,
+                title,
+                mainSheetName,
+                sourceMatchedRowNumbers);
 
             addRequests.Add(new
             {
@@ -510,12 +544,95 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         }
     }
 
+    private static object[]? BuildInvitedUnprotectedRanges(
+        JobWorkbookKind kind,
+        int sheetId,
+        string? sheetTitle,
+        string? mainSheetName,
+        IReadOnlyList<int>? sourceMatchedRowNumbers)
+    {
+        var invitedColumns = InvitedEditColumnIndexes(kind, sheetTitle);
+        if (invitedColumns.Length == 0)
+        {
+            return null;
+        }
+
+        if (kind == JobWorkbookKind.Profile
+            && mainSheetName is not null
+            && string.Equals(sheetTitle, mainSheetName, StringComparison.Ordinal)
+            && sourceMatchedRowNumbers is not null)
+        {
+            if (sourceMatchedRowNumbers.Count == 0)
+            {
+                return null;
+            }
+
+            return ContiguousRowSpans(sourceMatchedRowNumbers)
+                .SelectMany(span => invitedColumns.Select(columnIndex => (object)new
+                {
+                    sheetId,
+                    startRowIndex = span.StartRowIndex,
+                    endRowIndex = span.EndRowIndex,
+                    startColumnIndex = columnIndex,
+                    endColumnIndex = columnIndex + 1
+                }))
+                .ToArray();
+        }
+
+        return invitedColumns
+            .Select(index => (object)new
+            {
+                sheetId,
+                startColumnIndex = index,
+                endColumnIndex = index + 1
+            })
+            .ToArray();
+    }
+
+    private static IEnumerable<(int StartRowIndex, int EndRowIndex)> ContiguousRowSpans(
+        IReadOnlyList<int> sheetRowNumbers)
+    {
+        var ordered = sheetRowNumbers.Where(row => row > 1).Distinct().OrderBy(row => row).ToArray();
+        if (ordered.Length == 0)
+        {
+            yield break;
+        }
+
+        var start = ordered[0];
+        var previous = ordered[0];
+        for (var index = 1; index < ordered.Length; index++)
+        {
+            var row = ordered[index];
+            if (row == previous + 1)
+            {
+                previous = row;
+                continue;
+            }
+
+            yield return (start - 1, previous);
+            start = row;
+            previous = row;
+        }
+
+        yield return (start - 1, previous);
+    }
+
     private static bool IsStaleProtectedRangeError(string message)
     {
         return message.Contains("No protected range with id", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<IReadOnlyList<JobListingRow>> ReadListingsAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        CancellationToken cancellationToken)
+    {
+        var rows = await ReadListingSheetRowsAsync(accessToken, spreadsheetId, sheetName, cancellationToken);
+        return rows.Select(row => row.Listing).ToArray();
+    }
+
+    public async Task<IReadOnlyList<JobListingSheetRow>> ReadListingSheetRowsAsync(
         string accessToken,
         string spreadsheetId,
         string sheetName,
@@ -528,8 +645,158 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             null,
             cancellationToken);
 
-        return (payload.Values ?? [])
-            .Select(ToListing)
+        var rows = new List<JobListingSheetRow>();
+        var values = payload.Values ?? [];
+        for (var index = 0; index < values.Count; index++)
+        {
+            var listing = ToListing(values[index]);
+            if (listing.IsEmpty)
+            {
+                continue;
+            }
+
+            rows.Add(new JobListingSheetRow(index + 2, listing));
+        }
+
+        return rows;
+    }
+
+    public async Task<IReadOnlyList<JobListingSheetRow>> CompactListingRowsAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        CancellationToken cancellationToken)
+    {
+        var columnCount = ColumnsFor(JobWorkbookKind.Profile).Length;
+        var endColumn = (char)('A' + columnCount - 1);
+        var payload = await SendJson<SheetValues>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(sheetName, $"A2:{endColumn}")}",
+            null,
+            cancellationToken);
+
+        var values = payload.Values ?? [];
+        var filledCells = new List<string[]>();
+        var filledListings = new List<JobListingRow>();
+        var blankBetween = false;
+        var seenBlank = false;
+        foreach (var row in values)
+        {
+            var listing = ToListing(row);
+            if (listing.IsEmpty)
+            {
+                if (filledListings.Count > 0)
+                {
+                    seenBlank = true;
+                }
+
+                continue;
+            }
+
+            if (seenBlank)
+            {
+                blankBetween = true;
+            }
+
+            filledListings.Add(listing);
+            filledCells.Add(Enumerable.Range(0, columnCount).Select(index => Cell(row, index)).ToArray());
+        }
+
+        if (filledListings.Count == 0)
+        {
+            return [];
+        }
+
+        if (!blankBetween && values.Count == filledListings.Count)
+        {
+            return filledListings
+                .Select((listing, index) => new JobListingSheetRow(index + 2, listing))
+                .ToArray();
+        }
+
+        var meta = await SendJson<SpreadsheetList>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets(properties(sheetId,title),tables(tableId,range))",
+            null,
+            cancellationToken);
+        var sheet = (meta.Sheets ?? [])
+            .FirstOrDefault(item => string.Equals(item.Properties?.Title, sheetName, StringComparison.Ordinal));
+        if (sheet?.Properties is null)
+        {
+            throw new ValidationFailedException("Profile sheet was not found.");
+        }
+
+        var sheetId = sheet.Properties.SheetId;
+        var compactEndRow = 1 + filledListings.Count;
+        var previousEndRow = 1 + values.Count;
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Put,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(sheetName, $"A2:{endColumn}{compactEndRow}")}?valueInputOption=USER_ENTERED",
+            new { values = filledCells },
+            cancellationToken);
+
+        var requests = new List<object>();
+        if (previousEndRow > compactEndRow)
+        {
+            requests.Add(new
+            {
+                deleteDimension = new
+                {
+                    range = new
+                    {
+                        sheetId,
+                        dimension = "ROWS",
+                        startIndex = compactEndRow,
+                        endIndex = previousEndRow
+                    }
+                }
+            });
+        }
+
+        var existingTable = (sheet.Tables ?? [])
+            .FirstOrDefault(table => string.Equals(table.TableId, ListingsTableId(sheetId), StringComparison.Ordinal))
+            ?? (sheet.Tables ?? []).FirstOrDefault(table => table.Range?.SheetId == sheetId);
+        if (existingTable?.TableId is { } tableId)
+        {
+            requests.Add(new
+            {
+                updateTable = new
+                {
+                    table = new
+                    {
+                        tableId,
+                        range = new
+                        {
+                            sheetId,
+                            startRowIndex = 0,
+                            endRowIndex = compactEndRow,
+                            startColumnIndex = 0,
+                            endColumnIndex = columnCount
+                        }
+                    },
+                    fields = "range"
+                }
+            });
+        }
+
+        requests.AddRange(ListingsDataRowFormatRequests(sheetId, 1, compactEndRow, columnCount));
+
+        if (requests.Count > 0)
+        {
+            await SendJson<object>(
+                accessToken,
+                HttpMethod.Post,
+                $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+                new { requests },
+                cancellationToken);
+        }
+
+        return filledListings
+            .Select((listing, index) => new JobListingSheetRow(index + 2, listing))
             .ToArray();
     }
 
@@ -745,31 +1012,82 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             return;
         }
 
-        var appendResult = await SendJson<ValuesAppendResponse>(
+        var existingRows = await ReadListingSheetRowsAsync(
             accessToken,
-            HttpMethod.Post,
-            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(sheetName, "A2:D")}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS",
+            spreadsheetId,
+            sheetName,
+            cancellationToken);
+        var lastDataRow = existingRows.Count == 0
+            ? 1
+            : existingRows.Max(row => row.RowNumber);
+        var startRow = lastDataRow + 1;
+        var endRow = startRow + rows.Count - 1;
+
+        var meta = await SendJson<SpreadsheetList>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets(properties(sheetId,title),tables(tableId,range))",
+            null,
+            cancellationToken);
+        var sheet = (meta.Sheets ?? [])
+            .FirstOrDefault(item => string.Equals(item.Properties?.Title, sheetName, StringComparison.Ordinal));
+        if (sheet?.Properties is null)
+        {
+            throw new ValidationFailedException("Profile sheet was not found.");
+        }
+
+        var sheetId = sheet.Properties.SheetId;
+        var columnCount = ColumnsFor(JobWorkbookKind.Profile).Length;
+        var existingTable = (sheet.Tables ?? [])
+            .FirstOrDefault(table => string.Equals(table.TableId, ListingsTableId(sheetId), StringComparison.Ordinal))
+            ?? (sheet.Tables ?? []).FirstOrDefault(table => table.Range?.SheetId == sheetId);
+
+        var resizeRequests = new List<object>();
+        if (existingTable?.TableId is { } tableId)
+        {
+            resizeRequests.Add(new
+            {
+                updateTable = new
+                {
+                    table = new
+                    {
+                        tableId,
+                        range = new
+                        {
+                            sheetId,
+                            startRowIndex = 0,
+                            endRowIndex = endRow,
+                            startColumnIndex = 0,
+                            endColumnIndex = columnCount
+                        }
+                    },
+                    fields = "range"
+                }
+            });
+        }
+
+        if (resizeRequests.Count > 0)
+        {
+            await SendJson<object>(
+                accessToken,
+                HttpMethod.Post,
+                $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+                new { requests = resizeRequests },
+                cancellationToken);
+        }
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Put,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(sheetName, $"A{startRow}:D{endRow}")}?valueInputOption=USER_ENTERED",
             new
             {
                 values = rows.Select(row => new[] { row.CompanyName, row.Position, row.Link, row.Jd }).ToArray()
             },
             cancellationToken);
 
-        if (!TryParseAppendedRowRange(appendResult.Updates?.UpdatedRange, out var startRow, out var endRow))
-        {
-            return;
-        }
-
-        var sheets = await ListSheetsAsync(accessToken, spreadsheetId, cancellationToken);
-        var sheet = sheets.FirstOrDefault(item => string.Equals(item.Name, sheetName, StringComparison.Ordinal));
-        if (sheet is null)
-        {
-            return;
-        }
-
-        var columnCount = ColumnsFor(JobWorkbookKind.Profile).Length;
-        var requests = ListingsDataRowFormatRequests(
-            sheet.SheetId,
+        var formatRequests = ListingsDataRowFormatRequests(
+            sheetId,
             startRow - 1,
             endRow,
             columnCount);
@@ -777,7 +1095,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             accessToken,
             HttpMethod.Post,
             $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
-            new { requests },
+            new { requests = formatRequests },
             cancellationToken);
     }
 
@@ -1605,7 +1923,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                     {
                         sheetId,
                         startRowIndex = 0,
-                        endRowIndex = 200,
+                        endRowIndex = 1,
                         startColumnIndex = 0,
                         endColumnIndex = columns.Length
                     },
@@ -1975,6 +2293,14 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
     private sealed class GridRangeInfo
     {
         public int? SheetId { get; set; }
+
+        public int? StartRowIndex { get; set; }
+
+        public int? EndRowIndex { get; set; }
+
+        public int? StartColumnIndex { get; set; }
+
+        public int? EndColumnIndex { get; set; }
     }
 
     private sealed class ProtectedRangeInfo
