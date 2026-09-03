@@ -32,7 +32,7 @@ export const helpTabItems = [
   {
     value: "mailCheck",
     label: "Mail Check",
-    summary: "Check all catches up the mailbox; auto-check runs in the background.",
+    summary: "Check all catches up the mailbox; auto-check runs on the API.",
   },
   {
     value: "problems",

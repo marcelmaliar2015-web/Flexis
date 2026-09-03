@@ -21,7 +21,7 @@ export const mailCheckRunStages: MailCheckRunStage[] = [
   {
     id: "lock",
     label: "Wait for lock",
-    description: "Only one classify run at a time. Manual Check cancels auto-check, then may wait briefly.",
+    description: "Only one classify run at a time. Manual Check waits for the server lock if auto-check is active.",
     timingKey: "lockMs",
   },
   {

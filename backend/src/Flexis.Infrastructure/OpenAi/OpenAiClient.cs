@@ -11,7 +11,9 @@ namespace Flexis.Infrastructure.OpenAi;
 
 internal sealed class OpenAiClient : IOpenAiGateway
 {
-    private const int OutputTokens = 96;
+    private const int DefaultOutputTokens = 256;
+    private const int ReasoningOutputTokens = 768;
+    private const int MaxOutputTokens = 2048;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
@@ -97,11 +99,11 @@ internal sealed class OpenAiClient : IOpenAiGateway
         };
         if (shape.UseCompletionTokens)
         {
-            body["max_completion_tokens"] = OutputTokens;
+            body["max_completion_tokens"] = shape.OutputTokens;
         }
         else
         {
-            body["max_tokens"] = OutputTokens;
+            body["max_tokens"] = shape.OutputTokens;
         }
 
         if (shape.IncludeTemperature)
@@ -138,7 +140,7 @@ internal sealed class OpenAiClient : IOpenAiGateway
         };
         if (shape.UseCompletionTokens)
         {
-            body["max_output_tokens"] = OutputTokens;
+            body["max_output_tokens"] = shape.OutputTokens;
         }
 
         if (shape.IncludeJsonFormat)
@@ -205,13 +207,41 @@ internal sealed class OpenAiClient : IOpenAiGateway
             UseCompletionTokens = reasoning,
             IncludeTemperature = !reasoning,
             IncludeJsonFormat = !reasoning,
-            SystemAsUser = reasoning
+            SystemAsUser = reasoning,
+            OutputTokens = reasoning ? ReasoningOutputTokens : DefaultOutputTokens
         };
     }
 
     private static bool Adapt(RequestShape shape, string message)
     {
         var text = message.ToLowerInvariant();
+        if (text.Contains("empty classification", StringComparison.Ordinal)
+            || text.Contains("empty payload", StringComparison.Ordinal))
+        {
+            var adapted = false;
+            if (shape.OutputTokens < MaxOutputTokens)
+            {
+                shape.OutputTokens = Math.Min(MaxOutputTokens, Math.Max(shape.OutputTokens * 2, ReasoningOutputTokens));
+                adapted = true;
+            }
+
+            if (shape.IncludeJsonFormat)
+            {
+                shape.IncludeJsonFormat = false;
+                adapted = true;
+            }
+
+            if (!shape.UseResponsesApi)
+            {
+                shape.UseResponsesApi = true;
+                shape.UseCompletionTokens = true;
+                shape.IncludeTemperature = false;
+                adapted = true;
+            }
+
+            return adapted;
+        }
+
         if (!shape.UseResponsesApi && (text.Contains("v1/chat/completions", StringComparison.Ordinal) || text.Contains("/chat/completions", StringComparison.Ordinal))
             && (text.Contains("not found", StringComparison.Ordinal) || text.Contains("does not exist", StringComparison.Ordinal) || text.Contains("unsupported", StringComparison.Ordinal)))
         {
@@ -359,6 +389,8 @@ internal sealed class OpenAiClient : IOpenAiGateway
         public bool IncludeJsonFormat { get; set; }
 
         public bool SystemAsUser { get; set; }
+
+        public int OutputTokens { get; set; }
     }
 
     private sealed class ModelList

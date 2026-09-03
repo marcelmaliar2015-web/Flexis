@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Flexis.Application.Common;
 using Flexis.Application.Google;
 using Flexis.Application.Microsoft;
@@ -21,6 +22,7 @@ public sealed class MailCheckService
 
     private readonly IMailCheckSettingsRepository _settings;
     private readonly IMailCheckProcessedMessageRepository _processed;
+    private readonly IMailCheckActionLogRepository _actionLogs;
     private readonly IMailCheckScanStateRepository _scanStates;
     private readonly IMailConnectionRepository _mailConnections;
     private readonly MailAccessTokenService _mailTokens;
@@ -35,6 +37,7 @@ public sealed class MailCheckService
     public MailCheckService(
         IMailCheckSettingsRepository settings,
         IMailCheckProcessedMessageRepository processed,
+        IMailCheckActionLogRepository actionLogs,
         IMailCheckScanStateRepository scanStates,
         IMailConnectionRepository mailConnections,
         MailAccessTokenService mailTokens,
@@ -48,6 +51,7 @@ public sealed class MailCheckService
     {
         _settings = settings;
         _processed = processed;
+        _actionLogs = actionLogs;
         _scanStates = scanStates;
         _mailConnections = mailConnections;
         _mailTokens = mailTokens;
@@ -229,6 +233,7 @@ public sealed class MailCheckService
                 userId,
                 settings,
                 request.MailboxId,
+                manual,
                 lockMs,
                 progressGeneration,
                 handle.Token);
@@ -364,6 +369,7 @@ public sealed class MailCheckService
         Guid userId,
         MailCheckSettings settings,
         Guid? mailboxId,
+        bool manual,
         int lockMs,
         int progressGeneration,
         CancellationToken cancellationToken)
@@ -388,6 +394,9 @@ public sealed class MailCheckService
         string? activeMailboxProvider = null;
         var timing = new MailCheckRunTiming();
         timing.AddLockMs(lockMs);
+        var runId = Guid.NewGuid();
+        var source = manual ? "manual" : "auto";
+        var runClock = Stopwatch.StartNew();
         _runProgress.Begin(
             userId,
             progressGeneration,
@@ -445,6 +454,8 @@ public sealed class MailCheckService
                     labels,
                     labelRules,
                     items,
+                    runId,
+                    source,
                     cancellationToken));
                 trashed += enforced;
                 processed += enforced;
@@ -500,6 +511,7 @@ public sealed class MailCheckService
                     try
                     {
                         var candidate = search.Candidate;
+                        var messageClock = Stopwatch.StartNew();
                         Report("fetch", $"Downloading mail from {connection.Email}", connection.Email);
                         MailMessageContent message;
                         try
@@ -531,6 +543,9 @@ public sealed class MailCheckService
                                 labelRules,
                                 ourLabelIds,
                                 items,
+                                runId,
+                                source,
+                                (int)messageClock.ElapsedMilliseconds,
                                 cancellationToken);
                         });
                         if (handledBeforeClassify)
@@ -547,12 +562,28 @@ public sealed class MailCheckService
                         }
 
                         Report("classify", $"Classifying mail on {connection.Email} with OpenAI", connection.Email);
-                        var classification = await timing.TrackClassifyAsync(() => _openAi.ClassifyAsync(
-                            apiKey,
-                            settings.Model,
-                            classifierPrompt,
-                            MailCheckMailText.FormatForClassification(message),
-                            cancellationToken));
+                        MailCheckClassification classification;
+                        var classifyDetail = string.Empty;
+                        try
+                        {
+                            classification = await timing.TrackClassifyAsync(() => _openAi.ClassifyAsync(
+                                apiKey,
+                                settings.Model,
+                                classifierPrompt,
+                                MailCheckMailText.FormatForClassification(message),
+                                cancellationToken));
+                        }
+                        catch (ValidationFailedException classifyException)
+                        {
+                            _logger.LogWarning(
+                                classifyException,
+                                "MailCheck classify fallback user={UserId} mailbox={Mailbox} message={MessageId}",
+                                userId,
+                                connection.Email,
+                                message.Id);
+                            classification = new MailCheckClassification(MailCheckLabel.Other);
+                            classifyDetail = $"Classifier fallback to Other: {classifyException.Message}";
+                        }
 
                         try
                         {
@@ -583,6 +614,9 @@ public sealed class MailCheckService
                                 labelRules,
                                 ourLabelIds,
                                 items,
+                                runId,
+                                source,
+                                (int)messageClock.ElapsedMilliseconds,
                                 cancellationToken);
                         });
                         if (handledAfterClassify)
@@ -613,6 +647,10 @@ public sealed class MailCheckService
                                 labelRules,
                                 classification,
                                 items,
+                                runId,
+                                source,
+                                (int)messageClock.ElapsedMilliseconds,
+                                classifyDetail,
                                 cancellationToken);
                         });
                         var mailboxAction = labelRules[classification.Label];
@@ -648,6 +686,10 @@ public sealed class MailCheckService
                         }
 
                         errors++;
+                        await RecordMissingMessageAsync(userId, connection.Id, search.Candidate.Id, cancellationToken);
+                        skipMessageIds.Add(search.Candidate.Id);
+                        handledSkips++;
+                        alreadySeen++;
                         items.Add(new MailCheckRunItemDto(
                             search.Candidate.Id,
                             string.Empty,
@@ -658,7 +700,22 @@ public sealed class MailCheckService
                             connection.Id,
                             connection.Email,
                             providerName));
-                        break;
+                        await AppendMessageLogAsync(
+                            userId,
+                            runId,
+                            source,
+                            connection.Id,
+                            connection.Email,
+                            providerName,
+                            search.Candidate.Id,
+                            string.Empty,
+                            string.Empty,
+                            "error",
+                            string.Empty,
+                            exception.Message,
+                            0,
+                            cancellationToken);
+                        continue;
                     }
                 }
 
@@ -673,10 +730,46 @@ public sealed class MailCheckService
             }
 
             settings.RecordRun(labeled, trashed, skipped, processed, errors, hasMore, string.Empty);
+            var timingDto = timing.ToDto();
+            await AppendRunSummaryLogAsync(
+                userId,
+                runId,
+                source,
+                processed,
+                labeled,
+                trashed,
+                skipped,
+                errors,
+                scanned,
+                alreadySeen,
+                hasMore,
+                timingDto,
+                (int)runClock.ElapsedMilliseconds,
+                activeMailboxEmail,
+                activeMailboxProvider,
+                cancellationToken);
         }
         catch (Exception exception) when (exception is ValidationFailedException or GoogleOAuthException or MicrosoftOAuthException)
         {
             settings.RecordRun(labeled, trashed, skipped, processed, errors + 1, hasMore, exception.Message);
+            await AppendRunSummaryLogAsync(
+                userId,
+                runId,
+                source,
+                processed,
+                labeled,
+                trashed,
+                skipped,
+                errors + 1,
+                scanned,
+                alreadySeen,
+                hasMore,
+                timing.ToDto(),
+                (int)runClock.ElapsedMilliseconds,
+                activeMailboxEmail,
+                activeMailboxProvider,
+                cancellationToken,
+                exception.Message);
             await _processed.SaveChangesAsync(cancellationToken);
             await _scanStates.SaveChangesAsync(cancellationToken);
             await _settings.SaveChangesAsync(cancellationToken);
@@ -714,6 +807,10 @@ public sealed class MailCheckService
         IReadOnlyDictionary<MailCheckLabel, MailCheckMailboxAction> labelRules,
         MailCheckClassification classification,
         List<MailCheckRunItemDto> items,
+        Guid runId,
+        string source,
+        int durationMs,
+        string detail,
         CancellationToken cancellationToken)
     {
         if (!labels.TryGetValue(classification.Label, out var labelId))
@@ -736,16 +833,33 @@ public sealed class MailCheckService
         await _processed.UpsertAsync(
             MailCheckProcessedMessage.Create(userId, connection.Id, message.Id, classification.Label),
             cancellationToken);
+        var action = MailCheckLabelActionRules.ActionSlug(mailboxAction);
+        var labelName = MailCheckLabelCatalog.NameFor(classification.Label);
         items.Add(new MailCheckRunItemDto(
             message.Id,
             message.Subject,
             message.From,
-            MailCheckLabelActionRules.ActionSlug(mailboxAction),
-            string.Empty,
-            MailCheckLabelCatalog.NameFor(classification.Label),
+            action,
+            detail,
+            labelName,
             connection.Id,
             connection.Email,
             providerName));
+        await AppendMessageLogAsync(
+            userId,
+            runId,
+            source,
+            connection.Id,
+            connection.Email,
+            providerName,
+            message.Id,
+            message.Subject,
+            message.From,
+            action,
+            labelName,
+            detail,
+            durationMs,
+            cancellationToken);
     }
 
     private async Task<IReadOnlyList<MailConnection>> RequireConnectionsAsync(
@@ -982,6 +1096,9 @@ public sealed class MailCheckService
         IReadOnlyDictionary<MailCheckLabel, MailCheckMailboxAction> labelRules,
         IReadOnlySet<string> ourLabelIds,
         List<MailCheckRunItemDto> items,
+        Guid runId,
+        string source,
+        int durationMs,
         CancellationToken cancellationToken)
     {
         if (!message.LabelIds.Any(ourLabelIds.Contains))
@@ -1029,16 +1146,33 @@ public sealed class MailCheckService
                 message.Id,
                 existingLabel ?? MailCheckLabel.Other),
             cancellationToken);
+        var actionSlug = trashedNow ? "trash" : "already_checked";
+        var labelName = existingLabel is MailCheckLabel named ? MailCheckLabelCatalog.NameFor(named) : "Already labeled";
         items.Add(new MailCheckRunItemDto(
             message.Id,
             message.Subject,
             message.From,
-            trashedNow ? "trash" : "already_checked",
+            actionSlug,
             string.Empty,
-            existingLabel is MailCheckLabel named ? MailCheckLabelCatalog.NameFor(named) : "Already labeled",
+            labelName,
             connection.Id,
             connection.Email,
             providerName));
+        await AppendMessageLogAsync(
+            userId,
+            runId,
+            source,
+            connection.Id,
+            connection.Email,
+            providerName,
+            message.Id,
+            message.Subject,
+            message.From,
+            actionSlug,
+            labelName,
+            trashedNow ? "Already labeled; trash action enforced" : "Already labeled; skipped classification",
+            durationMs,
+            cancellationToken);
         return (true, trashedNow);
     }
 
@@ -1121,6 +1255,8 @@ public sealed class MailCheckService
         IReadOnlyDictionary<MailCheckLabel, string> labels,
         IReadOnlyDictionary<MailCheckLabel, MailCheckMailboxAction> labelRules,
         List<MailCheckRunItemDto> items,
+        Guid runId,
+        string source,
         CancellationToken cancellationToken)
     {
         var trashLabels = MailCheckLabelActionRules.TrashLabels(labelRules);
@@ -1146,6 +1282,7 @@ public sealed class MailCheckService
                     break;
                 }
 
+                var messageClock = Stopwatch.StartNew();
                 MailMessageContent message;
                 try
                 {
@@ -1167,22 +1304,107 @@ public sealed class MailCheckService
                 await _processed.UpsertAsync(
                     MailCheckProcessedMessage.Create(userId, connection.Id, message.Id, label),
                     cancellationToken);
+                var labelName = MailCheckLabelCatalog.NameFor(label);
                 items.Add(new MailCheckRunItemDto(
                     message.Id,
                     message.Subject,
                     message.From,
                     "trash",
                     "Enforced trash label action",
-                    MailCheckLabelCatalog.NameFor(label),
+                    labelName,
                     connection.Id,
                     connection.Email,
                     providerName));
+                await AppendMessageLogAsync(
+                    userId,
+                    runId,
+                    source,
+                    connection.Id,
+                    connection.Email,
+                    providerName,
+                    message.Id,
+                    message.Subject,
+                    message.From,
+                    "trash",
+                    labelName,
+                    "Enforced trash label action",
+                    (int)messageClock.ElapsedMilliseconds,
+                    cancellationToken);
                 enforced++;
                 remaining--;
             }
         }
 
         return enforced;
+    }
+
+    private Task AppendMessageLogAsync(
+        Guid userId,
+        Guid runId,
+        string source,
+        Guid mailConnectionId,
+        string mailboxEmail,
+        string mailboxProvider,
+        string messageId,
+        string subject,
+        string fromAddress,
+        string action,
+        string label,
+        string detail,
+        int durationMs,
+        CancellationToken cancellationToken)
+    {
+        return _actionLogs.AddAsync(
+            MailCheckActionLog.CreateMessage(
+                userId,
+                runId,
+                source,
+                mailConnectionId,
+                mailboxEmail,
+                mailboxProvider,
+                messageId,
+                subject,
+                fromAddress,
+                action,
+                label,
+                detail,
+                durationMs),
+            cancellationToken);
+    }
+
+    private Task AppendRunSummaryLogAsync(
+        Guid userId,
+        Guid runId,
+        string source,
+        int processed,
+        int labeled,
+        int trashed,
+        int skipped,
+        int errors,
+        int scanned,
+        int alreadySeen,
+        bool hasMore,
+        MailCheckRunTimingDto timing,
+        int durationMs,
+        string? mailboxEmail,
+        string? mailboxProvider,
+        CancellationToken cancellationToken,
+        string? error = null)
+    {
+        var detail = string.IsNullOrWhiteSpace(error)
+            ? $"Processed {processed}, labeled {labeled}, trashed {trashed}, skipped {skipped}, errors {errors}, scanned {scanned}, already seen {alreadySeen}, hasMore {hasMore}. Timing lock {timing.LockMs} ms, token {timing.TokenMs} ms, labels {timing.LabelsMs} ms, scan {timing.ScanMs} ms, fetch {timing.FetchMs} ms, classify {timing.ClassifyMs} ms, apply {timing.ApplyMs} ms, total {timing.TotalMs} ms."
+            : $"Run failed: {error}. Processed {processed}, errors {errors + 0}, scanned {scanned}.";
+        return _actionLogs.AddAsync(
+            MailCheckActionLog.CreateRunSummary(
+                userId,
+                runId,
+                source,
+                "run_completed",
+                detail,
+                durationMs,
+                mailboxEmail,
+                mailboxProvider),
+            cancellationToken);
     }
 
     private void ReportRunProgress(

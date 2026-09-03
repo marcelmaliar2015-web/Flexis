@@ -35,7 +35,7 @@ Path alias `@/` maps to `frontend/src/`.
 | `features/auth` | Sign-in screen |
 | `features/dashboard` | Workspace status board (health, Google, pipeline, financial, logs, Admin users) |
 | `features/jobApplication` | Job Application tabs, Pipeline table, pipeline bulk progress, Financial summary cards, pipeline entry detail, Financial, Resume generation, Logs, Settings (Gmail, default rates, profiles, profile info, sources, locations) |
-| `features/mailCheck` | Mail Check tabs: Need action, Inbox, Check, Settings (multi mailbox, auto-check toggle, OpenAI key, label actions, need action labels) |
+| `features/mailCheck` | Mail Check tabs: Need action, Inbox, Check, Log, Settings (multi mailbox, auto-check toggle, OpenAI key, label actions, need action labels) |
 | `features/settings` | Settings screen; signed-in account profile; Admin Google Cloud client and other users |
 | `shared/api` | `fetch` wrapper and endpoint functions |
 | `shared/auth` | Session provider and token storage |

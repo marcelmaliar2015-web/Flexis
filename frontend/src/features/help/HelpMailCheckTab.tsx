@@ -191,9 +191,21 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
                   <TableCell align="left">
 
                     Check all processes every inbox and junk candidate one message at a time with
-                    live progress. Background auto-check still runs about every two minutes while
-                    Mail Check is open.
+                    live progress. Background auto-check runs on the API about every 20 seconds while
+                    enabled, even if this browser tab is closed.
 
+                  </TableCell>
+
+                </TableRow>
+
+                <TableRow>
+
+                  <TableCell align="left">Log</TableCell>
+
+                  <TableCell align="left">
+                    Paginated history of auto-check and manual check actions: source, mailbox, from,
+                    subject, label, action, duration, and run detail. Filter and search when volume
+                    grows.
                   </TableCell>
 
                 </TableRow>

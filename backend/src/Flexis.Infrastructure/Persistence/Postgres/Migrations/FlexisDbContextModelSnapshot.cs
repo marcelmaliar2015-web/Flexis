@@ -341,6 +341,89 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("job_resume_settings", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckActionLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Detail")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FromAddress")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid?>("MailConnectionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MailboxEmail")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<string>("MailboxProvider")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("MessageId")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RunId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MailConnectionId");
+
+                    b.HasIndex("RunId");
+
+                    b.HasIndex("UserId", "OccurredAt");
+
+                    b.HasIndex("UserId", "Action", "OccurredAt");
+
+                    b.HasIndex("UserId", "MailConnectionId", "OccurredAt");
+
+                    b.HasIndex("UserId", "Source", "OccurredAt");
+
+                    b.ToTable("mail_check_action_logs", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckProcessedMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -663,6 +746,20 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobResumeSettings", b =>
                 {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckActionLog", b =>
+                {
+                    b.HasOne("Flexis.Domain.MailCheck.MailConnection", null)
+                        .WithMany()
+                        .HasForeignKey("MailConnectionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")

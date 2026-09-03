@@ -6,7 +6,7 @@ Two stores, registered in `Flexis.Infrastructure.DependencyInjection`.
 
 | Store | Use | Access |
 | --- | --- | --- |
-| PostgreSQL | Relational data, users, Google connections, Google Cloud client, Microsoft client, job catalog items, pipeline entries, banned companies, financial settings, activity logs, Mail Check settings and processed messages | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
+| PostgreSQL | Relational data, users, Google connections, Google Cloud client, Microsoft client, job catalog items, pipeline entries, banned companies, financial settings, activity logs, Mail Check settings, processed messages, and action logs | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
 | MongoDB | Document data | `IMongoClient` singleton, `IMongoDatabase` named `Mongo:Database` |
 
 Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, database `flexis`).
@@ -42,6 +42,8 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 `MailCheckProcessedMessage` in `Flexis.Domain.MailCheck`. Table `mail_check_processed_messages`. `MessageId` is `varchar(512)` so Outlook Graph ids fit. `Label` stores the classifier label slug. Unique (`MailConnectionId`, `MessageId`), cascade from `users` and from `mail_connections`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckProcessedMessageConfiguration.cs`.
 
 `MailCheckScanState` in `Flexis.Domain.MailCheck`. Table `mail_check_scan_states`. One row per mailbox connection. `CheckedNewestAt` is the newest message date processed. `CheckedUntilAt` is the oldest message date processed in the current scan. `LastScanAt` is the last scan time. `ScanCaughtUp` is true when inbox and junk folders are exhausted. Unique `MailConnectionId`, cascade from `users` and from `mail_connections`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckScanStateConfiguration.cs`.
+
+`MailCheckActionLog` in `Flexis.Domain.MailCheck`. Table `mail_check_action_logs`. Cascade from `users`. Optional `MailConnectionId` set null on mailbox disconnect. Indexes on `(UserId, OccurredAt)`, source, action, mailbox, and `RunId`. Listed with server pagination. EF configuration: `Persistence/Postgres/MailCheck/MailCheckActionLogConfiguration.cs`. See [026-mail-check-action-log.md](../decisions/026-mail-check-action-log.md).
 
 ## Migrations
 

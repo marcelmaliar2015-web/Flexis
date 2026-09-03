@@ -149,6 +149,47 @@ export type MailCheckInbox = {
   items: MailCheckInboxItem[];
 };
 
+export type MailCheckLogSource = "auto" | "manual";
+
+export type MailCheckLogAction =
+  | MailCheckAction
+  | "run_completed"
+  | string;
+
+export type MailCheckActionLog = {
+  id: string;
+  runId: string;
+  occurredAt: string;
+  source: MailCheckLogSource | string;
+  mailboxId: string | null;
+  mailboxEmail: string;
+  mailboxProvider: MailCheckMailboxProvider | string;
+  messageId: string;
+  subject: string;
+  from: string;
+  action: MailCheckLogAction;
+  label: string;
+  detail: string;
+  durationMs: number;
+};
+
+export type MailCheckActionLogPage = {
+  items: MailCheckActionLog[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+};
+
+export type MailCheckActionLogQuery = {
+  page?: number;
+  pageSize?: number;
+  source?: MailCheckLogSource | "all";
+  action?: string;
+  mailboxId?: string | null;
+  q?: string;
+};
+
 export const mailCheckLabels: { slug: MailCheckLabelSlug; name: string }[] = [
   { slug: "rejected", name: "Rejected" },
   { slug: "applied", name: "Applied" },

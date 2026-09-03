@@ -119,6 +119,23 @@ public sealed class MailCheckController : ControllerBase
         return mailCheck.GetNeedActionInboxAsync(CurrentUserId(), cancellationToken);
     }
 
+    [HttpGet("logs")]
+    public Task<MailCheckActionLogPageDto> ListLogs(
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
+        [FromQuery] string? source,
+        [FromQuery] string? action,
+        [FromQuery] Guid? mailboxId,
+        [FromQuery] string? q,
+        [FromServices] MailCheckActionLogService logs,
+        CancellationToken cancellationToken)
+    {
+        return logs.ListAsync(
+            CurrentUserId(),
+            new MailCheckActionLogQuery(page, pageSize, source, action, mailboxId, q),
+            cancellationToken);
+    }
+
     private Guid CurrentUserId()
     {
         var subject = User.FindFirstValue(ClaimTypes.NameIdentifier)

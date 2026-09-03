@@ -34,6 +34,7 @@ export const mailCheckActionLabels: Record<string, string> = {
   keep: "Left in inbox",
   already_checked: "Already labeled",
   error: "Error",
+  run_completed: "Run completed",
 };
 
 export function actionLabel(action: MailCheckAction | string): string {

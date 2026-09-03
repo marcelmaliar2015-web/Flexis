@@ -5,6 +5,7 @@ import {
   getMailCheckRunProgress,
   mailCheckInboxRootQueryKey,
   mailCheckLastRunQueryKey,
+  mailCheckLogsRootQueryKey,
   mailCheckNeedActionQueryKey,
   mailCheckSettingsQueryKey,
   runMailCheck,
@@ -243,6 +244,7 @@ export function useMailCheckRun(mailboxes: MailCheckMailboxItem[]) {
       await queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
       await queryClient.invalidateQueries({ queryKey: mailCheckInboxRootQueryKey });
       await queryClient.invalidateQueries({ queryKey: mailCheckNeedActionQueryKey });
+      await queryClient.invalidateQueries({ queryKey: mailCheckLogsRootQueryKey });
       setActiveMailboxId(null);
       abortRef.current = null;
       setCancelling(false);

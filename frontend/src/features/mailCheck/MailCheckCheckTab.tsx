@@ -93,9 +93,10 @@ export function MailCheckCheckTab({ settings, mailCheckRun }: MailCheckCheckTabP
 
       {autoCheck.isLive ? (
         <Alert severity="info">
-          Auto-check runs every {autoCheck.intervalSeconds} seconds while Mail Check stays open
-          {autoCheck.isRunning ? " and is classifying mail now" : ""}. The AppBar pill shows live
-          status. Manual Check cancels the in-flight auto request and takes the server lock.
+          Auto-check runs on the API every {autoCheck.intervalSeconds} seconds while it stays enabled
+          {autoCheck.isRunning ? " and is classifying mail now" : ""}. It continues even if this tab
+          or browser is closed. The AppBar pill shows live status. Manual Check takes the server
+          lock ahead of the background auto-check.
         </Alert>
       ) : null}
 

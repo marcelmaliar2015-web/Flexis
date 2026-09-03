@@ -85,8 +85,8 @@ export function MailCheckInboxTab() {
       {hasMailbox && !inboxQuery.isPending && items.length === 0 ? (
         <EmptyState>
           <Typography variant="body2" color="text.secondary">
-            No pinned mail yet. Open Check and run a check, or wait for auto-check while this page
-            is open.
+            No pinned mail yet. Open Check and run a check, or wait for server auto-check when it is
+            enabled.
           </Typography>
         </EmptyState>
       ) : null}

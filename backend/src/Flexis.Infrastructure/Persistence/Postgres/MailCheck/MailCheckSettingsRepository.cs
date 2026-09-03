@@ -18,6 +18,18 @@ internal sealed class MailCheckSettingsRepository : IMailCheckSettingsRepository
         return _db.MailCheckSettings.FirstOrDefaultAsync(item => item.UserId == userId, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Guid>> ListAutoCheckEligibleUserIdsAsync(CancellationToken cancellationToken)
+    {
+        return await _db.MailCheckSettings
+            .AsNoTracking()
+            .Where(item => item.AutoCheckEnabled)
+            .Where(item => item.ApiKeyProtected != null && item.ApiKeyProtected != string.Empty)
+            .Where(item => _db.MailConnections.Any(connection => connection.UserId == item.UserId))
+            .Select(item => item.UserId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
     public Task ReloadAsync(MailCheckSettings settings, CancellationToken cancellationToken)
     {
         return _db.Entry(settings).ReloadAsync(cancellationToken);

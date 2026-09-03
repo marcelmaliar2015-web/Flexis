@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { MailCheckCheckTab } from "@/features/mailCheck/MailCheckCheckTab";
 import { MailCheckInboxTab } from "@/features/mailCheck/MailCheckInboxTab";
+import { MailCheckLogTab } from "@/features/mailCheck/MailCheckLogTab";
 import { MailCheckNeedActionTab } from "@/features/mailCheck/MailCheckNeedActionTab";
 import { MailCheckSettingsTab } from "@/features/mailCheck/MailCheckSettingsTab";
 import { useMailCheckRun } from "@/features/mailCheck/useMailCheckRun";
@@ -55,7 +56,7 @@ const TabLabelRoot = styled("span")(({ theme }) => ({
   paddingRight: theme.spacing(2.5),
 }));
 
-type MailCheckTab = "need-action" | "inbox" | "check" | "settings";
+type MailCheckTab = "need-action" | "inbox" | "check" | "log" | "settings";
 
 function TabLabel({ label, count }: { label: string; count: number }) {
   if (count <= 0) {
@@ -87,6 +88,7 @@ export function MailCheckPage() {
   const [visited, setVisited] = useState({
     inbox: false,
     check: false,
+    log: false,
     settings: false,
   });
   const settingsQuery = useQuery({
@@ -156,7 +158,7 @@ export function MailCheckPage() {
             value={tab}
             onChange={(_event, value: MailCheckTab) => {
               setTab(value);
-              if (value === "inbox" || value === "check" || value === "settings") {
+              if (value === "inbox" || value === "check" || value === "log" || value === "settings") {
                 setVisited((current) => ({ ...current, [value]: true }));
               }
             }}
@@ -167,6 +169,7 @@ export function MailCheckPage() {
             />
             <MailCheckTabItem label="Inbox" value="inbox" />
             <MailCheckTabItem label="Check" value="check" />
+            <MailCheckTabItem label="Log" value="log" />
             <MailCheckTabItem label="Settings" value="settings" />
           </MailCheckTabs>
           <Box role="tabpanel" hidden={tab !== "need-action"}>
@@ -180,6 +183,11 @@ export function MailCheckPage() {
           {tab === "check" || visited.check ? (
             <Box role="tabpanel" hidden={tab !== "check"}>
               <MailCheckCheckTab settings={settings} mailCheckRun={mailCheckRun} />
+            </Box>
+          ) : null}
+          {tab === "log" || visited.log ? (
+            <Box role="tabpanel" hidden={tab !== "log"}>
+              <MailCheckLogTab />
             </Box>
           ) : null}
           {tab === "settings" || visited.settings ? (

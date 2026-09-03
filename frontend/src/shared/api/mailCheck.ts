@@ -1,6 +1,8 @@
 import { deleteRequest, getJson, postJson, putJson } from "@/shared/api/client";
 import type { QueryClient } from "@tanstack/react-query";
 import type {
+  MailCheckActionLogPage,
+  MailCheckActionLogQuery,
   MailCheckInbox,
   MailCheckLabelSlug,
   MailCheckMailboxStatus,
@@ -24,8 +26,21 @@ export const mailCheckNeedActionQueryKey = ["mail-check-need-action"] as const;
 
 export const mailCheckInboxRootQueryKey = ["mail-check-inbox"] as const;
 
+export const mailCheckLogsRootQueryKey = ["mail-check-logs"] as const;
+
 export const mailCheckInboxQueryKey = (label: MailCheckLabelSlug | "all") =>
   [...mailCheckInboxRootQueryKey, label] as const;
+
+export const mailCheckLogsQueryKey = (query: MailCheckActionLogQuery) =>
+  [
+    ...mailCheckLogsRootQueryKey,
+    query.page ?? 1,
+    query.pageSize ?? 50,
+    query.source ?? "all",
+    query.action ?? "all",
+    query.mailboxId ?? "all",
+    query.q ?? "",
+  ] as const;
 
 export const mailCheckSettingsRevisionQueryKey = ["mail-check-settings-revision"] as const;
 
@@ -82,6 +97,25 @@ export function getMailCheckInbox(label: MailCheckLabelSlug | "all"): Promise<Ma
 
 export function getMailCheckNeedAction(): Promise<MailCheckInbox> {
   return getJson<MailCheckInbox>("/api/mail-check/need-action");
+}
+
+export function listMailCheckLogs(query: MailCheckActionLogQuery): Promise<MailCheckActionLogPage> {
+  const params = new URLSearchParams();
+  params.set("page", String(query.page ?? 1));
+  params.set("pageSize", String(query.pageSize ?? 50));
+  if (query.source && query.source !== "all") {
+    params.set("source", query.source);
+  }
+  if (query.action && query.action !== "all") {
+    params.set("action", query.action);
+  }
+  if (query.mailboxId) {
+    params.set("mailboxId", query.mailboxId);
+  }
+  if (query.q?.trim()) {
+    params.set("q", query.q.trim());
+  }
+  return getJson<MailCheckActionLogPage>(`/api/mail-check/logs?${params.toString()}`);
 }
 
 export function getMailCheckMailbox(): Promise<MailCheckMailboxStatus> {

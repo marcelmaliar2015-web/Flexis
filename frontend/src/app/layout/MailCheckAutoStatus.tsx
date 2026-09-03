@@ -188,8 +188,8 @@ export function MailCheckAutoStatus() {
               <Typography variant="subtitle2">Mail Check auto-check</Typography>
               <Typography variant="caption" color="text.secondary">
                 {running
-                  ? "Flexis is classifying new mail on this page."
-                  : `Watching for new mail every ${mailCheck.intervalSeconds} seconds while Mail Check stays open.`}
+                  ? "The API is classifying new mail in the background."
+                  : `The API watches for new mail every ${mailCheck.intervalSeconds} seconds while auto-check stays on, even if this browser is closed.`}
               </Typography>
             </Stack>
             <Stack spacing={0.25}>
