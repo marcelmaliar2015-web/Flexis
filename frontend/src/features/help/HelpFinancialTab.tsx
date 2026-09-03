@@ -92,6 +92,12 @@ export function HelpFinancialTab() {
             </ListItem>
             <ListItem disableGutters>
               <ListItemText
+                primary="Performance graph"
+                secondary="Hourly snapshots of today, archived, and lifetime price with connected lines and hover detail. Switch to Daily to plot the last snapshot of each day. Opening Financial or Google workspace sync writes or updates this hour in PostgreSQL."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
                 primary="Selected rows"
                 secondary="Check rows, or use the header checkbox, to price a subset. The selected card shows today, archived, and lifetime totals."
               />

@@ -10,6 +10,8 @@ Job Application tabs are Operations, Financial, Logs, then Settings.
 
 Financial lists one row per pipeline entry. Today counts come from that profile's named main tab: total is non-empty listing rows, applied is Status `Applied`, interviews is Status `Interview`. Archived counts sum numbered tabs (`1`, `2`, `3`, …) created by Forward. Status dropdown maintenance skips archived tabs. Lifetime is today plus archived. Price is `applied * applyRate + interviews * bonusRate` for each period, rounded to 2 decimals. Each row has its own apply rate and bonus rate. New pipeline rows copy the user's defaults (0.06 and 1.5 until changed). Defaults are edited on Job Application Settings, not Admin Settings. Changing defaults does not rewrite existing row rates. Rows are selectable so a subset can be priced in the UI. Profile Status includes Interview.
 
+`GET /api/job-application/financial` also writes an hourly snapshot for that user (`job_financial_snapshots`, unique `UserId` + UTC hour). The same request returns `history` (oldest first, up to 14 days of hours). Opening Financial or Google workspace sync updates this hour's snapshot. `GET /api/job-application/financial/history` returns the same history list. The Financial tab charts today, archived, and lifetime price with Hourly and Daily views. See [028-financial-performance-snapshots.md](028-financial-performance-snapshots.md).
+
 Logs persist after successful pipeline, catalog, financial, and Gmail connect or disconnect actions. `GET /api/job-application/logs` returns the newest 200 for that user.
 
 ## Consequences

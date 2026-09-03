@@ -667,7 +667,10 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         string sheetName,
         CancellationToken cancellationToken)
     {
-        var columnCount = ColumnsFor(JobWorkbookKind.Profile).Length;
+        var columns = ColumnsFor(JobWorkbookKind.Profile);
+        var columnCount = columns.Length;
+        var linkIndex = Array.FindIndex(columns, column => column.Name == "Link");
+        var downloadIndex = Array.FindIndex(columns, column => column.Name == "Download");
         var endColumn = (char)('A' + columnCount - 1);
         var payload = await SendJson<SheetValues>(
             accessToken,
@@ -700,7 +703,18 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             }
 
             filledListings.Add(listing);
-            filledCells.Add(Enumerable.Range(0, columnCount).Select(index => Cell(row, index)).ToArray());
+            filledCells.Add(Enumerable.Range(0, columnCount)
+                .Select(index =>
+                {
+                    var value = Cell(row, index);
+                    if (index == linkIndex || index == downloadIndex)
+                    {
+                        return ToHyperlinkFormulaIfUrl(value);
+                    }
+
+                    return value;
+                })
+                .ToArray());
         }
 
         if (filledListings.Count == 0)
@@ -1096,6 +1110,102 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             HttpMethod.Post,
             $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
             new { requests = formatRequests },
+            cancellationToken);
+    }
+
+    public async Task RewriteUrlColumnsAsHyperlinksAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        CancellationToken cancellationToken)
+    {
+        var columns = ColumnsFor(JobWorkbookKind.Profile);
+        var linkIndex = Array.FindIndex(columns, column => column.Name == "Link");
+        var downloadIndex = Array.FindIndex(columns, column => column.Name == "Download");
+        var urlColumnIndices = new[] { linkIndex, downloadIndex }.Where(index => index >= 0).ToArray();
+        if (urlColumnIndices.Length == 0)
+        {
+            return;
+        }
+
+        var firstCol = urlColumnIndices.Min();
+        var lastCol = urlColumnIndices.Max();
+        var meta = await SendJson<SpreadsheetList>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets(properties(sheetId,title))",
+            null,
+            cancellationToken);
+        var sheet = (meta.Sheets ?? [])
+            .FirstOrDefault(item => string.Equals(item.Properties?.Title, sheetName, StringComparison.Ordinal));
+        if (sheet?.Properties is null)
+        {
+            return;
+        }
+
+        var payload = await SendJson<SheetValues>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(sheetName, $"{ColumnLetter(firstCol)}2:{ColumnLetter(lastCol)}")}?valueRenderOption=FORMULA",
+            null,
+            cancellationToken);
+
+        var requests = new List<object>();
+        var rowValues = payload.Values ?? [];
+        for (var i = 0; i < rowValues.Count; i++)
+        {
+            foreach (var colIndex in urlColumnIndices)
+            {
+                var raw = Cell(rowValues[i], colIndex - firstCol);
+                var uri = ExtractHyperlinkUri(raw);
+                if (uri is null)
+                {
+                    continue;
+                }
+
+                requests.Add(new
+                {
+                    updateCells = new
+                    {
+                        start = new { sheetId = sheet.Properties.SheetId, rowIndex = i + 1, columnIndex = colIndex },
+                        rows = new[]
+                        {
+                            new
+                            {
+                                values = new[]
+                                {
+                                    new
+                                    {
+                                        userEnteredValue = new { stringValue = uri },
+                                        userEnteredFormat = new
+                                        {
+                                            textFormat = new
+                                            {
+                                                link = new { uri },
+                                                underline = true,
+                                                foregroundColor = new Color(0.066, 0.333, 0.8)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        fields = "userEnteredValue,userEnteredFormat.textFormat"
+                    }
+                });
+            }
+        }
+
+        if (requests.Count == 0)
+        {
+            return;
+        }
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new { requests },
             cancellationToken);
     }
 
@@ -2188,6 +2298,44 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
     private static string SheetRange(string sheetName, string cells)
     {
         return $"'{sheetName.Replace("'", "''", StringComparison.Ordinal)}'!{cells}";
+    }
+
+    private static string ToHyperlinkFormulaIfUrl(string value)
+    {
+        return ExtractHyperlinkUri(value) ?? value;
+    }
+
+    private static string? ExtractHyperlinkUri(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.StartsWith("=HYPERLINK(", StringComparison.OrdinalIgnoreCase))
+        {
+            var firstQuote = trimmed.IndexOf('"');
+            var secondQuote = firstQuote >= 0 ? trimmed.IndexOf('"', firstQuote + 1) : -1;
+            if (firstQuote >= 0 && secondQuote > firstQuote)
+            {
+                trimmed = trimmed[(firstQuote + 1)..secondQuote].Replace("\"\"", "\"", StringComparison.Ordinal);
+            }
+        }
+
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out var absolute)
+            && (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps))
+        {
+            return absolute.AbsoluteUri;
+        }
+
+        if (Uri.TryCreate($"https://{trimmed}", UriKind.Absolute, out var prefixed)
+            && (prefixed.Host.Contains('.', StringComparison.Ordinal) || prefixed.Host.Contains(':', StringComparison.Ordinal)))
+        {
+            return prefixed.AbsoluteUri;
+        }
+
+        return null;
     }
 
     private static JobListingRow ToListing(List<JsonElement> row)

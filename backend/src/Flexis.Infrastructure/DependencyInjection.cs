@@ -93,6 +93,7 @@ public static class DependencyInjection
         services.AddScoped<IJobPipelineRepository, JobPipelineRepository>();
         services.AddScoped<IJobProfileBannedRepository, JobProfileBannedRepository>();
         services.AddScoped<IJobFinancialSettingsRepository, JobFinancialSettingsRepository>();
+        services.AddScoped<IJobFinancialSnapshotRepository, JobFinancialSnapshotRepository>();
         services.AddScoped<IJobResumeRepository, JobResumeRepository>();
         services.AddScoped<IJobApplicationLogRepository, JobApplicationLogRepository>();
         services.AddScoped<IMailCheckSettingsRepository, MailCheckSettingsRepository>();

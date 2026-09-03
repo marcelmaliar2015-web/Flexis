@@ -37,4 +37,22 @@ public sealed record JobFinancialBoardDto(
     decimal LifetimeAllPrice,
     int LifetimeAllTotal,
     int LifetimeAllApplied,
-    int LifetimeAllInterviews);
+    int LifetimeAllInterviews,
+    IReadOnlyList<JobFinancialSnapshotDto> History);
+
+public sealed record JobFinancialSnapshotDto(
+    DateOnly CapturedOn,
+    DateTimeOffset CapturedHour,
+    DateTimeOffset CapturedAt,
+    decimal TodayPrice,
+    int TodayTotal,
+    int TodayApplied,
+    int TodayInterviews,
+    decimal ArchivedPrice,
+    int ArchivedTotal,
+    int ArchivedApplied,
+    int ArchivedInterviews,
+    decimal LifetimePrice,
+    int LifetimeTotal,
+    int LifetimeApplied,
+    int LifetimeInterviews);

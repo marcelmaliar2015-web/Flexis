@@ -6,7 +6,10 @@ namespace Flexis.Application.JobApplication;
 
 public sealed class JobFinancialService
 {
+    public const int HistoryHours = 24 * 14;
+
     private readonly IJobFinancialSettingsRepository _settings;
+    private readonly IJobFinancialSnapshotRepository _snapshots;
     private readonly IJobPipelineRepository _entries;
     private readonly IJobCatalogRepository _items;
     private readonly GoogleAccessTokenService _tokens;
@@ -15,6 +18,7 @@ public sealed class JobFinancialService
 
     public JobFinancialService(
         IJobFinancialSettingsRepository settings,
+        IJobFinancialSnapshotRepository snapshots,
         IJobPipelineRepository entries,
         IJobCatalogRepository items,
         GoogleAccessTokenService tokens,
@@ -22,6 +26,7 @@ public sealed class JobFinancialService
         JobApplicationActivity activity)
     {
         _settings = settings;
+        _snapshots = snapshots;
         _entries = entries;
         _items = items;
         _tokens = tokens;
@@ -81,7 +86,7 @@ public sealed class JobFinancialService
                 cancellationToken));
         }
 
-        return new JobFinancialBoardDto(
+        var board = new JobFinancialBoardDto(
             new JobFinancialDefaultsDto(defaults.ApplyRate, defaults.BonusRate),
             rows,
             rows.Sum(row => row.Price),
@@ -95,7 +100,18 @@ public sealed class JobFinancialService
             rows.Sum(row => row.LifetimePrice),
             rows.Sum(row => row.LifetimeTotal),
             rows.Sum(row => row.LifetimeApplied),
-            rows.Sum(row => row.LifetimeInterviews));
+            rows.Sum(row => row.LifetimeInterviews),
+            []);
+        await CaptureSnapshotAsync(userId, board, cancellationToken);
+        var history = await ListHistoryAsync(userId, cancellationToken);
+        return board with { History = history };
+    }
+
+    public async Task<IReadOnlyList<JobFinancialSnapshotDto>> GetHistoryAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        return await ListHistoryAsync(userId, cancellationToken);
     }
 
     public async Task<JobFinancialDefaultsDto> UpdateDefaultsAsync(
@@ -281,5 +297,78 @@ public sealed class JobFinancialService
             lifetimeApplied,
             lifetimeInterviews,
             JobFinancialRules.Price(lifetimeApplied, lifetimeInterviews, entry.ApplyRate, entry.BonusRate));
+    }
+
+    private async Task CaptureSnapshotAsync(
+        Guid userId,
+        JobFinancialBoardDto board,
+        CancellationToken cancellationToken)
+    {
+        var capturedHour = JobFinancialSnapshot.TruncateToHour(DateTimeOffset.UtcNow);
+        var existing = await _snapshots.GetByUserAndHourAsync(userId, capturedHour, cancellationToken);
+        if (existing is null)
+        {
+            await _snapshots.AddAsync(
+                JobFinancialSnapshot.Create(
+                    userId,
+                    capturedHour,
+                    board.AllPrice,
+                    board.AllTotal,
+                    board.AllApplied,
+                    board.AllInterviews,
+                    board.ArchivedAllPrice,
+                    board.ArchivedAllTotal,
+                    board.ArchivedAllApplied,
+                    board.ArchivedAllInterviews,
+                    board.LifetimeAllPrice,
+                    board.LifetimeAllTotal,
+                    board.LifetimeAllApplied,
+                    board.LifetimeAllInterviews),
+                cancellationToken);
+        }
+        else
+        {
+            existing.Replace(
+                board.AllPrice,
+                board.AllTotal,
+                board.AllApplied,
+                board.AllInterviews,
+                board.ArchivedAllPrice,
+                board.ArchivedAllTotal,
+                board.ArchivedAllApplied,
+                board.ArchivedAllInterviews,
+                board.LifetimeAllPrice,
+                board.LifetimeAllTotal,
+                board.LifetimeAllApplied,
+                board.LifetimeAllInterviews);
+        }
+
+        await _snapshots.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<JobFinancialSnapshotDto>> ListHistoryAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var snapshots = await _snapshots.ListRecentAsync(userId, HistoryHours, cancellationToken);
+        return snapshots
+            .OrderBy(item => item.CapturedHour)
+            .Select(item => new JobFinancialSnapshotDto(
+                item.CapturedOn,
+                item.CapturedHour,
+                item.CapturedAt,
+                item.TodayPrice,
+                item.TodayTotal,
+                item.TodayApplied,
+                item.TodayInterviews,
+                item.ArchivedPrice,
+                item.ArchivedTotal,
+                item.ArchivedApplied,
+                item.ArchivedInterviews,
+                item.LifetimePrice,
+                item.LifetimeTotal,
+                item.LifetimeApplied,
+                item.LifetimeInterviews))
+            .ToArray();
     }
 }

@@ -6,7 +6,7 @@ Two stores, registered in `Flexis.Infrastructure.DependencyInjection`.
 
 | Store | Use | Access |
 | --- | --- | --- |
-| PostgreSQL | Relational data, users, Google connections, Google Cloud client, Microsoft client, job catalog items, pipeline entries, banned companies, financial settings, activity logs, Mail Check settings, processed messages, and action logs | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
+| PostgreSQL | Relational data, users, Google connections, Google Cloud client, Microsoft client, job catalog items, pipeline entries, banned companies, financial settings, financial snapshots, activity logs, Mail Check settings, processed messages, and action logs | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
 | MongoDB | Document data | `IMongoClient` singleton, `IMongoDatabase` named `Mongo:Database` |
 
 Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, database `flexis`).
@@ -28,6 +28,8 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 `JobProfileBannedCompany` in `Flexis.Domain.JobApplication`. Table `job_profile_banned_companies`. Unique (`ProfileId`, `MatchKey`), cascade from `job_catalog_items` where kind is Profile. EF configuration: `Persistence/Postgres/JobApplication/JobProfileBannedCompanyConfiguration.cs`.
 
 `JobFinancialSettings` in `Flexis.Domain.JobApplication`. Table `job_financial_settings`. Unique `UserId`, cascade from `users`. Default apply rate 0.06 and bonus rate 1.5. EF configuration: `Persistence/Postgres/JobApplication/JobFinancialSettingsConfiguration.cs`.
+
+`JobFinancialSnapshot` in `Flexis.Domain.JobApplication`. Table `job_financial_snapshots`. Unique (`UserId`, `CapturedHour`) UTC hour, cascade from `users`. `CapturedOn` is the UTC date of that hour. Stores today, archived, and lifetime price and listing counts. EF configuration: `Persistence/Postgres/JobApplication/JobFinancialSnapshotConfiguration.cs`. See [028-financial-performance-snapshots.md](../decisions/028-financial-performance-snapshots.md).
 
 `JobResumeSettings` in `Flexis.Domain.JobApplication`. Table `job_resume_settings`. Unique `UserId`, cascade from `users`. Stores owner option list JSON and job-master spreadsheet id and url. EF configuration: `Persistence/Postgres/JobApplication/JobResumeSettingsConfiguration.cs`.
 

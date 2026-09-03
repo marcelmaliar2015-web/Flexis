@@ -152,6 +152,12 @@ public interface IGoogleSheetsWorkspace
         IReadOnlyList<JobListingRow> rows,
         CancellationToken cancellationToken);
 
+    Task RewriteUrlColumnsAsHyperlinksAsync(
+        string accessToken,
+        string spreadsheetId,
+        string sheetName,
+        CancellationToken cancellationToken);
+
     Task EnsureProfileInfoSheetAsync(
         string accessToken,
         string spreadsheetId,

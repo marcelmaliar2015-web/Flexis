@@ -19,6 +19,7 @@ import {
   FinancialMetricCell,
   FinancialSummaryCards,
 } from "@/features/jobApplication/FinancialSummaryCards";
+import { FinancialPerformanceChart } from "@/features/jobApplication/FinancialPerformanceChart";
 import { formatFinancialMetrics, formatPrice, formatRate, parseRate } from "@/features/jobApplication/financialUi";
 import { refreshJobApplicationWorkspace } from "@/features/jobApplication/refreshWorkspace";
 import type { JobFinancialRow } from "@/shared/types/jobApplication";
@@ -122,6 +123,11 @@ export function JobApplicationFinancialTab() {
         lifetimeTotal={boardQuery.data?.lifetimeAllTotal ?? 0}
         lifetimeApplied={boardQuery.data?.lifetimeAllApplied ?? 0}
         lifetimeInterviews={boardQuery.data?.lifetimeAllInterviews ?? 0}
+      />
+
+      <FinancialPerformanceChart
+        loading={boardLoading}
+        history={boardQuery.data?.history ?? []}
       />
 
       <SelectionCard>

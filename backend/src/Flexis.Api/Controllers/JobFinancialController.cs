@@ -36,6 +36,14 @@ public sealed class JobFinancialController : ControllerBase
         return financial.UpdateRatesAsync(CurrentUserId(), entryId, request, cancellationToken);
     }
 
+    [HttpGet("history")]
+    public Task<IReadOnlyList<JobFinancialSnapshotDto>> GetHistory(
+        [FromServices] JobFinancialService financial,
+        CancellationToken cancellationToken)
+    {
+        return financial.GetHistoryAsync(CurrentUserId(), cancellationToken);
+    }
+
     private Guid CurrentUserId()
     {
         var subject = User.FindFirstValue(ClaimTypes.NameIdentifier)

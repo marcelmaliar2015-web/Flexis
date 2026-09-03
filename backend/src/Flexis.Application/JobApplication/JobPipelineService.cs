@@ -290,6 +290,12 @@ public sealed class JobPipelineService
             }
         }
 
+        await _sheets.RewriteUrlColumnsAsHyperlinksAsync(
+            access.AccessToken,
+            profile.SpreadsheetId,
+            main.Name,
+            cancellationToken);
+
         var sourceMatchedRows = existingRows
             .Where(row => !row.Listing.IsEmpty && sourceKeys.Contains(ListingKey(row.Listing)))
             .Select(row => row.RowNumber)

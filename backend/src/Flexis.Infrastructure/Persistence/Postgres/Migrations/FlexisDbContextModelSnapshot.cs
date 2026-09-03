@@ -211,6 +211,73 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("job_financial_settings", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ArchivedApplied")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ArchivedInterviews")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ArchivedPrice")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<int>("ArchivedTotal")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CapturedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CapturedHour")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("CapturedOn")
+                        .HasColumnType("date");
+
+                    b.Property<int>("LifetimeApplied")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LifetimeInterviews")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("LifetimePrice")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<int>("LifetimeTotal")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TodayApplied")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TodayInterviews")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("TodayPrice")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<int>("TodayTotal")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CapturedHour")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "CapturedOn");
+
+                    b.ToTable("job_financial_snapshots", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -709,6 +776,15 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                 });
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSettings", b =>
+                {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSnapshot", b =>
                 {
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()

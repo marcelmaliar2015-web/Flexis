@@ -43,6 +43,25 @@ export type JobFinancialBoard = {
   lifetimeAllTotal: number;
   lifetimeAllApplied: number;
   lifetimeAllInterviews: number;
+  history: JobFinancialSnapshot[];
+};
+
+export type JobFinancialSnapshot = {
+  capturedOn: string;
+  capturedHour: string;
+  capturedAt: string;
+  todayPrice: number;
+  todayTotal: number;
+  todayApplied: number;
+  todayInterviews: number;
+  archivedPrice: number;
+  archivedTotal: number;
+  archivedApplied: number;
+  archivedInterviews: number;
+  lifetimePrice: number;
+  lifetimeTotal: number;
+  lifetimeApplied: number;
+  lifetimeInterviews: number;
 };
 
 export type JobApplicationLog = {

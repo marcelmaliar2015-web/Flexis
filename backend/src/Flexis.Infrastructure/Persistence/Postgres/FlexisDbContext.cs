@@ -30,6 +30,8 @@ public sealed class FlexisDbContext : DbContext
 
     public DbSet<JobFinancialSettings> JobFinancialSettings => Set<JobFinancialSettings>();
 
+    public DbSet<JobFinancialSnapshot> JobFinancialSnapshots => Set<JobFinancialSnapshot>();
+
     public DbSet<JobResumeSettings> JobResumeSettings => Set<JobResumeSettings>();
 
     public DbSet<JobProfileResumeSettings> JobProfileResumeSettings => Set<JobProfileResumeSettings>();
