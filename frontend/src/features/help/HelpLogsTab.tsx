@@ -1,3 +1,4 @@
+import Link from "@mui/material/Link";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
@@ -9,44 +10,52 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
+import { Link as RouterLink } from "react-router-dom";
 import { Panel } from "@/features/help/helpUi";
+import { appPaths } from "@/shared/config/paths";
 
 export function HelpLogsTab() {
   return (
     <Stack spacing={2}>
       <Stack spacing={0.5}>
         <Typography variant="h6" component="h2">
-          Activity log
+          Activity logs
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Logs is a dated record of Job Application work for this account. Newest events appear first.
-          Flexis keeps the latest 200. Dashboard shows a seven-day chart and the newest events; this
-          tab is the full feed.
+          Open{" "}
+          <Link component={RouterLink} to={appPaths.logs}>
+            Logs
+          </Link>{" "}
+          in the left nav. Job Application and Mail Check activity share one page with separate tabs.
+          Both feeds are paged. Dashboard still shows a seven-day Job Application chart and recent
+          events.
         </Typography>
       </Stack>
       <Panel>
         <Stack spacing={1.5}>
           <Typography variant="h6" component="h2">
-            How to read it
+            Job Application tab
           </Typography>
           <List disablePadding>
             <ListItem disableGutters>
-              <ListItemText primary="Day groups" secondary="Events are grouped by calendar day in your local timezone. Each card has the time, an action chip, a category chip, a short summary, and a detailed line." />
+              <ListItemText
+                primary="Day groups"
+                secondary="Events on the current page are grouped by calendar day in your local timezone. Each card has the time, an action chip, a category chip, a short summary, and a detailed line."
+              />
             </ListItem>
             <ListItem disableGutters>
-              <ListItemText primary="Filters" secondary="All, Pipeline, Catalog, Financial, or Account. Search matches summary, detail, action, and category." />
+              <ListItemText
+                primary="Filters and pages"
+                secondary="All, Pipeline, Catalog, Financial, or Account. Search matches summary, detail, action, and category on the server. Choose how many rows per page, then move through the full history."
+              />
             </ListItem>
             <ListItem disableGutters>
-              <ListItemText primary="Refresh" secondary="Logs do not poll. Use Refresh after you work in another tab, or come back after the tab has already been opened." />
+              <ListItemText
+                primary="Refresh"
+                secondary="This feed does not poll. Use Refresh after you work in Job Application, or come back after the tab has already been opened."
+              />
             </ListItem>
           </List>
-        </Stack>
-      </Panel>
-      <Panel>
-        <Stack spacing={1.5}>
-          <Typography variant="h6" component="h2">
-            What is recorded
-          </Typography>
           <TableContainer>
             <Table size="small">
               <TableHead>
@@ -72,7 +81,9 @@ export function HelpLogsTab() {
                 </TableRow>
                 <TableRow>
                   <TableCell align="left">Financial</TableCell>
-                  <TableCell align="left">Save default rates or change apply and bonus rates on a pipeline row</TableCell>
+                  <TableCell align="left">
+                    Save default rates or change apply and bonus rates on a pipeline row
+                  </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell align="left">Account</TableCell>
@@ -85,6 +96,27 @@ export function HelpLogsTab() {
             Failed actions are not written. Opening a list or scanning banned matches does not create
             a log.
           </Typography>
+        </Stack>
+      </Panel>
+      <Panel>
+        <Stack spacing={1.5}>
+          <Typography variant="h6" component="h2">
+            Mail Check tab
+          </Typography>
+          <List disablePadding>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Table"
+                secondary="Sticky columns for when, source, mailbox, from, subject, label, action, duration, and detail. Run summaries appear as highlighted rows."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary="Filters and pages"
+                secondary="Filter by auto or manual source, action, and mailbox. Search subject, sender, mailbox, label, detail, or message id. Rows per page and page controls hit the server."
+              />
+            </ListItem>
+          </List>
         </Stack>
       </Panel>
     </Stack>

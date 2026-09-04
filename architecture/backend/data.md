@@ -35,7 +35,7 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 
 `JobProfileResumeSettings` in `Flexis.Domain.JobApplication`. Table `job_profile_resume_settings`. Unique `ProfileId`, cascade from `job_catalog_items`. Per-profile prompt, resume style, and owner. EF configuration: `Persistence/Postgres/JobApplication/JobProfileResumeSettingsConfiguration.cs`.
 
-`JobApplicationLog` in `Flexis.Domain.JobApplication`. Table `job_application_logs`. Cascade from `users`. Newest 200 rows are listed per user. EF configuration: `Persistence/Postgres/JobApplication/JobApplicationLogConfiguration.cs`.
+`JobApplicationLog` in `Flexis.Domain.JobApplication`. Table `job_application_logs`. Cascade from `users`. Listed with server pagination and optional category or text filters. EF configuration: `Persistence/Postgres/JobApplication/JobApplicationLogConfiguration.cs`.
 
 `MailCheckSettings` in `Flexis.Domain.MailCheck`. Table `mail_check_settings`. Unique `UserId`, cascade from `users`. OpenAI key stored protected. Default model `gpt-4o-mini`. Optional `ClassifierPrompt` text; empty uses the built-in default. `LabelActionsJson` text maps each classifier label slug to `pin`, `trash`, or `keep`. `NeedActionLabelsJson` text lists label slugs shown on the Need action tab. `AutoCheckEnabled` bool defaults true. EF configuration: `Persistence/Postgres/MailCheck/MailCheckSettingsConfiguration.cs`.
 

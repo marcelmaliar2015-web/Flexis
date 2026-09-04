@@ -4,7 +4,13 @@ namespace Flexis.Application.JobApplication;
 
 public interface IJobApplicationLogRepository
 {
-    Task<IReadOnlyList<JobApplicationLog>> ListAsync(Guid userId, int take, CancellationToken cancellationToken);
+    Task<(IReadOnlyList<JobApplicationLog> Items, int TotalCount)> ListAsync(
+        Guid userId,
+        int page,
+        int pageSize,
+        string? category,
+        string? query,
+        CancellationToken cancellationToken);
 
     Task AddAsync(JobApplicationLog log, CancellationToken cancellationToken);
 

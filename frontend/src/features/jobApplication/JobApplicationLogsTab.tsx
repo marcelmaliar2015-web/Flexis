@@ -1,14 +1,16 @@
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
+import TablePagination from "@mui/material/TablePagination";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { jobApplicationLogsQueryKey, listJobApplicationLogs } from "@/shared/api/jobApplicationLogs";
-import type { JobApplicationLog } from "@/shared/types/jobApplication";
+import type { JobApplicationLog, JobApplicationLogQuery } from "@/shared/types/jobApplication";
 
 const FilterRow = styled(Stack)(({ theme }) => ({
   flexWrap: "wrap",
@@ -43,6 +45,8 @@ const categoryFilters: { value: LogCategoryFilter; label: string }[] = [
   { value: "financial", label: "Financial" },
   { value: "account", label: "Account" },
 ];
+
+const pageSizeOptions = [25, 50, 100];
 
 const actionLabels: Record<string, string> = {
   create: "Created",
@@ -124,31 +128,46 @@ function groupByDay(items: JobApplicationLog[]): { day: string; items: JobApplic
   return [...groups.entries()].map(([day, grouped]) => ({ day, items: grouped }));
 }
 
+function useDebouncedValue(value: string, delayMs: number): string {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(id);
+  }, [delayMs, value]);
+  return debounced;
+}
+
 export function JobApplicationLogsTab() {
-  const logsQuery = useQuery({
-    queryKey: jobApplicationLogsQueryKey,
-    queryFn: listJobApplicationLogs,
-  });
   const [category, setCategory] = useState<LogCategoryFilter>("all");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
+  const debouncedSearch = useDebouncedValue(query, 300);
 
-  const filtered = useMemo(() => {
-    const items = logsQuery.data ?? [];
-    const needle = query.trim().toLowerCase();
-    return items.filter((item) => {
-      if (category !== "all" && item.category !== category) {
-        return false;
-      }
+  useEffect(() => {
+    setPage(0);
+  }, [category, debouncedSearch, pageSize]);
 
-      if (needle.length === 0) {
-        return true;
-      }
+  const listQuery: JobApplicationLogQuery = useMemo(
+    () => ({
+      page: page + 1,
+      pageSize,
+      category,
+      q: debouncedSearch,
+    }),
+    [category, debouncedSearch, page, pageSize],
+  );
 
-      return `${item.summary} ${item.detail} ${item.action} ${item.category}`.toLowerCase().includes(needle);
-    });
-  }, [category, logsQuery.data, query]);
+  const logsQuery = useQuery({
+    queryKey: jobApplicationLogsQueryKey(listQuery),
+    queryFn: () => listJobApplicationLogs(listQuery),
+    placeholderData: keepPreviousData,
+  });
 
-  const groups = useMemo(() => groupByDay(filtered), [filtered]);
+  const items = logsQuery.data?.items ?? [];
+  const totalCount = logsQuery.data?.totalCount ?? 0;
+  const groups = useMemo(() => groupByDay(items), [items]);
+  const hasFilters = category !== "all" || debouncedSearch.trim().length > 0;
 
   return (
     <Stack spacing={2}>
@@ -159,11 +178,11 @@ export function JobApplicationLogsTab() {
       >
         <Stack spacing={0.5}>
           <Typography variant="h6" component="h2">
-            Activity log
+            Job Application activity
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            A dated record of pipeline, catalog, financial, and Gmail actions for this account. Newest events appear
-            first.
+            Pipeline, catalog, financial, and Gmail actions for this account. Newest events appear
+            first. Use pages to move through the full history.
           </Typography>
         </Stack>
         <Button variant="text" onClick={() => void logsQuery.refetch()} disabled={logsQuery.isFetching}>
@@ -189,16 +208,51 @@ export function JobApplicationLogsTab() {
           />
         ))}
       </FilterRow>
-      {logsQuery.isSuccess && (logsQuery.data?.length ?? 0) === 0 ? (
+      <Stack
+        direction="row"
+        spacing={1}
+        useFlexGap
+        sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}
+      >
+        <Typography variant="caption" color="text.secondary">
+          {logsQuery.isFetching && !logsQuery.isPending
+            ? "Updating…"
+            : totalCount === 1
+              ? "1 event"
+              : `${totalCount.toLocaleString()} events`}
+          {hasFilters ? " matching filters" : ""}
+        </Typography>
+        {hasFilters ? (
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => {
+              setCategory("all");
+              setQuery("");
+            }}
+          >
+            Clear filters
+          </Button>
+        ) : null}
+      </Stack>
+      {logsQuery.isPending ? (
+        <Stack spacing={1} sx={{ alignItems: "center", py: 8 }}>
+          <CircularProgress size={28} />
+          <Typography variant="body2" color="text.secondary">
+            Loading activity…
+          </Typography>
+        </Stack>
+      ) : null}
+      {logsQuery.isSuccess && totalCount === 0 && !hasFilters ? (
         <EmptyState>
           <Typography variant="subtitle1">No activity recorded yet</Typography>
           <Typography variant="body2" color="text.secondary">
-            Pipeline updates, catalog changes, rate edits, and Gmail connect or disconnect will appear here with a
-            timestamp and a detailed description.
+            Pipeline updates, catalog changes, rate edits, and Gmail connect or disconnect will appear
+            here with a timestamp and a detailed description.
           </Typography>
         </EmptyState>
       ) : null}
-      {logsQuery.isSuccess && (logsQuery.data?.length ?? 0) > 0 && filtered.length === 0 ? (
+      {logsQuery.isSuccess && totalCount === 0 && hasFilters ? (
         <EmptyState>
           <Typography variant="subtitle1">No matching activity</Typography>
           <Typography variant="body2" color="text.secondary">
@@ -243,6 +297,21 @@ export function JobApplicationLogsTab() {
           ))}
         </Stack>
       ))}
+      {logsQuery.isSuccess && totalCount > 0 ? (
+        <TablePagination
+          component="div"
+          count={totalCount}
+          page={page}
+          onPageChange={(_event, nextPage) => setPage(nextPage)}
+          rowsPerPage={pageSize}
+          onRowsPerPageChange={(event) => {
+            setPageSize(Number.parseInt(event.target.value, 10));
+            setPage(0);
+          }}
+          rowsPerPageOptions={pageSizeOptions}
+          labelRowsPerPage="Rows"
+        />
+      ) : null}
     </Stack>
   );
 }

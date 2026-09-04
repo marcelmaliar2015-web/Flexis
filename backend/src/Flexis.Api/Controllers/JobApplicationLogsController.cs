@@ -10,11 +10,18 @@ namespace Flexis.Api.Controllers;
 public sealed class JobApplicationLogsController : ControllerBase
 {
     [HttpGet]
-    public Task<IReadOnlyList<JobApplicationLogDto>> List(
+    public Task<JobApplicationLogPageDto> List(
         [FromServices] JobApplicationLogService logs,
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
+        [FromQuery] string? category,
+        [FromQuery] string? q,
         CancellationToken cancellationToken)
     {
-        return logs.ListAsync(CurrentUserId(), cancellationToken);
+        return logs.ListAsync(
+            CurrentUserId(),
+            new JobApplicationLogQuery(page, pageSize, category, q),
+            cancellationToken);
     }
 
     private Guid CurrentUserId()

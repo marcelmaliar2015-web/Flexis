@@ -12,12 +12,13 @@ React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. L
 | `/job-application` | `JobApplicationPage` | Authenticated |
 | `/job-application/pipeline/:entryId` | `JobApplicationPipelineEntryPage` | Authenticated |
 | `/mail-check` | `MailCheckPage` | Authenticated |
+| `/logs` | `LogsPage` | Authenticated (tabs: Job Application, Mail Check) |
 | `/settings` | `SettingsPage` | Authenticated (tabs: Account, Job Application, Mail Check; Admin tab for Admin) |
 | `/help` | `HelpPage` | Authenticated |
 | `/health` | `HealthPage` | Authenticated |
 | `/users` | Redirect to `/settings` | Authenticated |
 
-Signed-in visits to `/` or `/sign-in` go to `/dashboard`, or to `state.from` when sign-in started from a protected route. Unauthenticated visits to protected routes redirect to `/sign-in` with `state.from`. Settings uses tabs for Account, Job Application, Mail Check, and Admin. Admin Google Cloud client, Microsoft client, and other users are on the Admin tab. `/health` has no nav link.
+Signed-in visits to `/` or `/sign-in` go to `/dashboard`, or to `state.from` when sign-in started from a protected route. Unauthenticated visits to protected routes redirect to `/sign-in` with `state.from`. Settings uses tabs for Account, Job Application, Mail Check, and Admin. Admin Google Cloud client, Microsoft client, and other users are on the Admin tab. Logs uses tabs for Job Application and Mail Check activity. `/health` has no nav link.
 
 ## Guards and access
 
@@ -37,3 +38,4 @@ Signed-in visits to `/` or `/sign-in` go to `/dashboard`, or to `state.from` whe
 - [../decisions/017-signed-in-account-profile.md](../decisions/017-signed-in-account-profile.md)
 - [../decisions/018-guest-only-public-routes.md](../decisions/018-guest-only-public-routes.md)
 - [../decisions/030-consolidated-settings-tabs.md](../decisions/030-consolidated-settings-tabs.md)
+- [../decisions/031-consolidated-logs-page.md](../decisions/031-consolidated-logs-page.md)

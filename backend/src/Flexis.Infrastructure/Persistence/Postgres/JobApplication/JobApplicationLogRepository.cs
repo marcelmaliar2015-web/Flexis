@@ -14,16 +14,38 @@ internal sealed class JobApplicationLogRepository : IJobApplicationLogRepository
         _db = db;
     }
 
-    public async Task<IReadOnlyList<JobApplicationLog>> ListAsync(
+    public async Task<(IReadOnlyList<JobApplicationLog> Items, int TotalCount)> ListAsync(
         Guid userId,
-        int take,
+        int page,
+        int pageSize,
+        string? category,
+        string? query,
         CancellationToken cancellationToken)
     {
-        return await _db.JobApplicationLogs
-            .Where(item => item.UserId == userId)
+        var filtered = _db.JobApplicationLogs.AsNoTracking().Where(item => item.UserId == userId);
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            filtered = filtered.Where(item => item.Category == category);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var needle = query.Trim();
+            filtered = filtered.Where(item =>
+                EF.Functions.ILike(item.Summary, $"%{needle}%")
+                || EF.Functions.ILike(item.Detail, $"%{needle}%")
+                || EF.Functions.ILike(item.Action, $"%{needle}%")
+                || EF.Functions.ILike(item.Category, $"%{needle}%"));
+        }
+
+        var totalCount = await filtered.CountAsync(cancellationToken);
+        var items = await filtered
             .OrderByDescending(item => item.OccurredAt)
-            .Take(take)
+            .ThenByDescending(item => item.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+        return (items, totalCount);
     }
 
     public async Task AddAsync(JobApplicationLog log, CancellationToken cancellationToken)

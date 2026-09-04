@@ -201,18 +201,6 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                 <TableRow>
 
-                  <TableCell align="left">Log</TableCell>
-
-                  <TableCell align="left">
-                    Paginated history of auto-check and manual check actions: source, mailbox, from,
-                    subject, label, action, duration, and run detail. Filter and search when volume
-                    grows.
-                  </TableCell>
-
-                </TableRow>
-
-                <TableRow>
-
                   <TableCell align="left">Usage</TableCell>
 
                   <TableCell align="left">

@@ -7,7 +7,6 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useState } from "react";
 import { JobApplicationFinancialTab } from "@/features/jobApplication/JobApplicationFinancialTab";
-import { JobApplicationLogsTab } from "@/features/jobApplication/JobApplicationLogsTab";
 import { JobApplicationOperationsTab } from "@/features/jobApplication/JobApplicationOperationsTab";
 import { JobApplicationResumeTab } from "@/features/jobApplication/JobApplicationResumeTab";
 import { PipelineBulkProgress } from "@/features/jobApplication/PipelineBulkProgress";
@@ -21,14 +20,13 @@ const AccentRule = styled("span")(({ theme }) => ({
   backgroundColor: theme.palette.secondary.main,
 }));
 
-type JobApplicationTab = "operations" | "financial" | "resume" | "logs";
+type JobApplicationTab = "operations" | "financial" | "resume";
 
 export function JobApplicationPage() {
   const [tab, setTab] = useState<JobApplicationTab>("operations");
   const [visited, setVisited] = useState({
     financial: false,
     resume: false,
-    logs: false,
   });
   const bulkRun = usePipelineBulkRun();
 
@@ -52,7 +50,7 @@ export function JobApplicationPage() {
             value={tab}
             onChange={(_event, value: JobApplicationTab) => {
               setTab(value);
-              if (value === "financial" || value === "resume" || value === "logs") {
+              if (value === "financial" || value === "resume") {
                 setVisited((current) => ({ ...current, [value]: true }));
               }
             }}
@@ -60,7 +58,6 @@ export function JobApplicationPage() {
             <Tab label="Operations" value="operations" />
             <Tab label="Financial" value="financial" />
             <Tab label="Resume generation" value="resume" />
-            <Tab label="Logs" value="logs" />
           </Tabs>
           <Box role="tabpanel" hidden={tab !== "operations"}>
             <JobApplicationOperationsTab bulkRun={bulkRun} />
@@ -73,11 +70,6 @@ export function JobApplicationPage() {
           {tab === "resume" || visited.resume ? (
             <Box role="tabpanel" hidden={tab !== "resume"}>
               <JobApplicationResumeTab />
-            </Box>
-          ) : null}
-          {tab === "logs" || visited.logs ? (
-            <Box role="tabpanel" hidden={tab !== "logs"}>
-              <JobApplicationLogsTab />
             </Box>
           ) : null}
         </Stack>

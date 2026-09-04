@@ -31,10 +31,11 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
         <Typography variant="body2" color="text.secondary">
           After sign-in the shell is a header, a left nav, and a scrolling content pane. Job
           Application is where listings, sheets, pricing, and Gmail live. Mail Check triages Gmail or
-          Outlook for interview mail. Dashboard shows whether that workspace is healthy and
-          producing counts. Settings holds your account. This Help set is the product map and the
-          how-to guides. The landing page and Sign in are for visitors who are not signed in.
-          Opening them while signed in returns you to Dashboard, or to the screen you were sent from.
+          Outlook for interview mail. Logs holds Job Application and Mail Check activity. Dashboard
+          shows whether that workspace is healthy and producing counts. Settings holds your account.
+          This Help set is the product map and the how-to guides. The landing page and Sign in are for
+          visitors who are not signed in. Opening them while signed in returns you to Dashboard, or to
+          the screen you were sent from.
         </Typography>
       </Stack>
       <Panel>
@@ -113,8 +114,8 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Job Application</TableCell>
                   <TableCell align="left">
-                    Operations pipeline, Financial pricing, Resume generation, and Logs. Gmail,
-                    rates, profiles, and sources live on Settings.
+                    Operations pipeline, Financial pricing, and Resume generation. Gmail, rates,
+                    profiles, and sources live on Settings. Activity is on Logs.
                   </TableCell>
                   <TableCell align="left">
                     Create sheets, pair a profile with a source location, copy listings, set Status,
@@ -129,8 +130,8 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Mail Check</TableCell>
                   <TableCell align="left">
-                    Need action, Inbox, Check, Log, and Usage. Mailbox connect, OpenAI key, and model
-                    live on Settings.
+                    Need action, Inbox, Check, and Usage. Mailbox connect, OpenAI key, and model live
+                    on Settings. Activity is on Logs.
                   </TableCell>
                   <TableCell align="left">
                     Connect Gmail or Outlook on Settings (Mail Check), then save an OpenAI key so Flexis
@@ -138,6 +139,20 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                   </TableCell>
                   <TableCell align="left">
                     <Link component={RouterLink} to={appPaths.mailCheck}>
+                      Open
+                    </Link>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell align="left">Logs</TableCell>
+                  <TableCell align="left">
+                    Tabs for Job Application and Mail Check activity. Both feeds are paged.
+                  </TableCell>
+                  <TableCell align="left">
+                    Review pipeline, catalog, financial, Gmail, and mail triage history in one place.
+                  </TableCell>
+                  <TableCell align="left">
+                    <Link component={RouterLink} to={appPaths.logs}>
                       Open
                     </Link>
                   </TableCell>
@@ -275,18 +290,6 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                     </Button>
                   </TableCell>
                 </TableRow>
-                <TableRow>
-                  <TableCell align="left">Logs</TableCell>
-                  <TableCell align="left">
-                    Searchable, category-filtered activity feed grouped by day. Newest 200 events
-                    for this account.
-                  </TableCell>
-                  <TableCell align="left">
-                    <Button variant="text" onClick={() => onOpenTab("logs")}>
-                      Logs
-                    </Button>
-                  </TableCell>
-                </TableRow>
               </TableBody>
             </Table>
           </TableContainer>
@@ -298,7 +301,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             Roles
           </Typography>
           <Typography variant="body2">
-            Every signed-in person uses the same Dashboard, Job Application, Mail Check, and Help
+            Every signed-in person uses the same Dashboard, Job Application, Mail Check, Logs, and Help
             screens. Your account on product Settings is available to every role.
           </Typography>
           <List disablePadding>

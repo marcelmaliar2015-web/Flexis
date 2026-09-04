@@ -15,12 +15,18 @@ import {
   profileBannedMatchesQueryKey,
 } from "@/shared/api/jobCatalog";
 import { getJobPipelineBoard, jobPipelineQueryKey } from "@/shared/api/pipeline";
+import type { JobApplicationLogQuery } from "@/shared/types/jobApplication";
 
 export const googleSyncIntervalMs = 180_000;
 
 export const googleSyncFreshMs = 120_000;
 
 export const googleSyncAgingMs = 480_000;
+
+const syncLogsQuery: JobApplicationLogQuery = {
+  page: 1,
+  pageSize: 100,
+};
 
 export type GoogleSyncProgressReporter = (percent: number) => void;
 
@@ -146,8 +152,8 @@ export async function syncGoogleWorkspace(
   });
   reportProgress(onProgress, 94);
   await queryClient.fetchQuery({
-    queryKey: jobApplicationLogsQueryKey,
-    queryFn: listJobApplicationLogs,
+    queryKey: jobApplicationLogsQueryKey(syncLogsQuery),
+    queryFn: () => listJobApplicationLogs(syncLogsQuery),
   });
   reportProgress(onProgress, 100);
 }

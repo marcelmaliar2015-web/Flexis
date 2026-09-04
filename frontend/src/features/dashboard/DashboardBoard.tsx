@@ -418,8 +418,8 @@ export function DashboardBoard(props: DashboardBoardProps) {
                   ))
                 )}
               </Stack>
-              <Link component={RouterLink} to={appPaths.jobApplication} variant="body2">
-                Open Job Application
+              <Link component={RouterLink} to={`${appPaths.logs}?tab=job-application`} variant="body2">
+                Open Logs
               </Link>
             </Stack>
           </Panel>

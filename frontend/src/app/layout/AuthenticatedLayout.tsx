@@ -35,6 +35,7 @@ const appNavItems = [
   { label: "Dashboard", path: appPaths.dashboard },
   { label: "Job Application", path: appPaths.jobApplication },
   { label: "Mail Check", path: appPaths.mailCheck },
+  { label: "Logs", path: appPaths.logs },
   { label: "Settings", path: appPaths.settings },
   { label: "Help", path: appPaths.help },
 ] as const;

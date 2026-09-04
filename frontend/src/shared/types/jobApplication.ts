@@ -72,3 +72,18 @@ export type JobApplicationLog = {
   summary: string;
   detail: string;
 };
+
+export type JobApplicationLogQuery = {
+  page?: number;
+  pageSize?: number;
+  category?: string | null;
+  q?: string | null;
+};
+
+export type JobApplicationLogPage = {
+  items: JobApplicationLog[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+};

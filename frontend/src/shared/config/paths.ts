@@ -5,6 +5,7 @@ export const appPaths = {
   jobApplication: "/job-application",
   jobApplicationPipeline: (id: string) => `/job-application/pipeline/${id}`,
   mailCheck: "/mail-check",
+  logs: "/logs",
   settings: "/settings",
   help: "/help",
   health: "/health",

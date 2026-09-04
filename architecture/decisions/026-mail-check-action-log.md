@@ -6,8 +6,8 @@ Mail Check only kept session-local “Recent decisions” on Check and a dedupe 
 
 ## Decision
 
-Persist every classified or enforced message action and each server round summary in `mail_check_action_logs`. Each row stores source (`auto` or `manual`), run id, mailbox, message id, subject, from, action, label, detail, and duration. `GET /api/mail-check/logs` returns a server-paged list with source, action, mailbox, and text filters. The Mail Check UI adds a Log tab with sticky table, chips, search, and pagination.
+Persist every classified or enforced message action and each server round summary in `mail_check_action_logs`. Each row stores source (`auto` or `manual`), run id, mailbox, message id, subject, from, action, label, detail, and duration. `GET /api/mail-check/logs` returns a server-paged list with source, action, mailbox, and text filters. The Logs page Mail Check tab shows a sticky table with chips, search, and pagination; see [031-consolidated-logs-page.md](031-consolidated-logs-page.md).
 
 ## Consequences
 
-Job Application’s newest-200 activity feed stays as-is. Mail Check log volume uses page size up to 100. Disconnecting a mailbox nulls `MailConnectionId` on existing log rows and keeps the email snapshot. Help and architecture list Log beside Check and Settings.
+Job Application activity uses the same Logs page with its own paged API. Mail Check log volume uses page size up to 100. Disconnecting a mailbox nulls `MailConnectionId` on existing log rows and keeps the email snapshot.
