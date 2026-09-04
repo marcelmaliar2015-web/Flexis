@@ -44,6 +44,14 @@ public sealed class JobFinancialController : ControllerBase
         return financial.GetHistoryAsync(CurrentUserId(), cancellationToken);
     }
 
+    [HttpGet("statistics")]
+    public Task<JobStatisticsBoardDto> GetStatistics(
+        [FromServices] JobFinancialService financial,
+        CancellationToken cancellationToken)
+    {
+        return financial.GetStatisticsAsync(CurrentUserId(), cancellationToken);
+    }
+
     private Guid CurrentUserId()
     {
         var subject = User.FindFirstValue(ClaimTypes.NameIdentifier)

@@ -52,3 +52,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [030](030-consolidated-settings-tabs.md) | Consolidated Settings page tabs |
 | [031](031-consolidated-logs-page.md) | Consolidated Logs page |
 | [032](032-job-application-profiles-tab.md) | Job Application Profiles tab |
+| [033](033-job-application-statistics.md) | Job Application Statistics tab |

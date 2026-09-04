@@ -35,7 +35,7 @@ Path alias `@/` maps to `frontend/src/`.
 | `features/help` | Tabbed product guides. Overview is the product map; Google setup, Operations, Financial, Logs, Mail Check, and Problems are topic guides. |
 | `features/auth` | Sign-in screen |
 | `features/dashboard` | Workspace status board (health, Google, pipeline, financial, logs, Admin users) |
-| `features/jobApplication` | Job Application tabs: Operations, Profiles, Financial, Resume generation. Pipeline table, Profiles table and profile detail page, pipeline bulk progress, Financial summary cards, financial performance chart, pipeline entry detail. Catalog and Gmail connect UI live on Settings (Job Application tab). Activity log UI is hosted on Logs |
+| `features/jobApplication` | Job Application tabs: Operations, Profiles, Financial, Statistics, Resume generation. Pipeline table, Profiles table and profile detail page, Statistics today and period views, pipeline bulk progress, Financial summary cards, financial performance chart, pipeline entry detail. Catalog and Gmail connect UI live on Settings (Job Application tab). Activity log UI is hosted on Logs |
 | `features/mailCheck` | Mail Check tabs: Need action, Inbox, Check, Usage (OpenAI cost chart). Mailbox, OpenAI, label, and prompt settings live on Settings (Mail Check tab). Action log UI is hosted on Logs |
 | `features/logs` | Logs screen with tabs: Job Application and Mail Check activity (reuses feature log components) |
 | `features/settings` | Settings screen with tabs: Account, Job Application, Mail Check, Admin (Google Cloud client, Microsoft client, users) |

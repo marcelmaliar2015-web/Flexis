@@ -31,6 +31,8 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 
 `JobFinancialSnapshot` in `Flexis.Domain.JobApplication`. Table `job_financial_snapshots`. Unique (`UserId`, `CapturedHour`) UTC hour, cascade from `users`. `CapturedOn` is the UTC date of that hour. Stores today, archived, and lifetime price and listing counts. EF configuration: `Persistence/Postgres/JobApplication/JobFinancialSnapshotConfiguration.cs`. See [028-financial-performance-snapshots.md](../decisions/028-financial-performance-snapshots.md).
 
+`JobProfileStatisticsSnapshot` in `Flexis.Domain.JobApplication`. Table `job_profile_statistics_snapshots`. Unique (`UserId`, `ProfileId`, `CapturedHour`) UTC hour, cascade from `users` and `job_catalog_items`. Stores applied, interviews, unapplied (blank Status), total, and price for the profile main tab. EF configuration: `Persistence/Postgres/JobApplication/JobProfileStatisticsSnapshotConfiguration.cs`. See [033-job-application-statistics.md](../decisions/033-job-application-statistics.md).
+
 `JobResumeSettings` in `Flexis.Domain.JobApplication`. Table `job_resume_settings`. Unique `UserId`, cascade from `users`. Stores owner option list JSON and job-master spreadsheet id and url. EF configuration: `Persistence/Postgres/JobApplication/JobResumeSettingsConfiguration.cs`.
 
 `JobProfileResumeSettings` in `Flexis.Domain.JobApplication`. Table `job_profile_resume_settings`. Unique `ProfileId`, cascade from `job_catalog_items`. Per-profile prompt, resume style, and owner. EF configuration: `Persistence/Postgres/JobApplication/JobProfileResumeSettingsConfiguration.cs`.

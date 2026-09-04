@@ -278,6 +278,60 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("job_financial_snapshots", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobProfileStatisticsSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Applied")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CapturedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CapturedHour")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("CapturedOn")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Interviews")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProfileTitle")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int>("Total")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Unapplied")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileId");
+
+                    b.HasIndex("UserId", "CapturedHour");
+
+                    b.HasIndex("UserId", "ProfileId", "CapturedHour")
+                        .IsUnique();
+
+                    b.ToTable("job_profile_statistics_snapshots", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobPipelineEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -835,6 +889,21 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSnapshot", b =>
                 {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobProfileStatisticsSnapshot", b =>
+                {
+                    b.HasOne("Flexis.Domain.JobApplication.JobCatalogItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")

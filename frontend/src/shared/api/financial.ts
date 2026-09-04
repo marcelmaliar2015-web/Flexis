@@ -4,12 +4,19 @@ import type {
   JobFinancialDefaults,
   JobFinancialRatesRequest,
   JobFinancialRow,
+  JobStatisticsBoard,
 } from "@/shared/types/jobApplication";
 
 export const jobFinancialQueryKey = ["job-financial"] as const;
 
+export const jobStatisticsQueryKey = ["job-statistics"] as const;
+
 export function getJobFinancialBoard(): Promise<JobFinancialBoard> {
   return getJson<JobFinancialBoard>("/api/job-application/financial");
+}
+
+export function getJobStatisticsBoard(): Promise<JobStatisticsBoard> {
+  return getJson<JobStatisticsBoard>("/api/job-application/financial/statistics");
 }
 
 export function updateJobFinancialDefaults(

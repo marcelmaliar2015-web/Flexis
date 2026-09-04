@@ -23,11 +23,13 @@ internal static class JobFinancialRules
             MidpointRounding.AwayFromZero);
     }
 
-    public static (int Total, int Applied, int Interviews) CountStatuses(IReadOnlyList<JobListingRow> rows)
+    public static (int Total, int Applied, int Interviews, int Unapplied) CountStatuses(
+        IReadOnlyList<JobListingRow> rows)
     {
         var total = 0;
         var applied = 0;
         var interviews = 0;
+        var unapplied = 0;
         foreach (var row in rows)
         {
             if (row.IsEmpty)
@@ -36,18 +38,25 @@ internal static class JobFinancialRules
             }
 
             total++;
-            if (string.Equals(row.Status.Trim(), "Interview", StringComparison.OrdinalIgnoreCase))
+            var status = row.Status.Trim();
+            if (status.Length == 0)
+            {
+                unapplied++;
+                continue;
+            }
+
+            if (string.Equals(status, "Interview", StringComparison.OrdinalIgnoreCase))
             {
                 interviews++;
                 continue;
             }
 
-            if (string.Equals(row.Status.Trim(), "Applied", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(status, "Applied", StringComparison.OrdinalIgnoreCase))
             {
                 applied++;
             }
         }
 
-        return (total, applied, interviews);
+        return (total, applied, interviews, unapplied);
     }
 }

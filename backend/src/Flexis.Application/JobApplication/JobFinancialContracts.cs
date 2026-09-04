@@ -13,16 +13,19 @@ public sealed record JobFinancialRowDto(
     int Total,
     int Applied,
     int Interviews,
+    int Unapplied,
     decimal ApplyRate,
     decimal BonusRate,
     decimal Price,
     int ArchivedTotal,
     int ArchivedApplied,
     int ArchivedInterviews,
+    int ArchivedUnapplied,
     decimal ArchivedPrice,
     int LifetimeTotal,
     int LifetimeApplied,
     int LifetimeInterviews,
+    int LifetimeUnapplied,
     decimal LifetimePrice);
 
 public sealed record JobFinancialBoardDto(
@@ -58,3 +61,35 @@ public sealed record JobFinancialSnapshotDto(
     int LifetimeTotal,
     int LifetimeApplied,
     int LifetimeInterviews);
+
+public sealed record JobStatisticsProfileDto(
+    Guid ProfileId,
+    string ProfileTitle,
+    string ProfileUrl,
+    int Applied,
+    int Interviews,
+    int Unapplied,
+    int Total,
+    decimal Price,
+    decimal ApplyRate,
+    decimal BonusRate);
+
+public sealed record JobStatisticsPointDto(
+    Guid ProfileId,
+    string ProfileTitle,
+    DateOnly CapturedOn,
+    DateTimeOffset CapturedHour,
+    int Applied,
+    int Interviews,
+    int Unapplied,
+    int Total,
+    decimal Price);
+
+public sealed record JobStatisticsBoardDto(
+    IReadOnlyList<JobStatisticsProfileDto> Profiles,
+    IReadOnlyList<JobStatisticsPointDto> History,
+    int AllApplied,
+    int AllInterviews,
+    int AllUnapplied,
+    int AllTotal,
+    decimal AllPrice);

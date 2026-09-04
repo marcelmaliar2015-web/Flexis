@@ -114,9 +114,9 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Job Application</TableCell>
                   <TableCell align="left">
-                    Operations pipeline, Profiles, Financial pricing, and Resume generation. Gmail,
-                    rates defaults, profiles catalog, and sources live on Settings. Activity is on
-                    Logs.
+                    Operations pipeline, Profiles, Financial pricing, Statistics, and Resume
+                    generation. Gmail, rates defaults, profiles catalog, and sources live on
+                    Settings. Activity is on Logs.
                   </TableCell>
                   <TableCell align="left">
                     Create sheets, pair a profile with a source location, copy listings, set Status,
@@ -284,6 +284,18 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                   <TableCell align="left">
                     Prices each pipeline row from Applied and Interview counts on the profile main
                     tab. Edit rates on the row. Totals for all sheets and for selected rows.
+                  </TableCell>
+                  <TableCell align="left">
+                    <Button variant="text" onClick={() => onOpenTab("financial")}>
+                      Financial
+                    </Button>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell align="left">Statistics</TableCell>
+                  <TableCell align="left">
+                    Today and hourly, daily, weekly, monthly views of applies, prices, and blank
+                    Status (unapplied) counts per profile.
                   </TableCell>
                   <TableCell align="left">
                     <Button variant="text" onClick={() => onOpenTab("financial")}>

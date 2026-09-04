@@ -17,16 +17,19 @@ export type JobFinancialRow = {
   total: number;
   applied: number;
   interviews: number;
+  unapplied: number;
   applyRate: number;
   bonusRate: number;
   price: number;
   archivedTotal: number;
   archivedApplied: number;
   archivedInterviews: number;
+  archivedUnapplied: number;
   archivedPrice: number;
   lifetimeTotal: number;
   lifetimeApplied: number;
   lifetimeInterviews: number;
+  lifetimeUnapplied: number;
   lifetimePrice: number;
 };
 
@@ -64,6 +67,41 @@ export type JobFinancialSnapshot = {
   lifetimeTotal: number;
   lifetimeApplied: number;
   lifetimeInterviews: number;
+};
+
+export type JobStatisticsProfile = {
+  profileId: string;
+  profileTitle: string;
+  profileUrl: string;
+  applied: number;
+  interviews: number;
+  unapplied: number;
+  total: number;
+  price: number;
+  applyRate: number;
+  bonusRate: number;
+};
+
+export type JobStatisticsPoint = {
+  profileId: string;
+  profileTitle: string;
+  capturedOn: string;
+  capturedHour: string;
+  applied: number;
+  interviews: number;
+  unapplied: number;
+  total: number;
+  price: number;
+};
+
+export type JobStatisticsBoard = {
+  profiles: JobStatisticsProfile[];
+  history: JobStatisticsPoint[];
+  allApplied: number;
+  allInterviews: number;
+  allUnapplied: number;
+  allTotal: number;
+  allPrice: number;
 };
 
 export type JobApplicationLog = {
