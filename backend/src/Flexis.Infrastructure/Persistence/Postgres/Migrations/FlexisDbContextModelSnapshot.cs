@@ -252,6 +252,19 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.Property<int>("LifetimeTotal")
                         .HasColumnType("integer");
 
+                    b.Property<int>("MainApplied")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MainInterviews")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("MainPrice")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<int>("MainTotal")
+                        .HasColumnType("integer");
+
                     b.Property<int>("TodayApplied")
                         .HasColumnType("integer");
 
@@ -276,6 +289,129 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.HasIndex("UserId", "CapturedOn");
 
                     b.ToTable("job_financial_snapshots", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingCopyBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AddedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CopiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PipelineEntryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileId");
+
+                    b.HasIndex("UserId", "ProfileId", "CopiedAt");
+
+                    b.ToTable("job_listing_copy_batches", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingCopyItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ListingKey")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchId", "ListingKey")
+                        .IsUnique();
+
+                    b.ToTable("job_listing_copy_items", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingStatusEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ListingKey")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileId");
+
+                    b.HasIndex("UserId", "OccurredAt");
+
+                    b.HasIndex("UserId", "ProfileId", "OccurredAt");
+
+                    b.ToTable("job_listing_status_events", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingStatusState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ListingKey")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileId");
+
+                    b.HasIndex("UserId", "ProfileId", "ListingKey")
+                        .IsUnique();
+
+                    b.ToTable("job_listing_status_states", (string)null);
                 });
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobProfileStatisticsSnapshot", b =>
@@ -889,6 +1025,65 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobFinancialSnapshot", b =>
                 {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingCopyBatch", b =>
+                {
+                    b.HasOne("Flexis.Domain.JobApplication.JobCatalogItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingCopyItem", b =>
+                {
+                    b.HasOne("Flexis.Domain.JobApplication.JobListingCopyBatch", null)
+                        .WithMany("Items")
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingCopyBatch", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingStatusEvent", b =>
+                {
+                    b.HasOne("Flexis.Domain.JobApplication.JobCatalogItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingStatusState", b =>
+                {
+                    b.HasOne("Flexis.Domain.JobApplication.JobCatalogItem", null)
+                        .WithMany()
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")

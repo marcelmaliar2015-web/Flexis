@@ -13,6 +13,7 @@ public sealed class JobPipelineService
     private readonly IGoogleSheetsWorkspace _sheets;
     private readonly GoogleDriveLayoutService _driveLayout;
     private readonly JobFinancialService _financial;
+    private readonly IJobListingCopyRepository _copies;
     private readonly JobApplicationActivity _activity;
 
     public JobPipelineService(
@@ -23,6 +24,7 @@ public sealed class JobPipelineService
         IGoogleSheetsWorkspace sheets,
         GoogleDriveLayoutService driveLayout,
         JobFinancialService financial,
+        IJobListingCopyRepository copies,
         JobApplicationActivity activity)
     {
         _entries = entries;
@@ -32,6 +34,7 @@ public sealed class JobPipelineService
         _sheets = sheets;
         _driveLayout = driveLayout;
         _financial = financial;
+        _copies = copies;
         _activity = activity;
     }
 
@@ -168,6 +171,7 @@ public sealed class JobPipelineService
         CancellationToken cancellationToken)
     {
         var result = await ApplyCoreAsync(userId, id, cancellationToken);
+        JobFinancialService.InvalidateBoardCache(userId);
         var entry = await RequireEntry(userId, id, cancellationToken);
         var description = await DescribeAsync(entry, cancellationToken);
         await _activity.WriteAsync(
@@ -193,6 +197,8 @@ public sealed class JobPipelineService
             skipped += result.Skipped;
             banned += result.Banned;
         }
+
+        JobFinancialService.InvalidateBoardCache(userId);
 
         if (entries.Count > 0)
         {
@@ -242,10 +248,10 @@ public sealed class JobPipelineService
             main.Name,
             cancellationToken);
         var sourceKeys = new HashSet<string>(
-            incoming.Where(listing => !listing.IsEmpty).Select(ListingKey),
+            incoming.Where(listing => !listing.IsEmpty).Select(JobFinancialRules.ListingKey),
             StringComparer.Ordinal);
         var seen = new HashSet<string>(
-            existingRows.Select(row => ListingKey(row.Listing)),
+            existingRows.Select(row => JobFinancialRules.ListingKey(row.Listing)),
             StringComparer.Ordinal);
         var fresh = new List<JobListingRow>();
         var skipped = 0;
@@ -263,7 +269,7 @@ public sealed class JobPipelineService
                 continue;
             }
 
-            if (!seen.Add(ListingKey(listing)))
+            if (!seen.Add(JobFinancialRules.ListingKey(listing)))
             {
                 skipped++;
                 continue;
@@ -297,12 +303,24 @@ public sealed class JobPipelineService
             cancellationToken);
 
         var sourceMatchedRows = existingRows
-            .Where(row => !row.Listing.IsEmpty && sourceKeys.Contains(ListingKey(row.Listing)))
+            .Where(row => !row.Listing.IsEmpty && sourceKeys.Contains(JobFinancialRules.ListingKey(row.Listing)))
             .Select(row => row.RowNumber)
             .Concat(appendedRowNumbers)
             .Distinct()
             .OrderBy(row => row)
             .ToArray();
+
+        var todayKeys = incoming
+            .Where(listing => !listing.IsEmpty && MatchingBan(listing.CompanyName, bans) is null)
+            .Select(JobFinancialRules.ListingKey)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        await SaveCopyBatchAsync(
+            userId,
+            entry.ProfileId,
+            entry.Id,
+            todayKeys,
+            cancellationToken);
 
         await _sheets.ProtectProfileMainAfterUpdateAsync(
             access.AccessToken,
@@ -321,12 +339,26 @@ public sealed class JobPipelineService
         return new JobPipelineUpdateResultDto(fresh.Count, skipped, banned);
     }
 
+    private async Task SaveCopyBatchAsync(
+        Guid userId,
+        Guid profileId,
+        Guid pipelineEntryId,
+        IReadOnlyList<string> listingKeys,
+        CancellationToken cancellationToken)
+    {
+        await _copies.ReplaceBatchAsync(
+            JobListingCopyBatch.Create(userId, profileId, pipelineEntryId, listingKeys),
+            cancellationToken);
+        await _copies.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<JobPipelineForwardResultDto> ForwardAsync(
         Guid userId,
         Guid id,
         CancellationToken cancellationToken)
     {
         var result = await ForwardCoreAsync(userId, id, cancellationToken);
+        JobFinancialService.InvalidateBoardCache(userId);
         var entry = await RequireEntry(userId, id, cancellationToken);
         var description = await DescribeAsync(entry, cancellationToken);
         await _activity.WriteAsync(
@@ -356,6 +388,8 @@ public sealed class JobPipelineService
             var result = await ForwardCoreAsync(userId, entry.Id, cancellationToken);
             archiveNames.Add(result.ArchivedSheetName);
         }
+
+        JobFinancialService.InvalidateBoardCache(userId);
 
         if (forwardedProfiles.Count > 0)
         {
@@ -538,14 +572,5 @@ public sealed class JobPipelineService
         }
 
         return null;
-    }
-
-    private static string ListingKey(JobListingRow listing)
-    {
-        return string.Join(
-            '\u001f',
-            listing.CompanyName.Trim().ToLowerInvariant(),
-            listing.Position.Trim().ToLowerInvariant(),
-            listing.Link.Trim().ToLowerInvariant());
     }
 }

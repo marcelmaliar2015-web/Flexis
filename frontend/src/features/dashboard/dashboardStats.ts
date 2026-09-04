@@ -7,11 +7,15 @@ import type { JobPipelineBoard } from "@/shared/types/pipeline";
 import type { UserDto } from "@/shared/types/user";
 
 export type StatusMix = {
-  open: number;
+  blank: number;
+  ready: number;
+  notReady: number;
   applied: number;
   interviews: number;
   total: number;
-  openShare: number;
+  blankShare: number;
+  readyShare: number;
+  notReadyShare: number;
   appliedShare: number;
   interviewShare: number;
   progressedShare: number;
@@ -21,6 +25,7 @@ export type PriceBar = {
   entryId: string;
   label: string;
   price: number;
+  mainPrice: number;
   share: number;
 };
 
@@ -51,15 +56,17 @@ export function queryErrorMessage(error: unknown): string | null {
   return userFacingError(error);
 }
 
-export function formatPrice(value: number): string {
+export function formatPrice(value: number | null | undefined): string {
+  const amount = typeof value === "number" && Number.isFinite(value) ? value : 0;
   return new Intl.NumberFormat(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  }).format(amount);
 }
 
-export function formatCount(value: number): string {
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value);
+export function formatCount(value: number | null | undefined): string {
+  const amount = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(amount);
 }
 
 export function formatOptionalCount(value: number | null): string {
@@ -81,7 +88,8 @@ export function formatPercent(value: number): string {
 }
 
 export function formatRate(value: number): string {
-  return String(Number(value.toFixed(4)));
+  const amount = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return String(Number(amount.toFixed(4)));
 }
 
 export function formatWhen(value: string): string {
@@ -102,19 +110,26 @@ export function locationCount(board: JobPipelineBoard | undefined): number {
 
 export function statusMix(board: JobFinancialBoard | undefined): StatusMix {
   const total = board?.allTotal ?? 0;
+  const ready = board?.allReady ?? 0;
+  const notReady = board?.allNotReady ?? 0;
   const applied = board?.allApplied ?? 0;
   const interviews = board?.allInterviews ?? 0;
-  const open = Math.max(0, total - applied - interviews);
+  const blank = board?.allUnapplied ?? 0;
   const denom = total > 0 ? total : 1;
+  const readyDenom = ready > 0 ? ready : 1;
   return {
-    open,
+    blank,
+    ready,
+    notReady,
     applied,
     interviews,
     total,
-    openShare: open / denom,
-    appliedShare: applied / denom,
-    interviewShare: interviews / denom,
-    progressedShare: total > 0 ? Math.min(1, (applied + interviews) / total) : 0,
+    blankShare: blank / readyDenom,
+    readyShare: ready / denom,
+    notReadyShare: notReady / denom,
+    appliedShare: applied / readyDenom,
+    interviewShare: interviews / readyDenom,
+    progressedShare: ready > 0 ? Math.min(1, (applied + interviews) / ready) : 0,
   };
 }
 
@@ -122,13 +137,16 @@ export function priceBars(rows: JobFinancialRow[] | undefined, limit = 8): Price
   if (!rows || rows.length === 0) {
     return [];
   }
-  const ranked = [...rows].sort((left, right) => right.price - left.price).slice(0, limit);
-  const peak = Math.max(...ranked.map((row) => row.price), 0);
+  const ranked = [...rows]
+    .sort((left, right) => (right.todayPrice ?? 0) - (left.todayPrice ?? 0))
+    .slice(0, limit);
+  const peak = Math.max(...ranked.map((row) => row.todayPrice ?? 0), 0);
   return ranked.map((row) => ({
     entryId: row.entryId,
     label: `${row.profileTitle} · ${row.sourceLabel}`,
-    price: row.price,
-    share: peak > 0 ? row.price / peak : 0,
+    price: row.todayPrice ?? 0,
+    mainPrice: row.price ?? 0,
+    share: peak > 0 ? (row.todayPrice ?? 0) / peak : 0,
   }));
 }
 
@@ -280,7 +298,7 @@ export function attentionItems(input: {
       id: "status",
       severity: "info",
       title: "No Applied or Interview rows",
-      detail: "On the named profile main tab, set Status to Applied or Interview. Financial prices those counts.",
+      detail: "On the named profile main tab, set Status to Applied or Interview. Today prices the last Update batch; Main prices the full sheet.",
       to: appPaths.jobApplication,
       action: "Open Financial",
     });

@@ -98,8 +98,8 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                   <TableCell align="left">Dashboard</TableCell>
                   <TableCell align="left">
                     Live status for this account: platform health, Google Cloud client, Gmail,
-                    catalog size, listing and price KPIs, status mix, price by pipeline row, setup
-                    attention, seven-day activity, and Admin user counts.
+                    catalog size, Today and Main price KPIs, main-sheet status mix, price by pipeline
+                    (Today ranked), setup attention, seven-day activity, and Admin user counts.
                   </TableCell>
                   <TableCell align="left">
                     See what is blocked, what the sheets currently count, and what to do next.
@@ -282,8 +282,8 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Financial</TableCell>
                   <TableCell align="left">
-                    Prices each pipeline row from Applied and Interview counts on the profile main
-                    tab. Edit rates on the row. Totals for all sheets and for selected rows.
+                    Prices each pipeline row. Today is the last Update batch. Main is the full profile
+                    sheet. Edit rates on the row. Archived and Lifetime include Forward sheets.
                   </TableCell>
                   <TableCell align="left">
                     <Button variant="text" onClick={() => onOpenTab("financial")}>
@@ -294,8 +294,8 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Statistics</TableCell>
                   <TableCell align="left">
-                    Today and hourly, daily, weekly, monthly views of applies, prices, and blank
-                    Status (unapplied) counts per profile.
+                    Today is the last Update batch. Hourly through monthly views sum Applied and
+                    Interview status changes recorded with timestamps.
                   </TableCell>
                   <TableCell align="left">
                     <Button variant="text" onClick={() => onOpenTab("financial")}>
@@ -378,7 +378,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             <ListItem disableGutters>
               <ListItemText
                 primary="5. Set Status and read price"
-                secondary="On the named profile main tab, set Status to Applied or Interview. Financial prices those counts. Dashboard shows the same totals. Logs records the actions."
+                secondary="On the named profile main tab, set Status to Applied or Interview. Today prices the last Update batch; Main prices the full sheet. Dashboard shows both. Logs records the actions."
               />
             </ListItem>
             <ListItem disableGutters>

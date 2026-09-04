@@ -5,7 +5,7 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
 import { styled, useTheme } from "@mui/material/styles";
 import { useMemo, useState } from "react";
-import { formatCount, formatPrice } from "@/features/jobApplication/financialUi";
+import { formatCount, formatPrice, asFiniteNumber } from "@/features/jobApplication/financialUi";
 import type { JobFinancialSnapshot } from "@/shared/types/jobApplication";
 
 const ChartPanel = styled(Box)(({ theme }) => ({
@@ -41,17 +41,20 @@ const TooltipCard = styled(Box)(({ theme }) => ({
 
 type RangeMode = "hourly" | "daily";
 
-type SeriesKey = "lifetimePrice" | "todayPrice" | "archivedPrice";
+type SeriesKey = "lifetimePrice" | "todayPrice" | "mainPrice" | "archivedPrice";
 
 type ChartPoint = {
   key: string;
   label: string;
   at: number;
   todayPrice: number;
+  mainPrice: number;
   archivedPrice: number;
   lifetimePrice: number;
   todayApplied: number;
   todayInterviews: number;
+  mainApplied: number;
+  mainInterviews: number;
   lifetimeApplied: number;
   lifetimeInterviews: number;
 };
@@ -74,13 +77,16 @@ function toChartPoints(history: JobFinancialSnapshot[], mode: RangeMode): ChartP
         key: item.capturedHour || item.capturedAt,
         label: formatHourLabel(item.capturedHour || item.capturedAt),
         at: Number.isNaN(at) ? 0 : at,
-        todayPrice: item.todayPrice,
-        archivedPrice: item.archivedPrice,
-        lifetimePrice: item.lifetimePrice,
-        todayApplied: item.todayApplied,
-        todayInterviews: item.todayInterviews,
-        lifetimeApplied: item.lifetimeApplied,
-        lifetimeInterviews: item.lifetimeInterviews,
+        todayPrice: asFiniteNumber(item.todayPrice),
+        mainPrice: asFiniteNumber(item.mainPrice),
+        archivedPrice: asFiniteNumber(item.archivedPrice),
+        lifetimePrice: asFiniteNumber(item.lifetimePrice),
+        todayApplied: asFiniteNumber(item.todayApplied),
+        todayInterviews: asFiniteNumber(item.todayInterviews),
+        mainApplied: asFiniteNumber(item.mainApplied),
+        mainInterviews: asFiniteNumber(item.mainInterviews),
+        lifetimeApplied: asFiniteNumber(item.lifetimeApplied),
+        lifetimeInterviews: asFiniteNumber(item.lifetimeInterviews),
       };
     });
   }
@@ -98,13 +104,16 @@ function toChartPoints(history: JobFinancialSnapshot[], mode: RangeMode): ChartP
         key: day,
         label: formatDayLabel(day),
         at: Number.isNaN(at) ? 0 : at,
-        todayPrice: item.todayPrice,
-        archivedPrice: item.archivedPrice,
-        lifetimePrice: item.lifetimePrice,
-        todayApplied: item.todayApplied,
-        todayInterviews: item.todayInterviews,
-        lifetimeApplied: item.lifetimeApplied,
-        lifetimeInterviews: item.lifetimeInterviews,
+        todayPrice: asFiniteNumber(item.todayPrice),
+        mainPrice: asFiniteNumber(item.mainPrice),
+        archivedPrice: asFiniteNumber(item.archivedPrice),
+        lifetimePrice: asFiniteNumber(item.lifetimePrice),
+        todayApplied: asFiniteNumber(item.todayApplied),
+        todayInterviews: asFiniteNumber(item.todayInterviews),
+        mainApplied: asFiniteNumber(item.mainApplied),
+        mainInterviews: asFiniteNumber(item.mainInterviews),
+        lifetimeApplied: asFiniteNumber(item.lifetimeApplied),
+        lifetimeInterviews: asFiniteNumber(item.lifetimeInterviews),
       };
     });
 }
@@ -199,13 +208,19 @@ export function FinancialPerformanceChart({ history, loading }: FinancialPerform
   const series: Series[] = [
     { key: "lifetimePrice", label: "Lifetime", color: theme.palette.primary.main },
     { key: "todayPrice", label: "Today", color: theme.palette.secondary.main },
+    { key: "mainPrice", label: "Main", color: theme.palette.info.main },
     { key: "archivedPrice", label: "Archived", color: "#5C6672" },
   ];
 
   const points = useMemo(() => toChartPoints(history, mode), [history, mode]);
   const maxValue = Math.max(
     1,
-    ...points.flatMap((point) => [point.lifetimePrice, point.todayPrice, point.archivedPrice]),
+    ...points.flatMap((point) => [
+      point.lifetimePrice,
+      point.todayPrice,
+      point.mainPrice,
+      point.archivedPrice,
+    ]),
   );
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({
     ratio,
@@ -402,6 +417,10 @@ export function FinancialPerformanceChart({ history, loading }: FinancialPerform
                   <Typography variant="caption" color="text.secondary">
                     Today {formatPrice(hover.todayPrice)} · {formatCount(hover.todayApplied)} applied ·{" "}
                     {formatCount(hover.todayInterviews)} interviews
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Main {formatPrice(hover.mainPrice)} · {formatCount(hover.mainApplied)} applied ·{" "}
+                    {formatCount(hover.mainInterviews)} interviews
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     Archived {formatPrice(hover.archivedPrice)}

@@ -236,8 +236,8 @@ export function JobApplicationProfilePage() {
                 Apply status
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Counts from the Status column on this profile sheet. Applied and Interview drive
-                price with the rates above.
+                Today is the last Update batch. Main is the full profile sheet. Applied and Interview
+                drive price with the rates above.
               </Typography>
               {row ? (
                 <TableContainer>
@@ -254,6 +254,13 @@ export function JobApplicationProfilePage() {
                     <TableBody>
                       <TableRow>
                         <TableCell align="left">Today</TableCell>
+                        <TableCell align="left">{row.todayApplied}</TableCell>
+                        <TableCell align="left">{row.todayInterviews}</TableCell>
+                        <TableCell align="left">{row.todayTotal}</TableCell>
+                        <TableCell align="left">{formatPrice(row.todayPrice)}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell align="left">Main</TableCell>
                         <TableCell align="left">{row.applied}</TableCell>
                         <TableCell align="left">{row.interviews}</TableCell>
                         <TableCell align="left">{row.total}</TableCell>

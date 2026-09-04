@@ -67,7 +67,7 @@ export function HelpOperationsTab() {
           </Typography>
           <List disablePadding>
             <ListItem disableGutters>
-              <ListItemText primary="Update" secondary="Copies Company Name, Position, Link, and JD from the source location onto the named profile main tab, written right after the last filled listing row. Removes blank rows between filled listings first. Skips rows already on that tab (same company, position, and link). Skips banned companies. Result counts added, skipped, and banned. Then locks rows that are no longer in the source so invited editors cannot edit them; Status and Issue stay editable only on rows still present in the source." />
+              <ListItemText primary="Update" secondary="Copies Company Name, Position, Link, and JD from the source location onto the named profile main tab, written right after the last filled listing row. Removes blank rows between filled listings first. Skips rows already on that tab (same company, position, and link). Skips banned companies. Result counts added, skipped, and banned. Appended listing keys are stored so Financial and Statistics Today use that last Update batch. Then locks rows that are no longer in the source so invited editors cannot edit them; Status and Issue stay editable only on rows still present in the source." />
             </ListItem>
             <ListItem disableGutters>
               <ListItemText primary="Forward" secondary="Renames the current main tab to the next unused positive integer (1, 2, 3, …) and creates a new empty main tab with the original profile name. Numbered tabs are locked logs. Update always writes to the named main tab, never a numbered tab." />

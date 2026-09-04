@@ -1,11 +1,12 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { jobFinancialQueryKey, jobStatisticsQueryKey } from "@/shared/api/financial";
+import { syncListingStatusBoards } from "@/shared/api/googleSync";
 import { jobApplicationLogsRootQueryKey } from "@/shared/api/jobApplicationLogs";
+import { requestSheetRefresh } from "@/shared/api/sheetRefreshCoordinator";
 
-export function refreshJobApplicationWorkspace(queryClient: QueryClient) {
-  return Promise.all([
-    queryClient.invalidateQueries({ queryKey: jobFinancialQueryKey }),
-    queryClient.invalidateQueries({ queryKey: jobStatisticsQueryKey }),
-    queryClient.invalidateQueries({ queryKey: jobApplicationLogsRootQueryKey }),
-  ]);
+export async function refreshJobApplicationWorkspace(queryClient: QueryClient) {
+  await requestSheetRefresh("workspace", async (onProgress) => {
+    await syncListingStatusBoards(queryClient, onProgress, 0, 90);
+    await queryClient.invalidateQueries({ queryKey: jobApplicationLogsRootQueryKey });
+    onProgress?.(100);
+  });
 }

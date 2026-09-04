@@ -4,12 +4,15 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { googleSyncIntervalMs, syncGoogleWorkspace } from "@/shared/api/googleSync";
+import {
+  getSheetRefreshSnapshot,
+  subscribeSheetRefresh,
+} from "@/shared/api/sheetRefreshCoordinator";
 import { useAuth } from "@/shared/auth/AuthProvider";
 
 type GoogleSyncContextValue = {
@@ -33,65 +36,69 @@ export function GoogleSyncProvider({ children }: GoogleSyncProviderProps) {
   const [failed, setFailed] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
-  const busyRef = useRef(false);
-  const lastSyncedAtRef = useRef<number | null>(null);
-
-  const runSync = useCallback(
-    async (mode: "auto" | "manual") => {
-      if (!auth.user || busyRef.current) {
-        return;
-      }
-
-      busyRef.current = true;
-      setIsSyncing(true);
-      setSyncProgress(0);
-      try {
-        await syncGoogleWorkspace(queryClient, mode, setSyncProgress);
-        const stamped = Date.now();
-        lastSyncedAtRef.current = stamped;
-        setLastSyncedAt(stamped);
-        setFailed(false);
-      } catch {
-        setFailed(true);
-      } finally {
-        busyRef.current = false;
-        setIsSyncing(false);
-        setSyncProgress(0);
-      }
-    },
-    [auth.user, queryClient],
-  );
-
-  const refresh = useCallback(() => runSync("manual"), [runSync]);
 
   useEffect(() => {
+    return subscribeSheetRefresh(() => {
+      const snapshot = getSheetRefreshSnapshot();
+      setLastSyncedAt(snapshot.lastSuccessAt);
+      setIsSyncing(snapshot.isRunning);
+      if (!snapshot.isRunning) {
+        setSyncProgress(0);
+      }
+    });
+  }, []);
+
+  const refresh = useCallback(async () => {
     if (!auth.user) {
-      lastSyncedAtRef.current = null;
-      setLastSyncedAt(null);
-      setFailed(false);
       return;
     }
 
-    void runSync("auto");
-    const timer = window.setInterval(() => {
+    setFailed(false);
+    setSyncProgress(0);
+    setIsSyncing(true);
+    try {
+      const result = await syncGoogleWorkspace(queryClient, "manual", setSyncProgress);
+      if (result === "skipped") {
+        setIsSyncing(getSheetRefreshSnapshot().isRunning);
+      }
+    } catch {
+      setFailed(true);
+      setIsSyncing(false);
+      setSyncProgress(0);
+    }
+  }, [auth.user, queryClient]);
+
+  useEffect(() => {
+    if (!auth.user) {
+      setLastSyncedAt(null);
+      setFailed(false);
+      setIsSyncing(false);
+      setSyncProgress(0);
+      return;
+    }
+
+    async function runAuto() {
       if (document.visibilityState !== "visible") {
         return;
       }
 
-      void runSync("auto");
+      setFailed(false);
+      try {
+        await syncGoogleWorkspace(queryClient, "auto", setSyncProgress);
+      } catch {
+        setFailed(true);
+        setIsSyncing(false);
+        setSyncProgress(0);
+      }
+    }
+
+    void runAuto();
+    const timer = window.setInterval(() => {
+      void runAuto();
     }, googleSyncIntervalMs);
 
     function onVisible() {
-      if (document.visibilityState !== "visible") {
-        return;
-      }
-
-      const last = lastSyncedAtRef.current;
-      if (last !== null && Date.now() - last < googleSyncIntervalMs) {
-        return;
-      }
-
-      void runSync("auto");
+      void runAuto();
     }
 
     document.addEventListener("visibilitychange", onVisible);
@@ -99,7 +106,7 @@ export function GoogleSyncProvider({ children }: GoogleSyncProviderProps) {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [auth.user, runSync]);
+  }, [auth.user, queryClient]);
 
   const value = useMemo(
     () => ({ lastSyncedAt, failed, isSyncing, syncProgress, refresh }),

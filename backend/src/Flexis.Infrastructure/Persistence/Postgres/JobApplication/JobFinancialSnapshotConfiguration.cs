@@ -12,6 +12,7 @@ internal sealed class JobFinancialSnapshotConfiguration : IEntityTypeConfigurati
         builder.ToTable("job_financial_snapshots");
         builder.HasKey(item => item.Id);
         builder.Property(item => item.TodayPrice).HasPrecision(12, 2);
+        builder.Property(item => item.MainPrice).HasPrecision(12, 2);
         builder.Property(item => item.ArchivedPrice).HasPrecision(12, 2);
         builder.Property(item => item.LifetimePrice).HasPrecision(12, 2);
         builder.HasIndex(item => new { item.UserId, item.CapturedHour }).IsUnique();

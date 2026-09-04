@@ -20,9 +20,10 @@ export function HelpFinancialTab() {
           Financial
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Financial prices each Operations row from the profile main tab and numbered archive tabs.
-          Today is the current main tab. Archived is sheets named 1, 2, 3 after Forward. Lifetime is
-          both combined. Dashboard workspace KPIs still use today main-tab counts.
+          Financial prices each Operations row from the last Update batch, the full profile main tab,
+          and numbered archive tabs. Today is listings copied by the last Update. Main is the full
+          main sheet. Archived is sheets named 1, 2, 3 after Forward. Lifetime is main plus archived.
+          Dashboard workspace KPIs still use main-sheet counts.
         </Typography>
       </Stack>
       <Panel>
@@ -49,7 +50,14 @@ export function HelpFinancialTab() {
                 </TableRow>
                 <TableRow>
                   <TableCell align="left">Today</TableCell>
-                  <TableCell align="left">Applied, interviews, and price from the named profile main tab</TableCell>
+                  <TableCell align="left">
+                    Applied, interviews, and price among last Update source rows (including already on
+                    the main sheet)
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell align="left">Main</TableCell>
+                  <TableCell align="left">Applied, interviews, and price from the full named profile main tab</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell align="left">Archived</TableCell>
@@ -57,7 +65,7 @@ export function HelpFinancialTab() {
                 </TableRow>
                 <TableRow>
                   <TableCell align="left">Lifetime</TableCell>
-                  <TableCell align="left">Today plus archived combined for that row</TableCell>
+                  <TableCell align="left">Main plus archived combined for that row</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell align="left">Apply rate</TableCell>
@@ -87,19 +95,19 @@ export function HelpFinancialTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="Summary cards"
-                secondary="Today, Archived, and Lifetime show workspace price and listing counts for every pipeline row."
+                secondary="Today, Main, Archived, and Lifetime show workspace price and listing counts for every pipeline row."
               />
             </ListItem>
             <ListItem disableGutters>
               <ListItemText
                 primary="Performance graph"
-                secondary="Hourly snapshots of today, archived, and lifetime price with connected lines and hover detail. Switch to Daily to plot the last snapshot of each day. Opening Financial or Google workspace sync writes or updates this hour in PostgreSQL."
+                secondary="Hourly snapshots of today, main, archived, and lifetime price with connected lines and hover detail. Switch to Daily to plot the last snapshot of each day. Opening Financial or Google workspace sync writes or updates this hour in PostgreSQL."
               />
             </ListItem>
             <ListItem disableGutters>
               <ListItemText
                 primary="Selected rows"
-                secondary="Check rows, or use the header checkbox, to price a subset. The selected card shows today, archived, and lifetime totals."
+                secondary="Check rows, or use the header checkbox, to price a subset. The selected card shows today, main, archived, and lifetime totals."
               />
             </ListItem>
           </List>

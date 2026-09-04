@@ -52,7 +52,10 @@ const GroupHeader = styled(TableCell)(({ theme }) => ({
 }));
 
 function sumRows(rows: JobFinancialRow[], pick: (row: JobFinancialRow) => number): number {
-  return rows.reduce((sum, row) => sum + pick(row), 0);
+  return rows.reduce((sum, row) => {
+    const value = pick(row);
+    return sum + (typeof value === "number" && Number.isFinite(value) ? value : 0);
+  }, 0);
 }
 
 export function JobApplicationFinancialTab() {
@@ -100,8 +103,9 @@ export function JobApplicationFinancialTab() {
             Financial
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Today uses each profile main tab. Archived uses numbered sheets from Forward. Lifetime is both
-            combined.
+            Today is listings from the last Update. Ready rows have Download filled; Applied and blank
+            Status count among ready rows only. Main is the full profile main sheet. Archived uses
+            numbered sheets from Forward. Lifetime is main plus archived.
           </Typography>
         </Stack>
         <Button variant="text" onClick={() => void boardQuery.refetch()} disabled={boardQuery.isFetching}>
@@ -111,16 +115,28 @@ export function JobApplicationFinancialTab() {
 
       <FinancialSummaryCards
         loading={boardLoading}
-        todayPrice={boardQuery.data?.allPrice ?? 0}
-        todayTotal={boardQuery.data?.allTotal ?? 0}
-        todayApplied={boardQuery.data?.allApplied ?? 0}
-        todayInterviews={boardQuery.data?.allInterviews ?? 0}
+        todayPrice={boardQuery.data?.todayAllPrice ?? 0}
+        todayTotal={boardQuery.data?.todayAllTotal ?? 0}
+        todayReady={boardQuery.data?.todayAllReady ?? 0}
+        todayNotReady={boardQuery.data?.todayAllNotReady ?? 0}
+        todayApplied={boardQuery.data?.todayAllApplied ?? 0}
+        todayInterviews={boardQuery.data?.todayAllInterviews ?? 0}
+        mainPrice={boardQuery.data?.allPrice ?? 0}
+        mainTotal={boardQuery.data?.allTotal ?? 0}
+        mainReady={boardQuery.data?.allReady ?? 0}
+        mainNotReady={boardQuery.data?.allNotReady ?? 0}
+        mainApplied={boardQuery.data?.allApplied ?? 0}
+        mainInterviews={boardQuery.data?.allInterviews ?? 0}
         archivedPrice={boardQuery.data?.archivedAllPrice ?? 0}
         archivedTotal={boardQuery.data?.archivedAllTotal ?? 0}
+        archivedReady={boardQuery.data?.archivedAllReady ?? 0}
+        archivedNotReady={boardQuery.data?.archivedAllNotReady ?? 0}
         archivedApplied={boardQuery.data?.archivedAllApplied ?? 0}
         archivedInterviews={boardQuery.data?.archivedAllInterviews ?? 0}
         lifetimePrice={boardQuery.data?.lifetimeAllPrice ?? 0}
         lifetimeTotal={boardQuery.data?.lifetimeAllTotal ?? 0}
+        lifetimeReady={boardQuery.data?.lifetimeAllReady ?? 0}
+        lifetimeNotReady={boardQuery.data?.lifetimeAllNotReady ?? 0}
         lifetimeApplied={boardQuery.data?.lifetimeAllApplied ?? 0}
         lifetimeInterviews={boardQuery.data?.lifetimeAllInterviews ?? 0}
       />
@@ -150,6 +166,27 @@ export function JobApplicationFinancialTab() {
                 Today
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                {selectedRows.length === 0
+                  ? "—"
+                  : formatPrice(sumRows(selectedRows, (row) => row.todayPrice))}
+              </Typography>
+              {selectedRows.length > 0 ? (
+                <Typography variant="caption" color="text.secondary">
+                  {formatFinancialMetrics(
+                    sumRows(selectedRows, (row) => row.todayApplied),
+                    sumRows(selectedRows, (row) => row.todayInterviews),
+                    sumRows(selectedRows, (row) => row.todayTotal),
+                    sumRows(selectedRows, (row) => row.todayReady),
+                    sumRows(selectedRows, (row) => row.todayNotReady),
+                  )}
+                </Typography>
+              ) : null}
+            </Stack>
+            <Stack spacing={0.25}>
+              <Typography variant="caption" color="text.secondary">
+                Main
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
                 {selectedRows.length === 0 ? "—" : formatPrice(sumRows(selectedRows, (row) => row.price))}
               </Typography>
               {selectedRows.length > 0 ? (
@@ -158,6 +195,8 @@ export function JobApplicationFinancialTab() {
                     sumRows(selectedRows, (row) => row.applied),
                     sumRows(selectedRows, (row) => row.interviews),
                     sumRows(selectedRows, (row) => row.total),
+                    sumRows(selectedRows, (row) => row.ready),
+                    sumRows(selectedRows, (row) => row.notReady),
                   )}
                 </Typography>
               ) : null}
@@ -203,6 +242,7 @@ export function JobApplicationFinancialTab() {
                 <TableCell>Profile</TableCell>
                 <TableCell>Source</TableCell>
                 <GroupHeader>Today</GroupHeader>
+                <GroupHeader>Main</GroupHeader>
                 <GroupHeader>Archived</GroupHeader>
                 <GroupHeader>Lifetime</GroupHeader>
                 <GroupHeader>Apply rate</GroupHeader>
@@ -212,7 +252,7 @@ export function JobApplicationFinancialTab() {
             <TableBody>
               {boardLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={9}>
                     <Typography variant="body2" color="text.secondary">
                       Loading…
                     </Typography>
@@ -220,7 +260,7 @@ export function JobApplicationFinancialTab() {
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={9}>
                     <Typography variant="body2" color="text.secondary">
                       Add pipeline rows on Operations to price listings.
                     </Typography>
@@ -238,6 +278,13 @@ export function JobApplicationFinancialTab() {
                     </TableCell>
                     <TableCell>{row.profileTitle}</TableCell>
                     <TableCell>{row.sourceLabel}</TableCell>
+                    <TableCell>
+                      <FinancialMetricCell
+                        applied={row.todayApplied}
+                        interviews={row.todayInterviews}
+                        price={row.todayPrice}
+                      />
+                    </TableCell>
                     <TableCell>
                       <FinancialMetricCell
                         applied={row.applied}

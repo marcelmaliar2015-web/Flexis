@@ -91,10 +91,16 @@ export function DashboardBoard(props: DashboardBoardProps) {
   const sourceCount = queryCount(props.pipeline, props.pipelineLoading, props.pipeline?.sources.length);
   const locations = props.pipelineLoading ? null : locationCount(props.pipeline);
   const pipelineRows = queryCount(props.pipeline, props.pipelineLoading, props.pipeline?.entries.length);
-  const workspacePrice = queryCount(props.financial, props.financialLoading, props.financial?.allPrice);
-  const listingTotal = queryCount(props.financial, props.financialLoading, props.financial?.allTotal);
-  const appliedTotal = queryCount(props.financial, props.financialLoading, props.financial?.allApplied);
-  const interviewTotal = queryCount(props.financial, props.financialLoading, props.financial?.allInterviews);
+  const todayPrice = queryCount(props.financial, props.financialLoading, props.financial?.todayAllPrice);
+  const mainPrice = queryCount(props.financial, props.financialLoading, props.financial?.allPrice);
+  const todayListings = queryCount(props.financial, props.financialLoading, props.financial?.todayAllTotal);
+  const todayApplied = queryCount(props.financial, props.financialLoading, props.financial?.todayAllApplied);
+  const todayInterviews = queryCount(
+    props.financial,
+    props.financialLoading,
+    props.financial?.todayAllInterviews,
+  );
+  const mainListings = queryCount(props.financial, props.financialLoading, props.financial?.allTotal);
 
   return (
     <Stack spacing={3}>
@@ -199,48 +205,52 @@ export function DashboardBoard(props: DashboardBoardProps) {
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <KpiCard>
             <Typography variant="overline" color="text.secondary">
-              Workspace price
+              Today price
             </Typography>
-            <Typography variant="h4">{formatOptionalPrice(workspacePrice)}</Typography>
+            <Typography variant="h4">{formatOptionalPrice(todayPrice)}</Typography>
             <Typography variant="body2" color="text.secondary">
               {props.financialLoading
-                ? "Reading profile main tabs."
-                : "Applied times apply rate plus interviews times bonus rate, from each profile main tab."}
+                ? "Reading last Update rows."
+                : "Applied and Interview among listings copied by the last Update."}
             </Typography>
           </KpiCard>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <KpiCard>
             <Typography variant="overline" color="text.secondary">
-              Listings
+              Main price
             </Typography>
-            <Typography variant="h4">{formatOptionalCount(listingTotal)}</Typography>
+            <Typography variant="h4">{formatOptionalPrice(mainPrice)}</Typography>
             <Typography variant="body2" color="text.secondary">
               {props.financialLoading
-                ? "Reading profile main tabs."
-                : "Non-empty rows on named profile main tabs. Zero until Gmail can read those workbooks."}
+                ? "Reading profile main sheets."
+                : "Full profile main sheet. Applied times apply rate plus interviews times bonus rate."}
             </Typography>
           </KpiCard>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <KpiCard>
             <Typography variant="overline" color="text.secondary">
-              Applied
+              Today applied
             </Typography>
-            <Typography variant="h4">{formatOptionalCount(appliedTotal)}</Typography>
+            <Typography variant="h4">{formatOptionalCount(todayApplied)}</Typography>
             <Typography variant="body2" color="text.secondary">
-              {formatPercent(mix.appliedShare)} of listings. Status Applied on the profile main tab.
+              {props.financialLoading
+                ? "Reading last Update rows."
+                : `${formatOptionalCount(todayListings)} listings from the last Update.`}
             </Typography>
           </KpiCard>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <KpiCard>
             <Typography variant="overline" color="text.secondary">
-              Interviews
+              Today interviews
             </Typography>
-            <Typography variant="h4">{formatOptionalCount(interviewTotal)}</Typography>
+            <Typography variant="h4">{formatOptionalCount(todayInterviews)}</Typography>
             <Typography variant="body2" color="text.secondary">
-              {formatPercent(mix.interviewShare)} of listings. Status Interview on the profile main tab.
+              {props.financialLoading
+                ? "Reading last Update rows."
+                : `${formatOptionalCount(mainListings)} listings on main sheets overall.`}
             </Typography>
           </KpiCard>
         </Grid>
@@ -252,19 +262,22 @@ export function DashboardBoard(props: DashboardBoardProps) {
             <Stack spacing={2}>
               <Stack spacing={0.5}>
                 <Typography variant="h6" component="h2">
-                  Listing status
+                  Main sheet status
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Open rows still need a Status. Applied and Interview are priced separately, not a sequential funnel.
+                  Ready rows have Download filled. Applied, Interview, and blank Status are among
+                  ready rows. Counts refresh with Google sync.
                 </Typography>
               </Stack>
               <MixTrack aria-hidden="true">
-                <MixSegment tone="open" share={mix.openShare} />
-                <MixSegment tone="applied" share={mix.appliedShare} />
-                <MixSegment tone="interview" share={mix.interviewShare} />
+                <MixSegment tone="open" share={mix.notReadyShare} />
+                <MixSegment tone="applied" share={mix.appliedShare * mix.readyShare} />
+                <MixSegment tone="interview" share={mix.interviewShare * mix.readyShare} />
               </MixTrack>
               <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 1 }}>
-                <Chip size="small" label={`Open ${formatCount(mix.open)}`} />
+                <Chip size="small" label={`Ready ${formatCount(mix.ready)}`} />
+                <Chip size="small" label={`Not ready ${formatCount(mix.notReady)}`} />
+                <Chip size="small" label={`Blank status ${formatCount(mix.blank)}`} />
                 <Chip size="small" color="primary" label={`Applied ${formatCount(mix.applied)}`} />
                 <Chip size="small" color="secondary" label={`Interview ${formatCount(mix.interviews)}`} />
               </Stack>
@@ -293,12 +306,12 @@ export function DashboardBoard(props: DashboardBoardProps) {
                   Price by pipeline
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Highest priced profile and source pairs. Open a row to edit that pipeline entry.
+                  Ranked by Today price (last Update). Main price is the full sheet for that row.
                 </Typography>
               </Stack>
               {props.financialLoading ? (
                 <Typography variant="body2" color="text.secondary">
-                  Reading listing status from profile main tabs.
+                  Reading listing status from profile sheets.
                 </Typography>
               ) : prices.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
@@ -317,7 +330,12 @@ export function DashboardBoard(props: DashboardBoardProps) {
                         >
                           {row.label}
                         </Link>
-                        <Typography variant="body2">{formatPrice(row.price)}</Typography>
+                        <Stack spacing={0} sx={{ alignItems: "flex-end", flexShrink: 0 }}>
+                          <Typography variant="body2">{formatPrice(row.price)}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Main {formatPrice(row.mainPrice)}
+                          </Typography>
+                        </Stack>
                       </Stack>
                       <PriceTrack>
                         <PriceFill share={row.share} />
@@ -434,7 +452,7 @@ export function DashboardBoard(props: DashboardBoardProps) {
                 Pipeline contribution
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Each row is a profile paired with a source location. Counts are from that profile main tab.
+                Today is the last Update batch. Main is the full profile sheet for that pairing.
               </Typography>
             </Stack>
             <Table size="small">
@@ -442,10 +460,11 @@ export function DashboardBoard(props: DashboardBoardProps) {
                 <TableRow>
                   <TableCell align="left">Profile</TableCell>
                   <TableCell align="left">Source</TableCell>
-                  <TableCell>Listings</TableCell>
-                  <TableCell>Applied</TableCell>
-                  <TableCell>Interviews</TableCell>
-                  <TableCell>Price</TableCell>
+                  <TableCell>Today listings</TableCell>
+                  <TableCell>Today applied</TableCell>
+                  <TableCell>Today interviews</TableCell>
+                  <TableCell>Today price</TableCell>
+                  <TableCell>Main price</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -457,9 +476,10 @@ export function DashboardBoard(props: DashboardBoardProps) {
                       </Link>
                     </TableCell>
                     <TableCell align="left">{row.sourceLabel}</TableCell>
-                    <TableCell>{formatCount(row.total)}</TableCell>
-                    <TableCell>{formatCount(row.applied)}</TableCell>
-                    <TableCell>{formatCount(row.interviews)}</TableCell>
+                    <TableCell>{formatCount(row.todayTotal)}</TableCell>
+                    <TableCell>{formatCount(row.todayApplied)}</TableCell>
+                    <TableCell>{formatCount(row.todayInterviews)}</TableCell>
+                    <TableCell>{formatPrice(row.todayPrice)}</TableCell>
                     <TableCell>{formatPrice(row.price)}</TableCell>
                   </TableRow>
                 ))}

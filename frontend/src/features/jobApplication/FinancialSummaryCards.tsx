@@ -7,15 +7,18 @@ import { formatCount, formatFinancialMetrics, formatPrice } from "@/features/job
 const SummaryGrid = styled(Box)(({ theme }) => ({
   display: "grid",
   gap: theme.spacing(2),
-  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-  [theme.breakpoints.down("md")]: {
+  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+  [theme.breakpoints.down("lg")]: {
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  },
+  [theme.breakpoints.down("sm")]: {
     gridTemplateColumns: "1fr",
   },
 }));
 
 const SummaryCard = styled(Box, {
   shouldForwardProp: (prop) => prop !== "tone",
-})<{ tone: "today" | "archived" | "lifetime" }>(({ theme, tone }) => ({
+})<{ tone: "today" | "main" | "archived" | "lifetime" }>(({ theme, tone }) => ({
   minWidth: 0,
   borderRadius: theme.shape.borderRadius,
   padding: theme.spacing(2.5),
@@ -44,14 +47,26 @@ type FinancialSummaryCardsProps = {
   loading: boolean;
   todayPrice: number;
   todayTotal: number;
+  todayReady: number;
+  todayNotReady: number;
   todayApplied: number;
   todayInterviews: number;
+  mainPrice: number;
+  mainTotal: number;
+  mainReady: number;
+  mainNotReady: number;
+  mainApplied: number;
+  mainInterviews: number;
   archivedPrice: number;
   archivedTotal: number;
+  archivedReady: number;
+  archivedNotReady: number;
   archivedApplied: number;
   archivedInterviews: number;
   lifetimePrice: number;
   lifetimeTotal: number;
+  lifetimeReady: number;
+  lifetimeNotReady: number;
   lifetimeApplied: number;
   lifetimeInterviews: number;
 };
@@ -60,14 +75,26 @@ export function FinancialSummaryCards({
   loading,
   todayPrice,
   todayTotal,
+  todayReady,
+  todayNotReady,
   todayApplied,
   todayInterviews,
+  mainPrice,
+  mainTotal,
+  mainReady,
+  mainNotReady,
+  mainApplied,
+  mainInterviews,
   archivedPrice,
   archivedTotal,
+  archivedReady,
+  archivedNotReady,
   archivedApplied,
   archivedInterviews,
   lifetimePrice,
   lifetimeTotal,
+  lifetimeReady,
+  lifetimeNotReady,
   lifetimeApplied,
   lifetimeInterviews,
 }: FinancialSummaryCardsProps) {
@@ -80,14 +107,28 @@ export function FinancialSummaryCards({
           </Typography>
           <PriceValue variant="h4">{loading ? "…" : formatPrice(todayPrice)}</PriceValue>
           <Typography variant="body2" color="text.secondary">
-            {loading
-              ? "Reading current main tabs."
-              : "Current profile main tab only."}
+            {loading ? "Reading last Update rows." : "Source rows from the last Update, including skips."}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             {loading
               ? "…"
-              : formatFinancialMetrics(todayApplied, todayInterviews, todayTotal)}
+              : formatFinancialMetrics(todayApplied, todayInterviews, todayTotal, todayReady, todayNotReady)}
+          </Typography>
+        </Stack>
+      </SummaryCard>
+      <SummaryCard tone="main">
+        <Stack spacing={1}>
+          <Typography variant="overline" color="text.secondary">
+            Main
+          </Typography>
+          <PriceValue variant="h4">{loading ? "…" : formatPrice(mainPrice)}</PriceValue>
+          <Typography variant="body2" color="text.secondary">
+            {loading ? "Reading current main tabs." : "Full profile main sheet."}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {loading
+              ? "…"
+              : formatFinancialMetrics(mainApplied, mainInterviews, mainTotal, mainReady, mainNotReady)}
           </Typography>
         </Stack>
       </SummaryCard>
@@ -103,7 +144,13 @@ export function FinancialSummaryCards({
           <Typography variant="caption" color="text.secondary">
             {loading
               ? "…"
-              : formatFinancialMetrics(archivedApplied, archivedInterviews, archivedTotal)}
+              : formatFinancialMetrics(
+                  archivedApplied,
+                  archivedInterviews,
+                  archivedTotal,
+                  archivedReady,
+                  archivedNotReady,
+                )}
           </Typography>
         </Stack>
       </SummaryCard>
@@ -114,12 +161,18 @@ export function FinancialSummaryCards({
           </Typography>
           <PriceValue variant="h4">{loading ? "…" : formatPrice(lifetimePrice)}</PriceValue>
           <Typography variant="body2" color="text.secondary">
-            {loading ? "Combining today and archived." : "Today plus every archived sheet."}
+            {loading ? "Combining main and archived." : "Main plus every archived sheet."}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             {loading
               ? "…"
-              : formatFinancialMetrics(lifetimeApplied, lifetimeInterviews, lifetimeTotal)}
+              : formatFinancialMetrics(
+                  lifetimeApplied,
+                  lifetimeInterviews,
+                  lifetimeTotal,
+                  lifetimeReady,
+                  lifetimeNotReady,
+                )}
           </Typography>
         </Stack>
       </SummaryCard>

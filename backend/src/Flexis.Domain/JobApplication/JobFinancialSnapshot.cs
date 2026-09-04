@@ -24,6 +24,14 @@ public sealed class JobFinancialSnapshot
 
     public int TodayInterviews { get; private set; }
 
+    public decimal MainPrice { get; private set; }
+
+    public int MainTotal { get; private set; }
+
+    public int MainApplied { get; private set; }
+
+    public int MainInterviews { get; private set; }
+
     public decimal ArchivedPrice { get; private set; }
 
     public int ArchivedTotal { get; private set; }
@@ -53,6 +61,10 @@ public sealed class JobFinancialSnapshot
         int todayTotal,
         int todayApplied,
         int todayInterviews,
+        decimal mainPrice,
+        int mainTotal,
+        int mainApplied,
+        int mainInterviews,
         decimal archivedPrice,
         int archivedTotal,
         int archivedApplied,
@@ -74,6 +86,10 @@ public sealed class JobFinancialSnapshot
             TodayTotal = todayTotal,
             TodayApplied = todayApplied,
             TodayInterviews = todayInterviews,
+            MainPrice = mainPrice,
+            MainTotal = mainTotal,
+            MainApplied = mainApplied,
+            MainInterviews = mainInterviews,
             ArchivedPrice = archivedPrice,
             ArchivedTotal = archivedTotal,
             ArchivedApplied = archivedApplied,
@@ -90,6 +106,10 @@ public sealed class JobFinancialSnapshot
         int todayTotal,
         int todayApplied,
         int todayInterviews,
+        decimal mainPrice,
+        int mainTotal,
+        int mainApplied,
+        int mainInterviews,
         decimal archivedPrice,
         int archivedTotal,
         int archivedApplied,
@@ -104,6 +124,10 @@ public sealed class JobFinancialSnapshot
         TodayTotal = todayTotal;
         TodayApplied = todayApplied;
         TodayInterviews = todayInterviews;
+        MainPrice = mainPrice;
+        MainTotal = mainTotal;
+        MainApplied = mainApplied;
+        MainInterviews = mainInterviews;
         ArchivedPrice = archivedPrice;
         ArchivedTotal = archivedTotal;
         ArchivedApplied = archivedApplied;

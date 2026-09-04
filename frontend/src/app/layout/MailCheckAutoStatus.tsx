@@ -10,7 +10,7 @@ import { styled, keyframes } from "@mui/material/styles";
 import { useEffect, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMailCheckAuto } from "@/app/providers/MailCheckProvider";
-import { formatUpdatedAgo } from "@/shared/api/googleSync";
+import { formatRelativeUpdatedAgo } from "@/shared/api/googleSync";
 import { appPaths } from "@/shared/config/paths";
 
 const shimmer = keyframes`
@@ -129,7 +129,7 @@ export function MailCheckAutoStatus() {
   const running = mailCheck.isRunning;
   const label = running ? "Classifying mail…" : "Auto-check live";
   const lastRunLabel = mailCheck.lastRunAt
-    ? formatUpdatedAgo(mailCheck.lastRunAt, now)
+    ? formatRelativeUpdatedAgo(mailCheck.lastRunAt, now)
     : "Waiting for first run";
   const open = Boolean(anchor);
 

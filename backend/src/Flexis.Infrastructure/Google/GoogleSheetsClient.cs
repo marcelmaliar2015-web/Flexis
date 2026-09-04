@@ -2431,7 +2431,13 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
 
     private static JobListingRow ToListing(List<JsonElement> row)
     {
-        return new JobListingRow(Cell(row, 0), Cell(row, 1), Cell(row, 2), Cell(row, 3), Cell(row, 5));
+        return new JobListingRow(
+            Cell(row, 0),
+            Cell(row, 1),
+            Cell(row, 2),
+            Cell(row, 3),
+            Cell(row, 4),
+            Cell(row, 5));
     }
 
     private static string Cell(List<JsonElement> row, int index)

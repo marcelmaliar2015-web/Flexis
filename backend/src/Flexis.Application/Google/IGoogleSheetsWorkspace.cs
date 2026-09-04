@@ -15,6 +15,7 @@ public sealed record JobListingRow(
     string Position,
     string Link,
     string Jd,
+    string Download = "",
     string Status = "")
 {
     public bool IsEmpty =>

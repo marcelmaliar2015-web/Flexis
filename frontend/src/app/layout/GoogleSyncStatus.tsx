@@ -161,10 +161,10 @@ export function GoogleSyncStatus() {
 
   const lane = googleSyncLane(sync.lastSyncedAt, now, sync.failed, sync.isSyncing);
   const label = sync.isSyncing
-    ? "Updating…"
+    ? "Refreshing sheets…"
     : sync.lastSyncedAt
       ? formatUpdatedAgo(sync.lastSyncedAt, now)
-      : "Waiting for Google";
+      : "Sheet refresh waiting";
   const litIndex = lane === "stale" ? 0 : lane === "aging" ? 1 : 2;
 
   return (
@@ -174,8 +174,8 @@ export function GoogleSyncStatus() {
       disabled={sync.isSyncing}
       aria-label={
         sync.isSyncing
-          ? `Updating Google sheets and configuration. ${sync.syncProgress} percent complete.`
-          : `${label}. Refresh Google sheets and configuration.`
+          ? `Sheet refresh in progress. ${sync.syncProgress} percent complete.`
+          : `${label}. Run sheet refresh now.`
       }
       onClick={() => {
         void sync.refresh();

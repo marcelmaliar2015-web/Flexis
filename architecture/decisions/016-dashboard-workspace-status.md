@@ -6,7 +6,7 @@ Signed-in users land on Dashboard. The product already has health, Google connec
 
 ## Decision
 
-Dashboard is a read-only status board for the signed-in account. It composes existing query keys: health, Google connection, pipeline, financial, logs, and `users` when the role is Admin. It does not add a dashboard API. KPIs, status mix, price bars, attention, and recent activity are derived on the client. Sheet counts stay zero until Gmail can read profile workbooks, same as Financial.
+Dashboard is a read-only status board for the signed-in account. It composes existing query keys: health, Google connection, pipeline, financial, logs, and `users` when the role is Admin. It does not add a dashboard API. KPIs use Today (last Update batch) and Main (full profile main sheet) from the financial board. Status mix uses Ready (Download filled), Not ready, blank Status, Applied, and Interview; Applied / Interview / blank Status are among ready rows. Price by pipeline ranks Today price and shows Main beside it. Pipeline contribution lists Today counts plus Main price. Attention and recent activity are derived on the client. Sheet counts stay zero until Gmail can read profile workbooks, same as Financial. Google workspace sync refreshes the financial board on the regular timer so these counts update without opening Job Application.
 
 ## Consequences
 

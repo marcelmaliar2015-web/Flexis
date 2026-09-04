@@ -34,6 +34,14 @@ public sealed class FlexisDbContext : DbContext
 
     public DbSet<JobProfileStatisticsSnapshot> JobProfileStatisticsSnapshots => Set<JobProfileStatisticsSnapshot>();
 
+    public DbSet<JobListingCopyBatch> JobListingCopyBatches => Set<JobListingCopyBatch>();
+
+    public DbSet<JobListingCopyItem> JobListingCopyItems => Set<JobListingCopyItem>();
+
+    public DbSet<JobListingStatusState> JobListingStatusStates => Set<JobListingStatusState>();
+
+    public DbSet<JobListingStatusEvent> JobListingStatusEvents => Set<JobListingStatusEvent>();
+
     public DbSet<JobResumeSettings> JobResumeSettings => Set<JobResumeSettings>();
 
     public DbSet<JobProfileResumeSettings> JobProfileResumeSettings => Set<JobProfileResumeSettings>();
