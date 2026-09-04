@@ -85,8 +85,47 @@ internal sealed class JobListingStatusRepository : IJobListingStatusRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
-        return _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (PostgresUniqueConstraint.IsViolation(exception))
+        {
+            foreach (var entry in _db.ChangeTracker.Entries<JobListingStatusState>()
+                .Where(item => item.State == EntityState.Added)
+                .ToList())
+            {
+                var entity = entry.Entity;
+                var exists = await _db.JobListingStatusStates
+                    .AsNoTracking()
+                    .AnyAsync(
+                        item => item.UserId == entity.UserId
+                            && item.ProfileId == entity.ProfileId
+                            && item.ListingKey == entity.ListingKey,
+                        cancellationToken);
+                if (exists)
+                {
+                    entry.State = EntityState.Detached;
+                }
+            }
+
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException retryException) when (PostgresUniqueConstraint.IsViolation(retryException))
+            {
+                foreach (var entry in _db.ChangeTracker.Entries<JobListingStatusState>()
+                    .Where(item => item.State == EntityState.Added)
+                    .ToList())
+                {
+                    entry.State = EntityState.Detached;
+                }
+
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+        }
     }
 }

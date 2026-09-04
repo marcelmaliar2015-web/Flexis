@@ -265,8 +265,8 @@ export function DashboardBoard(props: DashboardBoardProps) {
                   Main sheet status
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Ready rows have Download filled. Applied, Interview, and blank Status are among
-                  ready rows. Counts refresh with Google sync.
+                  Ready is Download filled. Not ready is blank Download and blank Status. Applied,
+                  Interview, and blank Status are among ready rows. Counts refresh with Google sync.
                 </Typography>
               </Stack>
               <MixTrack aria-hidden="true">

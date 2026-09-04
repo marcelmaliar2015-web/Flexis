@@ -105,8 +105,9 @@ export function JobApplicationStatisticsTab() {
             Statistics
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Ready rows have a Download value. Applied, Interview, and blank Status count only among
-            ready rows. Period charts show Applied, Interview, and Price
+            Ready is Download filled. Not ready is blank Download and blank Status. Applied,
+            Interview, and blank Status count only among ready rows. Period charts show Applied,
+            Interview, and Price
             {profileId === "all" ? " summed across profiles" : " for the selected profile"}.
           </Typography>
         </Stack>
@@ -205,7 +206,8 @@ export function JobApplicationStatisticsTab() {
           <Stack spacing={1.5}>
             <Typography variant="subtitle1">Today by profile</Typography>
             <Typography variant="body2" color="text.secondary">
-              Ready means Download is filled. Applied and Unapplied are among ready rows only.
+              Ready means Download is filled. Not ready means blank Download and blank Status.
+              Applied and Unapplied are among ready rows only.
             </Typography>
             {loading ? (
               <Typography variant="body2" color="text.secondary">

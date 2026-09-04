@@ -62,6 +62,11 @@ internal static class JobFinancialRules
         return CellContent(listing.Download).Length > 0;
     }
 
+    public static bool IsNotReady(JobListingRow listing)
+    {
+        return !IsReady(listing) && listing.Status.Trim().Length == 0;
+    }
+
     public static string NormalizeLink(string link)
     {
         var trimmed = CellContent(link);
@@ -114,29 +119,33 @@ internal static class JobFinancialRules
             }
 
             total++;
-            if (!IsReady(row))
+            if (IsReady(row))
+            {
+                ready++;
+                var status = row.Status.Trim();
+                if (status.Length == 0)
+                {
+                    unapplied++;
+                    continue;
+                }
+
+                if (string.Equals(status, "Interview", StringComparison.OrdinalIgnoreCase))
+                {
+                    interviews++;
+                    continue;
+                }
+
+                if (string.Equals(status, "Applied", StringComparison.OrdinalIgnoreCase))
+                {
+                    applied++;
+                }
+
+                continue;
+            }
+
+            if (IsNotReady(row))
             {
                 notReady++;
-                continue;
-            }
-
-            ready++;
-            var status = row.Status.Trim();
-            if (status.Length == 0)
-            {
-                unapplied++;
-                continue;
-            }
-
-            if (string.Equals(status, "Interview", StringComparison.OrdinalIgnoreCase))
-            {
-                interviews++;
-                continue;
-            }
-
-            if (string.Equals(status, "Applied", StringComparison.OrdinalIgnoreCase))
-            {
-                applied++;
             }
         }
 

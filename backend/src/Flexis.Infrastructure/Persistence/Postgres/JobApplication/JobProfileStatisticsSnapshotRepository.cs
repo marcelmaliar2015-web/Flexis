@@ -45,6 +45,47 @@ internal sealed class JobProfileStatisticsSnapshotRepository : IJobProfileStatis
         await _db.JobProfileStatisticsSnapshots.AddAsync(snapshot, cancellationToken);
     }
 
+    public async Task UpsertHourAsync(JobProfileStatisticsSnapshot snapshot, CancellationToken cancellationToken)
+    {
+        var existing = await GetByUserProfileAndHourAsync(
+            snapshot.UserId,
+            snapshot.ProfileId,
+            snapshot.CapturedHour,
+            cancellationToken);
+        if (existing is null)
+        {
+            await _db.JobProfileStatisticsSnapshots.AddAsync(snapshot, cancellationToken);
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+                return;
+            }
+            catch (DbUpdateException exception) when (PostgresUniqueConstraint.IsViolation(exception))
+            {
+                _db.Entry(snapshot).State = EntityState.Detached;
+                existing = await GetByUserProfileAndHourAsync(
+                    snapshot.UserId,
+                    snapshot.ProfileId,
+                    snapshot.CapturedHour,
+                    cancellationToken);
+                if (existing is null)
+                {
+                    throw new InvalidOperationException(
+                        "Profile statistics snapshot was not found after a unique constraint conflict.");
+                }
+            }
+        }
+
+        existing.Replace(
+            snapshot.ProfileTitle,
+            snapshot.Applied,
+            snapshot.Interviews,
+            snapshot.Unapplied,
+            snapshot.Total,
+            snapshot.Price);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         return _db.SaveChangesAsync(cancellationToken);

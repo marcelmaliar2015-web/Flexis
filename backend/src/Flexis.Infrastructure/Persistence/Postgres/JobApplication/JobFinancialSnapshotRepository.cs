@@ -43,6 +43,55 @@ internal sealed class JobFinancialSnapshotRepository : IJobFinancialSnapshotRepo
         await _db.JobFinancialSnapshots.AddAsync(snapshot, cancellationToken);
     }
 
+    public async Task UpsertHourAsync(JobFinancialSnapshot snapshot, CancellationToken cancellationToken)
+    {
+        var existing = await GetByUserAndHourAsync(
+            snapshot.UserId,
+            snapshot.CapturedHour,
+            cancellationToken);
+        if (existing is null)
+        {
+            await _db.JobFinancialSnapshots.AddAsync(snapshot, cancellationToken);
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+                return;
+            }
+            catch (DbUpdateException exception) when (PostgresUniqueConstraint.IsViolation(exception))
+            {
+                _db.Entry(snapshot).State = EntityState.Detached;
+                existing = await GetByUserAndHourAsync(
+                    snapshot.UserId,
+                    snapshot.CapturedHour,
+                    cancellationToken);
+                if (existing is null)
+                {
+                    throw new InvalidOperationException(
+                        "Financial snapshot was not found after a unique constraint conflict.");
+                }
+            }
+        }
+
+        existing.Replace(
+            snapshot.TodayPrice,
+            snapshot.TodayTotal,
+            snapshot.TodayApplied,
+            snapshot.TodayInterviews,
+            snapshot.MainPrice,
+            snapshot.MainTotal,
+            snapshot.MainApplied,
+            snapshot.MainInterviews,
+            snapshot.ArchivedPrice,
+            snapshot.ArchivedTotal,
+            snapshot.ArchivedApplied,
+            snapshot.ArchivedInterviews,
+            snapshot.LifetimePrice,
+            snapshot.LifetimeTotal,
+            snapshot.LifetimeApplied,
+            snapshot.LifetimeInterviews);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         return _db.SaveChangesAsync(cancellationToken);

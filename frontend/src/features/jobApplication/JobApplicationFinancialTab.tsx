@@ -103,9 +103,10 @@ export function JobApplicationFinancialTab() {
             Financial
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Today is listings from the last Update. Ready rows have Download filled; Applied and blank
-            Status count among ready rows only. Main is the full profile main sheet. Archived uses
-            numbered sheets from Forward. Lifetime is main plus archived.
+            Today is listings from the last Update. Ready is Download filled. Not ready is blank
+            Download and blank Status. Applied and blank Status count among ready rows only. Main is
+            the full profile main sheet. Archived uses numbered sheets from Forward. Lifetime is main
+            plus archived.
           </Typography>
         </Stack>
         <Button variant="text" onClick={() => void boardQuery.refetch()} disabled={boardQuery.isFetching}>

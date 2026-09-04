@@ -16,5 +16,7 @@ public interface IJobFinancialSnapshotRepository
 
     Task AddAsync(JobFinancialSnapshot snapshot, CancellationToken cancellationToken);
 
+    Task UpsertHourAsync(JobFinancialSnapshot snapshot, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

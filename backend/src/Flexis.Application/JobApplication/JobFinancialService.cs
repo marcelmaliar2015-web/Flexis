@@ -551,34 +551,10 @@ public sealed class JobFinancialService
         var lifetimeApplied = uniqueRows.Sum(row => row.LifetimeApplied);
         var lifetimeInterviews = uniqueRows.Sum(row => row.LifetimeInterviews);
         var capturedHour = JobFinancialSnapshot.TruncateToHour(DateTimeOffset.UtcNow);
-        var existing = await _snapshots.GetByUserAndHourAsync(userId, capturedHour, cancellationToken);
-        if (existing is null)
-        {
-            await _snapshots.AddAsync(
-                JobFinancialSnapshot.Create(
-                    userId,
-                    capturedHour,
-                    todayPrice,
-                    todayTotal,
-                    todayApplied,
-                    todayInterviews,
-                    mainPrice,
-                    mainTotal,
-                    mainApplied,
-                    mainInterviews,
-                    archivedPrice,
-                    archivedTotal,
-                    archivedApplied,
-                    archivedInterviews,
-                    lifetimePrice,
-                    lifetimeTotal,
-                    lifetimeApplied,
-                    lifetimeInterviews),
-                cancellationToken);
-        }
-        else
-        {
-            existing.Replace(
+        await _snapshots.UpsertHourAsync(
+            JobFinancialSnapshot.Create(
+                userId,
+                capturedHour,
                 todayPrice,
                 todayTotal,
                 todayApplied,
@@ -594,46 +570,24 @@ public sealed class JobFinancialService
                 lifetimePrice,
                 lifetimeTotal,
                 lifetimeApplied,
-                lifetimeInterviews);
-        }
-
-        await _snapshots.SaveChangesAsync(cancellationToken);
+                lifetimeInterviews),
+            cancellationToken);
 
         foreach (var profile in profiles)
         {
-            var profileExisting = await _profileSnapshots.GetByUserProfileAndHourAsync(
-                userId,
-                profile.ProfileId,
-                capturedHour,
-                cancellationToken);
-            if (profileExisting is null)
-            {
-                await _profileSnapshots.AddAsync(
-                    JobProfileStatisticsSnapshot.Create(
-                        userId,
-                        profile.ProfileId,
-                        profile.ProfileTitle,
-                        capturedHour,
-                        profile.TodayApplied,
-                        profile.TodayInterviews,
-                        profile.TodayUnapplied,
-                        profile.TodayTotal,
-                        profile.TodayPrice),
-                    cancellationToken);
-            }
-            else
-            {
-                profileExisting.Replace(
+            await _profileSnapshots.UpsertHourAsync(
+                JobProfileStatisticsSnapshot.Create(
+                    userId,
+                    profile.ProfileId,
                     profile.ProfileTitle,
+                    capturedHour,
                     profile.TodayApplied,
                     profile.TodayInterviews,
                     profile.TodayUnapplied,
                     profile.TodayTotal,
-                    profile.TodayPrice);
-            }
+                    profile.TodayPrice),
+                cancellationToken);
         }
-
-        await _profileSnapshots.SaveChangesAsync(cancellationToken);
     }
 
     private static IReadOnlyList<JobStatisticsProfileDto> DeduplicateProfiles(

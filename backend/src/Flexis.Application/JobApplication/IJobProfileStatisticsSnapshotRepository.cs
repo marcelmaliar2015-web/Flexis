@@ -17,5 +17,7 @@ public interface IJobProfileStatisticsSnapshotRepository
 
     Task AddAsync(JobProfileStatisticsSnapshot snapshot, CancellationToken cancellationToken);
 
+    Task UpsertHourAsync(JobProfileStatisticsSnapshot snapshot, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
