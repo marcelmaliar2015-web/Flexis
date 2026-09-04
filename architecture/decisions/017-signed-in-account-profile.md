@@ -6,7 +6,7 @@ The account menu listed name, email, and role as a text block. Settings showed t
 
 ## Decision
 
-`UserMenu` uses a compact header: avatar, display name, email, and a role chip, then Settings, Help, and Sign out. Settings always has a Your account card. The signed-in user can update display name and optional password. Email and role are read-only. `PUT /api/auth/me` performs that update. The Admin users table lists other accounts only.
+`UserMenu` uses a compact header: avatar, display name, email, and a role chip, then Settings, Help, and Sign out. Settings Account tab always has a Your account card. The signed-in user can update display name and optional password. Email and role are read-only. `PUT /api/auth/me` performs that update. The Admin users table lists other accounts only.
 
 ## Consequences
 

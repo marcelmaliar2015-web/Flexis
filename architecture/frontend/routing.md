@@ -12,16 +12,16 @@ React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. L
 | `/job-application` | `JobApplicationPage` | Authenticated |
 | `/job-application/pipeline/:entryId` | `JobApplicationPipelineEntryPage` | Authenticated |
 | `/mail-check` | `MailCheckPage` | Authenticated |
-| `/settings` | `SettingsPage` | Authenticated |
+| `/settings` | `SettingsPage` | Authenticated (tabs: Account, Job Application, Mail Check; Admin tab for Admin) |
 | `/help` | `HelpPage` | Authenticated |
 | `/health` | `HealthPage` | Authenticated |
 | `/users` | Redirect to `/settings` | Authenticated |
 
-Signed-in visits to `/` or `/sign-in` go to `/dashboard`, or to `state.from` when sign-in started from a protected route. Unauthenticated visits to protected routes redirect to `/sign-in` with `state.from`. Settings always has the signed-in account profile. Admin Google Cloud client and other users are on `/settings`, not a separate screen. `/health` has no nav link.
+Signed-in visits to `/` or `/sign-in` go to `/dashboard`, or to `state.from` when sign-in started from a protected route. Unauthenticated visits to protected routes redirect to `/sign-in` with `state.from`. Settings uses tabs for Account, Job Application, Mail Check, and Admin. Admin Google Cloud client, Microsoft client, and other users are on the Admin tab. `/health` has no nav link.
 
 ## Guards and access
 
-`RequireGuest` wraps `/` and `/sign-in`. `RequireAuth` wraps `AuthenticatedLayout`. Both wait for session restore before redirecting. Settings shows the Google Cloud client and the other-users table only when `role` is `Admin`. Every signed-in role can edit display name and password on Settings.
+`RequireGuest` wraps `/` and `/sign-in`. `RequireAuth` wraps `AuthenticatedLayout`. Both wait for session restore before redirecting. Settings shows the Admin tab only when `role` is `Admin`. Every signed-in role can edit display name and password on the Account tab.
 
 ## Related
 
@@ -36,4 +36,4 @@ Signed-in visits to `/` or `/sign-in` go to `/dashboard`, or to `state.from` whe
 - [../decisions/016-dashboard-workspace-status.md](../decisions/016-dashboard-workspace-status.md)
 - [../decisions/017-signed-in-account-profile.md](../decisions/017-signed-in-account-profile.md)
 - [../decisions/018-guest-only-public-routes.md](../decisions/018-guest-only-public-routes.md)
-- [../decisions/019-mail-check.md](../decisions/019-mail-check.md)
+- [../decisions/030-consolidated-settings-tabs.md](../decisions/030-consolidated-settings-tabs.md)

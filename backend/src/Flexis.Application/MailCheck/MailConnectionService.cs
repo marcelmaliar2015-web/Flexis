@@ -9,6 +9,7 @@ namespace Flexis.Application.MailCheck;
 public sealed class MailConnectionService
 {
     private static readonly TimeSpan OAuthStateLifetime = TimeSpan.FromMinutes(10);
+    private static readonly Uri SettingsPath = new("/settings", UriKind.Relative);
     private static readonly Uri MailCheckPath = new("/mail-check", UriKind.Relative);
 
     private readonly IGoogleOAuthGateway _googleOAuth;
@@ -258,7 +259,7 @@ public sealed class MailConnectionService
     public static string MailCheckFallbackReturnUrl(IReadOnlyList<string> origins)
     {
         var origin = origins.Count > 0 ? origins[0] : "http://127.0.0.1:5173";
-        return origin + MailCheckPath.OriginalString;
+        return origin + SettingsPath.OriginalString;
     }
 
     public static IReadOnlyList<MailMailboxItemDto> ToMailboxItems(IReadOnlyList<MailConnection> connections)
@@ -330,7 +331,8 @@ public sealed class MailConnectionService
     {
         if (!Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri)
             || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
-            || uri.AbsolutePath != MailCheckPath.OriginalString
+            || (uri.AbsolutePath != SettingsPath.OriginalString
+                && uri.AbsolutePath != MailCheckPath.OriginalString)
             || !string.IsNullOrEmpty(uri.Query)
             || !string.IsNullOrEmpty(uri.Fragment))
         {
@@ -343,7 +345,7 @@ public sealed class MailConnectionService
             throw new ValidationFailedException("Return URL is not allowed.");
         }
 
-        return origin + MailCheckPath.OriginalString;
+        return origin + uri.AbsolutePath;
     }
 
     private static (string Verifier, string Challenge) CreatePkce()

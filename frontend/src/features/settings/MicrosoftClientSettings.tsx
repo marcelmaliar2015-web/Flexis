@@ -72,7 +72,7 @@ export function MicrosoftClientSettings() {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               One Azure app for Mail Check Outlook connect. Each person still connects their own
-              mailbox on Mail Check Settings. Create the app with Help, then paste Application ID
+              mailbox on Settings (Mail Check). Create the app with Help, then paste Application ID
               and client secret here.
             </Typography>
           </Stack>

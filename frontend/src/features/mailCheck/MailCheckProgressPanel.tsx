@@ -65,7 +65,7 @@ function stageState(
 
   if (finished) {
     const stageIndex = stageOrder.indexOf(stageId);
-    const lastDoneIndex = stageOrder.reduce((last, id, index) => {
+    const lastDoneIndex = stageOrder.reduce((last, _stageId, index) => {
       const key = mailCheckRunStages[index]?.timingKey;
       return key && timing[key] > 0 ? index : last;
     }, -1);

@@ -138,7 +138,7 @@ export function JobApplicationOperationsTab({ bulkRun }: JobApplicationOperation
   return (
     <Stack spacing={2}>
       {!connected ? (
-        <Alert severity="info">Connect Gmail on the Settings tab before using the pipeline.</Alert>
+        <Alert severity="info">Connect Gmail on Settings before using the pipeline.</Alert>
       ) : null}
       {notice ? <Alert severity="success">{notice}</Alert> : null}
       {bulkRun.error ? <Alert severity="error">{bulkRun.error}</Alert> : null}

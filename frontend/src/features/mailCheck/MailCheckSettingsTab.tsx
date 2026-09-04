@@ -53,7 +53,7 @@ function buildLabelActions(
 
 function buildNeedActionLabels(source: MailCheckLabelSlug[] | undefined): MailCheckLabelSlug[] {
   if (!source || source.length === 0) {
-    return ["schedule", "assessment", "availability"];
+    return ["schedule", "assessment", "availability", "ai_interview", "code"];
   }
 
   return source;

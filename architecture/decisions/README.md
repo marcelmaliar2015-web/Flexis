@@ -48,3 +48,5 @@ One file per significant architecture choice. Record a decision when you introdu
 | [026](026-mail-check-action-log.md) | Mail Check action log |
 | [027](027-mail-check-server-auto-check.md) | Mail Check server auto-check |
 | [028](028-financial-performance-snapshots.md) | Financial performance snapshots |
+| [029](029-mail-check-openai-usage.md) | Mail Check OpenAI usage hours |
+| [030](030-consolidated-settings-tabs.md) | Consolidated Settings page tabs |

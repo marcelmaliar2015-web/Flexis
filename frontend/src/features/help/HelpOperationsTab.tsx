@@ -95,7 +95,7 @@ export function HelpOperationsTab() {
             Profiles, sources, locations
           </Typography>
           <Typography variant="body2">
-            Job Application Settings holds Gmail, default rates, profiles, sources, and source
+            Settings (Job Application) holds Gmail, default rates, profiles, sources, and source
             location tabs. Creating a profile or source creates a Google Sheet and then shows that
             URL.
           </Typography>

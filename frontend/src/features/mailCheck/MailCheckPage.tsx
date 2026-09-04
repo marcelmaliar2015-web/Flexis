@@ -14,7 +14,7 @@ import { MailCheckCheckTab } from "@/features/mailCheck/MailCheckCheckTab";
 import { MailCheckInboxTab } from "@/features/mailCheck/MailCheckInboxTab";
 import { MailCheckLogTab } from "@/features/mailCheck/MailCheckLogTab";
 import { MailCheckNeedActionTab } from "@/features/mailCheck/MailCheckNeedActionTab";
-import { MailCheckSettingsTab } from "@/features/mailCheck/MailCheckSettingsTab";
+import { MailCheckUsageTab } from "@/features/mailCheck/MailCheckUsageTab";
 import { useMailCheckRun } from "@/features/mailCheck/useMailCheckRun";
 import {
   getMailCheckNeedAction,
@@ -56,7 +56,7 @@ const TabLabelRoot = styled("span")(({ theme }) => ({
   paddingRight: theme.spacing(2.5),
 }));
 
-type MailCheckTab = "need-action" | "inbox" | "check" | "log" | "settings";
+type MailCheckTab = "need-action" | "inbox" | "check" | "log" | "usage";
 
 function TabLabel({ label, count }: { label: string; count: number }) {
   if (count <= 0) {
@@ -89,7 +89,7 @@ export function MailCheckPage() {
     inbox: false,
     check: false,
     log: false,
-    settings: false,
+    usage: false,
   });
   const settingsQuery = useQuery({
     queryKey: mailCheckSettingsQueryKey,
@@ -120,8 +120,8 @@ export function MailCheckPage() {
             </Typography>
             <AccentRule />
             <Typography variant="body2" color="text.secondary">
-              Connect Gmail or Outlook on Settings, add your OpenAI key, and Flexis classifies mail,
-              pins what matters, and trashes noise.
+              Connect Gmail or Outlook and add your OpenAI key on Settings, then Flexis classifies
+              mail, pins what matters, and trashes noise.
             </Typography>
           </Stack>
 
@@ -158,7 +158,7 @@ export function MailCheckPage() {
             value={tab}
             onChange={(_event, value: MailCheckTab) => {
               setTab(value);
-              if (value === "inbox" || value === "check" || value === "log" || value === "settings") {
+              if (value === "inbox" || value === "check" || value === "log" || value === "usage") {
                 setVisited((current) => ({ ...current, [value]: true }));
               }
             }}
@@ -170,7 +170,7 @@ export function MailCheckPage() {
             <MailCheckTabItem label="Inbox" value="inbox" />
             <MailCheckTabItem label="Check" value="check" />
             <MailCheckTabItem label="Log" value="log" />
-            <MailCheckTabItem label="Settings" value="settings" />
+            <MailCheckTabItem label="Usage" value="usage" />
           </MailCheckTabs>
           <Box role="tabpanel" hidden={tab !== "need-action"}>
             <MailCheckNeedActionTab />
@@ -190,9 +190,9 @@ export function MailCheckPage() {
               <MailCheckLogTab />
             </Box>
           ) : null}
-          {tab === "settings" || visited.settings ? (
-            <Box role="tabpanel" hidden={tab !== "settings"}>
-              <MailCheckSettingsTab />
+          {tab === "usage" || visited.usage ? (
+            <Box role="tabpanel" hidden={tab !== "usage"}>
+              <MailCheckUsageTab />
             </Box>
           ) : null}
         </Stack>

@@ -44,6 +44,8 @@ public sealed class FlexisDbContext : DbContext
 
     public DbSet<MailCheckActionLog> MailCheckActionLogs => Set<MailCheckActionLog>();
 
+    public DbSet<MailCheckUsageHour> MailCheckUsageHours => Set<MailCheckUsageHour>();
+
     public DbSet<MailConnection> MailConnections => Set<MailConnection>();
 
     public DbSet<MailCheckScanState> MailCheckScanStates => Set<MailCheckScanState>();

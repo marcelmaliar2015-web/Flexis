@@ -47,6 +47,8 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 
 `MailCheckActionLog` in `Flexis.Domain.MailCheck`. Table `mail_check_action_logs`. Cascade from `users`. Optional `MailConnectionId` set null on mailbox disconnect. Indexes on `(UserId, OccurredAt)`, source, action, mailbox, and `RunId`. Listed with server pagination. EF configuration: `Persistence/Postgres/MailCheck/MailCheckActionLogConfiguration.cs`. See [026-mail-check-action-log.md](../decisions/026-mail-check-action-log.md).
 
+`MailCheckUsageHour` in `Flexis.Domain.MailCheck`. Table `mail_check_usage_hours`. One row per user per UTC hour (`CapturedHour`, unique with `UserId`). Stores classify call count, prompt/completion/total tokens, estimated USD cost, and last model. Cascade from `users`. EF configuration: `Persistence/Postgres/MailCheck/MailCheckUsageHourConfiguration.cs`. See [029-mail-check-openai-usage.md](../decisions/029-mail-check-openai-usage.md).
+
 ## Migrations
 
 EF Core migrations in `Flexis.Infrastructure`. In Development the API runs `PostgresStartup.InitializeAsync` (migrate, then seed users if the table is empty).

@@ -99,9 +99,9 @@ API must be running at [http://localhost:5080/api/health](http://localhost:5080/
 ## 9. Connect
 
 1. [http://127.0.0.1:5173/sign-in](http://127.0.0.1:5173/sign-in) — `admin@flexis.local` / `FlexisAdmin1!`
-2. [http://127.0.0.1:5173/job-application](http://127.0.0.1:5173/job-application) — Settings tab
+2. [http://127.0.0.1:5173/settings?tab=job-application](http://127.0.0.1:5173/settings?tab=job-application) — Settings, Job Application tab
 3. **Connect Gmail** — pick the test-user Gmail — Allow
-4. Google sends the browser to `http://localhost:5080/api/google/connections/callback`, then Flexis returns to `http://127.0.0.1:5173/job-application?google=connected`
+4. Google sends the browser to `http://localhost:5080/api/google/connections/callback`, then Flexis returns to `http://127.0.0.1:5173/settings?google=connected`
 
 The chip should read **Connected** and show that Gmail address.
 

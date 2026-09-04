@@ -87,11 +87,11 @@ export function JobApplicationGmailCard() {
     setNotice(nextNotice);
     void queryClient.invalidateQueries({ queryKey: googleConnectionQueryKey });
     void refreshJobApplicationWorkspace(queryClient);
-    navigate(appPaths.jobApplication, { replace: true });
+    navigate({ pathname: appPaths.settings, search: "?tab=job-application" }, { replace: true });
   }, [navigate, queryClient, searchParams]);
 
   const connectMutation = useMutation({
-    mutationFn: () => startGoogleConnection(`${window.location.origin}${appPaths.jobApplication}`),
+    mutationFn: () => startGoogleConnection(`${window.location.origin}${appPaths.settings}`),
     onSuccess: (result) => {
       window.location.assign(result.authorizationUrl);
     },
@@ -99,7 +99,7 @@ export function JobApplicationGmailCard() {
 
   const copyUrlMutation = useMutation({
     mutationFn: async () => {
-      const result = await startGoogleConnection(`${window.location.origin}${appPaths.jobApplication}`);
+      const result = await startGoogleConnection(`${window.location.origin}${appPaths.settings}`);
       await copyText(result.authorizationUrl);
     },
     onSuccess: () => {

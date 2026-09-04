@@ -10,7 +10,6 @@ import { JobApplicationFinancialTab } from "@/features/jobApplication/JobApplica
 import { JobApplicationLogsTab } from "@/features/jobApplication/JobApplicationLogsTab";
 import { JobApplicationOperationsTab } from "@/features/jobApplication/JobApplicationOperationsTab";
 import { JobApplicationResumeTab } from "@/features/jobApplication/JobApplicationResumeTab";
-import { JobApplicationSettingsTab } from "@/features/jobApplication/JobApplicationSettingsTab";
 import { PipelineBulkProgress } from "@/features/jobApplication/PipelineBulkProgress";
 import { usePipelineBulkRun } from "@/features/jobApplication/usePipelineBulkRun";
 
@@ -22,7 +21,7 @@ const AccentRule = styled("span")(({ theme }) => ({
   backgroundColor: theme.palette.secondary.main,
 }));
 
-type JobApplicationTab = "operations" | "financial" | "resume" | "logs" | "settings";
+type JobApplicationTab = "operations" | "financial" | "resume" | "logs";
 
 export function JobApplicationPage() {
   const [tab, setTab] = useState<JobApplicationTab>("operations");
@@ -30,7 +29,6 @@ export function JobApplicationPage() {
     financial: false,
     resume: false,
     logs: false,
-    settings: false,
   });
   const bulkRun = usePipelineBulkRun();
 
@@ -54,7 +52,7 @@ export function JobApplicationPage() {
             value={tab}
             onChange={(_event, value: JobApplicationTab) => {
               setTab(value);
-              if (value === "financial" || value === "resume" || value === "logs" || value === "settings") {
+              if (value === "financial" || value === "resume" || value === "logs") {
                 setVisited((current) => ({ ...current, [value]: true }));
               }
             }}
@@ -63,7 +61,6 @@ export function JobApplicationPage() {
             <Tab label="Financial" value="financial" />
             <Tab label="Resume generation" value="resume" />
             <Tab label="Logs" value="logs" />
-            <Tab label="Settings" value="settings" />
           </Tabs>
           <Box role="tabpanel" hidden={tab !== "operations"}>
             <JobApplicationOperationsTab bulkRun={bulkRun} />
@@ -81,11 +78,6 @@ export function JobApplicationPage() {
           {tab === "logs" || visited.logs ? (
             <Box role="tabpanel" hidden={tab !== "logs"}>
               <JobApplicationLogsTab />
-            </Box>
-          ) : null}
-          {tab === "settings" || visited.settings ? (
-            <Box role="tabpanel" hidden={tab !== "settings"}>
-              <JobApplicationSettingsTab />
             </Box>
           ) : null}
         </Stack>

@@ -53,10 +53,10 @@ export function MailCheckNeedActionTab() {
   return (
     <Stack spacing={2}>
       {settings && !hasMailbox ? (
-        <Alert severity="info">Connect a mailbox on the Settings tab to see mail here.</Alert>
+        <Alert severity="info">Connect a mailbox on Settings to see mail here.</Alert>
       ) : null}
       {hasMailbox && !settings?.hasApiKey ? (
-        <Alert severity="info">Save an OpenAI API key on the Settings tab so Flexis can classify new mail.</Alert>
+        <Alert severity="info">Save an OpenAI API key on Settings so Flexis can classify new mail.</Alert>
       ) : null}
       <Panel>
         <Stack spacing={1.5}>

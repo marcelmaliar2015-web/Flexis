@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddSingleton<MailCheckRunCoordinator>();
         services.AddScoped<MailCheckService>();
         services.AddScoped<MailCheckActionLogService>();
+        services.AddScoped<MailCheckUsageService>();
         services.AddScoped<MailConnectionService>();
         services.AddScoped<MailAccessTokenService>();
         return services;

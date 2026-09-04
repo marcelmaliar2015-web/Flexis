@@ -30,6 +30,7 @@ public sealed class MailCheckService
     private readonly IMicrosoftOAuthGateway _microsoftOAuth;
     private readonly IGoogleTokenProtector _protector;
     private readonly IOpenAiGateway _openAi;
+    private readonly MailCheckUsageService _usage;
     private readonly MailCheckRunProgressStore _runProgress;
     private readonly MailCheckRunCoordinator _runCoordinator;
     private readonly ILogger<MailCheckService> _logger;
@@ -45,6 +46,7 @@ public sealed class MailCheckService
         IMicrosoftOAuthGateway microsoftOAuth,
         IGoogleTokenProtector protector,
         IOpenAiGateway openAi,
+        MailCheckUsageService usage,
         MailCheckRunProgressStore runProgress,
         MailCheckRunCoordinator runCoordinator,
         ILogger<MailCheckService> logger)
@@ -59,6 +61,7 @@ public sealed class MailCheckService
         _microsoftOAuth = microsoftOAuth;
         _protector = protector;
         _openAi = openAi;
+        _usage = usage;
         _runProgress = runProgress;
         _runCoordinator = runCoordinator;
         _logger = logger;
@@ -572,6 +575,11 @@ public sealed class MailCheckService
                                 classifierPrompt,
                                 MailCheckMailText.FormatForClassification(message),
                                 cancellationToken));
+                            await _usage.RecordClassifyAsync(
+                                userId,
+                                settings.Model,
+                                classification.Usage,
+                                cancellationToken);
                         }
                         catch (ValidationFailedException classifyException)
                         {
@@ -581,7 +589,9 @@ public sealed class MailCheckService
                                 userId,
                                 connection.Email,
                                 message.Id);
-                            classification = new MailCheckClassification(MailCheckLabel.Other);
+                            classification = new MailCheckClassification(
+                                MailCheckLabel.Other,
+                                OpenAiTokenUsage.Empty);
                             classifyDetail = $"Classifier fallback to Other: {classifyException.Message}";
                         }
 

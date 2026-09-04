@@ -5,7 +5,6 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Flexis.Application.Common;
 using Flexis.Application.MailCheck;
-using Flexis.Domain.MailCheck;
 
 namespace Flexis.Infrastructure.OpenAi;
 
@@ -54,14 +53,21 @@ internal sealed class OpenAiClient : IOpenAiGateway
         var shape = ShapeFor(model);
         var userText = $"{prompt}\n\n---\n\n{mailText}";
         ValidationFailedException? last = null;
+        var usage = OpenAiTokenUsage.Empty;
         for (var attempt = 0; attempt < 6; attempt++)
         {
             try
             {
-                var content = shape.UseResponsesApi
+                var attemptResult = shape.UseResponsesApi
                     ? await ClassifyWithResponsesAsync(apiKey, model, userText, shape, cancellationToken)
                     : await ClassifyWithChatAsync(apiKey, model, mailText, prompt, userText, shape, cancellationToken);
-                return ParseClassification(content);
+                usage = usage.Add(attemptResult.Usage);
+                if (string.IsNullOrWhiteSpace(attemptResult.Content))
+                {
+                    throw new ValidationFailedException("OpenAI returned an empty classification.");
+                }
+
+                return ParseClassification(attemptResult.Content, usage);
             }
             catch (ValidationFailedException exception)
             {
@@ -76,7 +82,7 @@ internal sealed class OpenAiClient : IOpenAiGateway
         throw last ?? new ValidationFailedException("OpenAI classification failed.");
     }
 
-    private async Task<string> ClassifyWithChatAsync(
+    private async Task<ClassifyAttempt> ClassifyWithChatAsync(
         string apiKey,
         string model,
         string mailText,
@@ -117,16 +123,12 @@ internal sealed class OpenAiClient : IOpenAiGateway
         }
 
         var payload = await SendAsync<ChatResponse>(apiKey, HttpMethod.Post, "v1/chat/completions", body, cancellationToken);
-        var content = payload.Choices?.FirstOrDefault()?.Message?.Content;
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            throw new ValidationFailedException("OpenAI returned an empty classification.");
-        }
-
-        return content;
+        return new ClassifyAttempt(
+            payload.Choices?.FirstOrDefault()?.Message?.Content,
+            ReadChatUsage(payload.Usage));
     }
 
-    private async Task<string> ClassifyWithResponsesAsync(
+    private async Task<ClassifyAttempt> ClassifyWithResponsesAsync(
         string apiKey,
         string model,
         string input,
@@ -149,18 +151,10 @@ internal sealed class OpenAiClient : IOpenAiGateway
         }
 
         var payload = await SendAsync<ResponsesPayload>(apiKey, HttpMethod.Post, "v1/responses", body, cancellationToken);
-        if (!string.IsNullOrWhiteSpace(payload.OutputText))
-        {
-            return payload.OutputText;
-        }
-
-        var fromOutput = ReadResponsesText(payload);
-        if (string.IsNullOrWhiteSpace(fromOutput))
-        {
-            throw new ValidationFailedException("OpenAI returned an empty classification.");
-        }
-
-        return fromOutput;
+        var content = !string.IsNullOrWhiteSpace(payload.OutputText)
+            ? payload.OutputText
+            : ReadResponsesText(payload);
+        return new ClassifyAttempt(content, ReadResponsesUsage(payload.Usage));
     }
 
     private async Task<T> SendAsync<T>(
@@ -291,7 +285,7 @@ internal sealed class OpenAiClient : IOpenAiGateway
         return false;
     }
 
-    private static MailCheckClassification ParseClassification(string content)
+    private static MailCheckClassification ParseClassification(string content, OpenAiTokenUsage usage)
     {
         var json = ExtractJson(content);
         ClassifierPayload? parsed = null;
@@ -303,7 +297,33 @@ internal sealed class OpenAiClient : IOpenAiGateway
         {
         }
 
-        return new MailCheckClassification(MailCheckLabelCatalog.Parse(parsed?.Label));
+        return new MailCheckClassification(MailCheckLabelCatalog.Parse(parsed?.Label), usage);
+    }
+
+    private static OpenAiTokenUsage ReadChatUsage(ChatUsage? usage)
+    {
+        if (usage is null)
+        {
+            return OpenAiTokenUsage.Empty;
+        }
+
+        var prompt = usage.PromptTokens;
+        var completion = usage.CompletionTokens;
+        var total = usage.TotalTokens > 0 ? usage.TotalTokens : prompt + completion;
+        return new OpenAiTokenUsage(prompt, completion, total);
+    }
+
+    private static OpenAiTokenUsage ReadResponsesUsage(ResponsesUsage? usage)
+    {
+        if (usage is null)
+        {
+            return OpenAiTokenUsage.Empty;
+        }
+
+        var prompt = usage.InputTokens;
+        var completion = usage.OutputTokens;
+        var total = usage.TotalTokens > 0 ? usage.TotalTokens : prompt + completion;
+        return new OpenAiTokenUsage(prompt, completion, total);
     }
 
     private static string ExtractJson(string content)
@@ -378,6 +398,8 @@ internal sealed class OpenAiClient : IOpenAiGateway
         return fallback;
     }
 
+    private sealed record ClassifyAttempt(string? Content, OpenAiTokenUsage Usage);
+
     private sealed class RequestShape
     {
         public bool UseResponsesApi { get; set; }
@@ -406,6 +428,17 @@ internal sealed class OpenAiClient : IOpenAiGateway
     private sealed class ChatResponse
     {
         public List<ChatChoice>? Choices { get; set; }
+
+        public ChatUsage? Usage { get; set; }
+    }
+
+    private sealed class ChatUsage
+    {
+        public int PromptTokens { get; set; }
+
+        public int CompletionTokens { get; set; }
+
+        public int TotalTokens { get; set; }
     }
 
     private sealed class ChatChoice
@@ -423,6 +456,17 @@ internal sealed class OpenAiClient : IOpenAiGateway
         public string? OutputText { get; set; }
 
         public List<ResponseItem>? Output { get; set; }
+
+        public ResponsesUsage? Usage { get; set; }
+    }
+
+    private sealed class ResponsesUsage
+    {
+        public int InputTokens { get; set; }
+
+        public int OutputTokens { get; set; }
+
+        public int TotalTokens { get; set; }
     }
 
     private sealed class ResponseItem

@@ -140,7 +140,7 @@ export function FinancialMetricCell({ applied, interviews, price, emphasize = fa
       <Typography variant="caption" color="text.secondary">
         {formatCount(applied)} app · {formatCount(interviews)} int
       </Typography>
-      <Typography variant="body2" fontWeight={emphasize ? 700 : 600}>
+      <Typography variant="body2" sx={{ fontWeight: emphasize ? 700 : 600 }}>
         {formatPrice(price)}
       </Typography>
     </Stack>

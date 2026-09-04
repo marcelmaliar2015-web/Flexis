@@ -80,7 +80,7 @@ export function HelpProblemsTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="New, Update, and catalog buttons stay disabled"
-                secondary="Connect Gmail on Job Application Settings for this signed-in user."
+                secondary="Connect Gmail on Settings (Job Application) for this signed-in user."
               />
             </ListItem>
             <ListItem disableGutters>
@@ -155,7 +155,7 @@ export function HelpProblemsTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="Check all stays disabled"
-                secondary="Connect a mailbox on Mail Check Settings, then save an OpenAI API key there."
+                secondary="Connect a mailbox on Settings (Mail Check), then save an OpenAI API key there."
               />
             </ListItem>
             <ListItem disableGutters>

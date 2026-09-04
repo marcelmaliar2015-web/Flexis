@@ -8,6 +8,8 @@ public enum MailCheckLabel
     Scheduled,
     Assessment,
     Availability,
+    AiInterview,
+    Code,
     Success,
     Other,
     LessImportant

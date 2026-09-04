@@ -34,9 +34,9 @@ Path alias `@/` maps to `frontend/src/`.
 | `features/help` | Tabbed product guides. Overview is the product map; Google setup, Operations, Financial, Logs, Mail Check, and Problems are topic guides. |
 | `features/auth` | Sign-in screen |
 | `features/dashboard` | Workspace status board (health, Google, pipeline, financial, logs, Admin users) |
-| `features/jobApplication` | Job Application tabs, Pipeline table, pipeline bulk progress, Financial summary cards, financial performance chart, pipeline entry detail, Financial, Resume generation, Logs, Settings (Gmail, default rates, profiles, profile info, sources, locations) |
-| `features/mailCheck` | Mail Check tabs: Need action, Inbox, Check, Log, Settings (multi mailbox, auto-check toggle, OpenAI key, label actions, need action labels) |
-| `features/settings` | Settings screen; signed-in account profile; Admin Google Cloud client and other users |
+| `features/jobApplication` | Job Application tabs: Operations, Financial, Resume generation, Logs. Pipeline table, pipeline bulk progress, Financial summary cards, financial performance chart, pipeline entry detail. Catalog and Gmail connect UI live on Settings (Job Application tab) |
+| `features/mailCheck` | Mail Check tabs: Need action, Inbox, Check, Log, Usage (OpenAI cost chart). Mailbox, OpenAI, label, and prompt settings live on Settings (Mail Check tab) |
+| `features/settings` | Settings screen with tabs: Account, Job Application, Mail Check, Admin (Google Cloud client, Microsoft client, users) |
 | `shared/api` | `fetch` wrapper and endpoint functions |
 | `shared/auth` | Session provider and token storage |
 | `shared/config` | Env access and `appPaths` |

@@ -15,10 +15,12 @@ public static class MailCheckNeedActionLabels
     [
         MailCheckLabel.Schedule,
         MailCheckLabel.Assessment,
-        MailCheckLabel.Availability
+        MailCheckLabel.Availability,
+        MailCheckLabel.AiInterview,
+        MailCheckLabel.Code
     ];
 
-    public const string DefaultJson = "[\"schedule\",\"assessment\",\"availability\"]";
+    public const string DefaultJson = "[\"schedule\",\"assessment\",\"availability\",\"ai_interview\",\"code\"]";
 
     public static IReadOnlyList<MailCheckLabel> Resolve(MailCheckSettings settings)
     {

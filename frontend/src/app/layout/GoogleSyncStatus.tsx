@@ -143,7 +143,7 @@ function SyncProgressRing({ value }: SyncProgressRingProps) {
         size={SYNC_PROGRESS_RING_SIZE}
         thickness={3.5}
       />
-      <ProgressRingLabel component="span" variant="caption">
+      <ProgressRingLabel variant="caption">
         {clamped}
       </ProgressRingLabel>
     </ProgressRingRoot>

@@ -632,6 +632,55 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("mail_check_settings", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckUsageHour", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CapturedHour")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("CapturedOn")
+                        .HasColumnType("date");
+
+                    b.Property<int>("CallCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CompletionTokens")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("EstimatedCostUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)");
+
+                    b.Property<string>("LastModel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("PromptTokens")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalTokens")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CapturedHour")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "CapturedOn");
+
+                    b.ToTable("mail_check_usage_hours", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.MailCheck.MailConnection", b =>
                 {
                     b.Property<Guid>("Id")
@@ -874,6 +923,15 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                 });
 
             modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckSettings", b =>
+                {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.MailCheck.MailCheckUsageHour", b =>
                 {
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()

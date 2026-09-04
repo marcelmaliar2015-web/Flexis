@@ -60,7 +60,7 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
         <Typography variant="body2" color="text.secondary">
 
-          Auto-triage Gmail or Outlook for interview work. Connect any number of mailboxes on Mail Check Settings.
+          Auto-triage Gmail or Outlook for interview work. Connect any number of mailboxes on Settings (Mail Check).
 
           Outlook uses free Microsoft Graph app registration and OAuth, not a paid Graph mail plan.
 
@@ -88,7 +88,7 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                 primary="Gmail"
 
-                secondary="Uses the Flexis Google Cloud client. An admin saves it on product Settings. Each user connects Gmail on Mail Check Settings."
+                secondary="Uses the Flexis Google Cloud client. An admin saves it on Settings (Admin). Each user connects Gmail on Settings (Mail Check)."
 
               />
 
@@ -100,7 +100,7 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                 primary="Outlook"
 
-                secondary="Uses a free Azure app registration and Microsoft Graph OAuth. There is no paid Graph mail plan. An admin saves Application ID and client secret on product Settings. Each user connects Outlook on Mail Check Settings."
+                secondary="Uses a free Azure app registration and Microsoft Graph OAuth. There is no paid Graph mail plan. An admin saves Application ID and client secret on Settings (Admin). Each user connects Outlook on Settings (Mail Check)."
 
               />
 
@@ -178,7 +178,8 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                   <TableCell align="left">
                     Mail Flexis labeled or categorized and pinned. Filter by Rejected, Applied,
-                    Schedule, Scheduled, Assessment, Availability, Success, Other, or Less Important
+                    Schedule, Scheduled, Assessment, Availability, AI Interview, Code, Success,
+                    Other, or Less Important
                     (pin-configured labels only).
                   </TableCell>
 
@@ -206,6 +207,17 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
                     Paginated history of auto-check and manual check actions: source, mailbox, from,
                     subject, label, action, duration, and run detail. Filter and search when volume
                     grows.
+                  </TableCell>
+
+                </TableRow>
+
+                <TableRow>
+
+                  <TableCell align="left">Usage</TableCell>
+
+                  <TableCell align="left">
+                    OpenAI API key spend from classify calls. Today and lifetime totals, with an
+                    hourly or daily chart of estimated cost, tokens, and call count.
                   </TableCell>
 
                 </TableRow>
@@ -325,7 +337,7 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
             <ListItem disableGutters>
 
-              <ListItemText primary="Open Mail Check, Settings tab." />
+              <ListItemText primary="Open Settings, Mail Check tab." />
 
             </ListItem>
 

@@ -11,6 +11,7 @@ import type {
   MailCheckRunProgress,
   MailCheckSettings,
   MailCheckSettingsWrite,
+  MailCheckUsage,
 } from "@/shared/types/mailCheck";
 export const mailCheckSettingsQueryKey = ["mail-check-settings"] as const;
 
@@ -27,6 +28,8 @@ export const mailCheckNeedActionQueryKey = ["mail-check-need-action"] as const;
 export const mailCheckInboxRootQueryKey = ["mail-check-inbox"] as const;
 
 export const mailCheckLogsRootQueryKey = ["mail-check-logs"] as const;
+
+export const mailCheckUsageQueryKey = ["mail-check-usage"] as const;
 
 export const mailCheckInboxQueryKey = (label: MailCheckLabelSlug | "all") =>
   [...mailCheckInboxRootQueryKey, label] as const;
@@ -116,6 +119,10 @@ export function listMailCheckLogs(query: MailCheckActionLogQuery): Promise<MailC
     params.set("q", query.q.trim());
   }
   return getJson<MailCheckActionLogPage>(`/api/mail-check/logs?${params.toString()}`);
+}
+
+export function getMailCheckUsage(): Promise<MailCheckUsage> {
+  return getJson<MailCheckUsage>("/api/mail-check/usage");
 }
 
 export function getMailCheckMailbox(): Promise<MailCheckMailboxStatus> {

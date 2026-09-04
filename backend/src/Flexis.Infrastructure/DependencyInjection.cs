@@ -99,6 +99,7 @@ public static class DependencyInjection
         services.AddScoped<IMailCheckSettingsRepository, MailCheckSettingsRepository>();
         services.AddScoped<IMailCheckProcessedMessageRepository, MailCheckProcessedMessageRepository>();
         services.AddScoped<IMailCheckActionLogRepository, MailCheckActionLogRepository>();
+        services.AddScoped<IMailCheckUsageHourRepository, MailCheckUsageHourRepository>();
         services.AddScoped<IMailConnectionRepository, MailConnectionRepository>();
         services.AddScoped<IMailCheckScanStateRepository, MailCheckScanStateRepository>();
         services.AddHostedService<MailCheckAutoCheckWorker>();

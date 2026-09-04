@@ -224,7 +224,7 @@ export function attentionItems(input: {
       id: "profiles",
       severity: "info",
       title: "No profiles yet",
-      detail: "Create a profile on Job Application Settings. Flexis makes a Google Sheet under Flexis / Job Application / Profiles.",
+      detail: "Create a profile on Settings (Job Application). Flexis makes a Google Sheet under Flexis / Job Application / Profiles.",
       to: appPaths.jobApplication,
       action: "Create profile",
     });
@@ -235,7 +235,7 @@ export function attentionItems(input: {
       id: "sources",
       severity: "info",
       title: "No sources yet",
-      detail: "Create a source on Job Application Settings, then add location tabs such as US.",
+      detail: "Create a source on Settings (Job Application), then add location tabs such as US.",
       to: appPaths.jobApplication,
       action: "Create source",
     });

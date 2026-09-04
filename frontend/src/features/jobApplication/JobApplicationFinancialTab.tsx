@@ -149,7 +149,7 @@ export function JobApplicationFinancialTab() {
               <Typography variant="caption" color="text.secondary">
                 Today
               </Typography>
-              <Typography variant="body1" fontWeight={600}>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
                 {selectedRows.length === 0 ? "—" : formatPrice(sumRows(selectedRows, (row) => row.price))}
               </Typography>
               {selectedRows.length > 0 ? (
@@ -166,7 +166,7 @@ export function JobApplicationFinancialTab() {
               <Typography variant="caption" color="text.secondary">
                 Archived
               </Typography>
-              <Typography variant="body1" fontWeight={600}>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
                 {selectedRows.length === 0
                   ? "—"
                   : formatPrice(sumRows(selectedRows, (row) => row.archivedPrice))}
@@ -176,7 +176,7 @@ export function JobApplicationFinancialTab() {
               <Typography variant="caption" color="text.secondary">
                 Lifetime
               </Typography>
-              <Typography variant="body1" fontWeight={700}>
+              <Typography variant="body1" sx={{ fontWeight: 700 }}>
                 {selectedRows.length === 0
                   ? "—"
                   : formatPrice(sumRows(selectedRows, (row) => row.lifetimePrice))}
@@ -197,7 +197,7 @@ export function JobApplicationFinancialTab() {
                     indeterminate={someSelected}
                     disabled={rows.length === 0}
                     onChange={toggleAll}
-                    inputProps={{ "aria-label": "Select all pipeline rows" }}
+                    slotProps={{ input: { "aria-label": "Select all pipeline rows" } }}
                   />
                 </TableCell>
                 <TableCell>Profile</TableCell>
@@ -233,7 +233,7 @@ export function JobApplicationFinancialTab() {
                       <Checkbox
                         checked={selectedSet.has(row.entryId)}
                         onChange={() => toggleRow(row.entryId)}
-                        inputProps={{ "aria-label": `Select ${row.profileTitle}` }}
+                        slotProps={{ input: { "aria-label": `Select ${row.profileTitle}` } }}
                       />
                     </TableCell>
                     <TableCell>{row.profileTitle}</TableCell>

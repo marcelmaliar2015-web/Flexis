@@ -88,18 +88,18 @@ export function MailCheckMailboxCard() {
     setNotice(nextNotice);
     void queryClient.invalidateQueries({ queryKey: mailCheckMailboxQueryKey });
     void queryClient.invalidateQueries({ queryKey: mailCheckSettingsQueryKey });
-    navigate(appPaths.mailCheck, { replace: true });
+    navigate({ pathname: appPaths.settings, search: "?tab=mail-check" }, { replace: true });
   }, [navigate, queryClient, searchParams]);
 
   const connectGmailMutation = useMutation({
-    mutationFn: () => startMailCheckGmail(`${window.location.origin}${appPaths.mailCheck}`),
+    mutationFn: () => startMailCheckGmail(`${window.location.origin}${appPaths.settings}`),
     onSuccess: (result) => {
       window.location.assign(result.authorizationUrl);
     },
   });
 
   const connectOutlookMutation = useMutation({
-    mutationFn: () => startMailCheckOutlook(`${window.location.origin}${appPaths.mailCheck}`),
+    mutationFn: () => startMailCheckOutlook(`${window.location.origin}${appPaths.settings}`),
     onSuccess: (result) => {
       window.location.assign(result.authorizationUrl);
     },
@@ -107,7 +107,7 @@ export function MailCheckMailboxCard() {
 
   const copyGmailUrlMutation = useMutation({
     mutationFn: async () => {
-      const result = await startMailCheckGmail(`${window.location.origin}${appPaths.mailCheck}`);
+      const result = await startMailCheckGmail(`${window.location.origin}${appPaths.settings}`);
       await copyText(result.authorizationUrl);
     },
     onSuccess: () => {
@@ -117,7 +117,7 @@ export function MailCheckMailboxCard() {
 
   const copyOutlookUrlMutation = useMutation({
     mutationFn: async () => {
-      const result = await startMailCheckOutlook(`${window.location.origin}${appPaths.mailCheck}`);
+      const result = await startMailCheckOutlook(`${window.location.origin}${appPaths.settings}`);
       await copyText(result.authorizationUrl);
     },
     onSuccess: () => {

@@ -113,8 +113,8 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Job Application</TableCell>
                   <TableCell align="left">
-                    Operations pipeline, Financial pricing, Logs, and Settings for Gmail, default
-                    rates, profiles, sources, and locations.
+                    Operations pipeline, Financial pricing, Resume generation, and Logs. Gmail,
+                    rates, profiles, and sources live on Settings.
                   </TableCell>
                   <TableCell align="left">
                     Create sheets, pair a profile with a source location, copy listings, set Status,
@@ -129,11 +129,11 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Mail Check</TableCell>
                   <TableCell align="left">
-                    Inbox of labeled or categorized interview mail, Check all plus auto check, and
-                    Settings for mailbox connect, OpenAI key, and model.
+                    Need action, Inbox, Check, Log, and Usage. Mailbox connect, OpenAI key, and model
+                    live on Settings.
                   </TableCell>
                   <TableCell align="left">
-                    Connect Gmail or Outlook on Mail Check Settings, then save an OpenAI key so Flexis
+                    Connect Gmail or Outlook on Settings (Mail Check), then save an OpenAI key so Flexis
                     can label, pin, and trash job mail.
                   </TableCell>
                   <TableCell align="left">
@@ -145,13 +145,14 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Settings</TableCell>
                   <TableCell align="left">
-                    Your account: display name and optional password. Email and role stay as
-                    assigned. Admin also sees Google Cloud client, Microsoft client, and other users. You are not a row
-                    in that users table.
+                    Tabs for Account, Job Application, Mail Check, and Admin. Account is name and
+                    password. Job Application is Gmail, rates, profiles, and sources. Mail Check is
+                    mailboxes and OpenAI. Admin is Google Cloud client, Microsoft client, and other
+                    users. You are not a row in that users table.
                   </TableCell>
                   <TableCell align="left">
-                    Change your name or password. Admins save the Flexis Google Cloud web client, Microsoft client, and
-                    manage other accounts.
+                    Change your name or password. Connect Gmail or mailboxes. Admins save OAuth
+                    clients and manage other accounts.
                   </TableCell>
                   <TableCell align="left">
                     <Link component={RouterLink} to={appPaths.settings}>
@@ -203,7 +204,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             <ListItem disableGutters>
               <ListItemText
                 primary="Gmail status"
-                secondary="Left of the account avatar. Live, waiting, or idle orb plus Gmail and the connected address. Open it for a short status and a link to Job Application, Settings, or Help. Connect and disconnect stay on Job Application Settings."
+                secondary="Left of the account avatar. Live, waiting, or idle orb plus Gmail and the connected address. Open it for a short status and a link to Job Application, Settings, or Help. Connect and disconnect stay on Settings (Job Application)."
               />
             </ListItem>
             <ListItem disableGutters>
@@ -263,6 +264,18 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                   </TableCell>
                 </TableRow>
                 <TableRow>
+                  <TableCell align="left">Resume generation</TableCell>
+                  <TableCell align="left">
+                    Per-profile prompt, resume style, and owner. Syncs the job-master sheet when
+                    saved.
+                  </TableCell>
+                  <TableCell align="left">
+                    <Button variant="text" onClick={() => onOpenTab("operations")}>
+                      Operations
+                    </Button>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
                   <TableCell align="left">Logs</TableCell>
                   <TableCell align="left">
                     Searchable, category-filtered activity feed grouped by day. Newest 200 events
@@ -271,19 +284,6 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                   <TableCell align="left">
                     <Button variant="text" onClick={() => onOpenTab("logs")}>
                       Logs
-                    </Button>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell align="left">Settings</TableCell>
-                  <TableCell align="left">
-                    Connect Gmail, default apply and bonus rates, profile and source tables, and
-                    source location tabs. Creating a profile or source creates a Google Sheet under
-                    Flexis / Job Application / Profiles or Sources.
-                  </TableCell>
-                  <TableCell align="left">
-                    <Button variant="text" onClick={() => onOpenTab("google")}>
-                      Google setup
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -311,7 +311,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             <ListItem disableGutters>
               <ListItemText
                 primary="User and Viewer"
-                secondary="Same product screens today. Connect their own Gmail on Job Application. Edit display name and password on Settings. Cannot edit the Flexis Google Cloud client or the users table."
+                secondary="Same product screens today. Connect their own Gmail on Settings (Job Application). Edit display name and password on Settings (Account). Cannot edit the Flexis Google Cloud client or the users table."
               />
             </ListItem>
           </List>
@@ -332,13 +332,13 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             <ListItem disableGutters>
               <ListItemText
                 primary="2. Each person connects Gmail"
-                secondary="Job Application, Settings tab. Connect Gmail with a Google test user. Copy URL copies the consent URL for another browser."
+                secondary="Settings, Job Application tab. Connect Gmail with a Google test user. Copy URL copies the consent URL for another browser."
               />
             </ListItem>
             <ListItem disableGutters>
               <ListItemText
                 primary="3. Create a profile and a source"
-                secondary="Still on Job Application Settings. Flexis makes a Google Sheet for each under Flexis / Job Application / Profiles or Sources, then shows that URL."
+                secondary="Still on Settings (Job Application). Flexis makes a Google Sheet for each under Flexis / Job Application / Profiles or Sources, then shows that URL."
               />
             </ListItem>
             <ListItem disableGutters>
@@ -356,7 +356,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             <ListItem disableGutters>
               <ListItemText
                 primary="6. Turn on Mail Check"
-                secondary="Optional: admin saves Microsoft client on Settings for Outlook. Mail Check, Settings tab. Connect Gmail or Outlook, paste an OpenAI API key, and pick a model."
+                secondary="Optional: admin saves Microsoft client on Settings (Admin) for Outlook. Settings, Mail Check tab. Connect Gmail or Outlook, paste an OpenAI API key, and pick a model."
               />
             </ListItem>
           </List>

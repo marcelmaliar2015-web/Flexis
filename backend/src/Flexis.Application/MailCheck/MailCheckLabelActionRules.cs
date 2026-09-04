@@ -20,6 +20,8 @@ public static class MailCheckLabelActionRules
             [MailCheckLabel.Scheduled] = MailCheckMailboxAction.Pin,
             [MailCheckLabel.Assessment] = MailCheckMailboxAction.Pin,
             [MailCheckLabel.Availability] = MailCheckMailboxAction.Pin,
+            [MailCheckLabel.AiInterview] = MailCheckMailboxAction.Pin,
+            [MailCheckLabel.Code] = MailCheckMailboxAction.Pin,
             [MailCheckLabel.Success] = MailCheckMailboxAction.Pin,
             [MailCheckLabel.Other] = MailCheckMailboxAction.Keep,
             [MailCheckLabel.LessImportant] = MailCheckMailboxAction.Trash

@@ -9,6 +9,7 @@ namespace Flexis.Application.Google;
 public sealed class GoogleConnectionService
 {
     private static readonly TimeSpan OAuthStateLifetime = TimeSpan.FromMinutes(10);
+    private static readonly Uri SettingsPath = new("/settings", UriKind.Relative);
     private static readonly Uri JobApplicationPath = new("/job-application", UriKind.Relative);
 
     private readonly IGoogleOAuthGateway _oauth;
@@ -209,7 +210,8 @@ public sealed class GoogleConnectionService
     {
         if (!Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri)
             || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
-            || uri.AbsolutePath != JobApplicationPath.OriginalString
+            || (uri.AbsolutePath != SettingsPath.OriginalString
+                && uri.AbsolutePath != JobApplicationPath.OriginalString)
             || !string.IsNullOrEmpty(uri.Query)
             || !string.IsNullOrEmpty(uri.Fragment))
         {
@@ -222,7 +224,7 @@ public sealed class GoogleConnectionService
             throw new ValidationFailedException("Return URL is not allowed.");
         }
 
-        return origin + JobApplicationPath.OriginalString;
+        return origin + uri.AbsolutePath;
     }
 
     private string FallbackReturnUrl()
@@ -230,7 +232,7 @@ public sealed class GoogleConnectionService
         var origin = _frontendOrigins.Origins.Count > 0
             ? _frontendOrigins.Origins[0]
             : "http://127.0.0.1:5173";
-        return origin + JobApplicationPath.OriginalString;
+        return origin + SettingsPath.OriginalString;
     }
 
     private string RedirectResult(GoogleOAuthPending pending, string result)

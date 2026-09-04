@@ -84,10 +84,10 @@ export function MailCheckCheckTab({ settings, mailCheckRun }: MailCheckCheckTabP
   return (
     <Stack spacing={2}>
       {!hasMailbox ? (
-        <Alert severity="info">Connect a mailbox on the Settings tab before checking mail.</Alert>
+        <Alert severity="info">Connect a mailbox on Settings before checking mail.</Alert>
       ) : null}
       {hasMailbox && !settings?.hasApiKey ? (
-        <Alert severity="info">Save an OpenAI API key on the Settings tab. That is the only paid piece.</Alert>
+        <Alert severity="info">Save an OpenAI API key on Settings. That is the only paid piece.</Alert>
       ) : null}
       {runError ? <Alert severity="error">{runError}</Alert> : null}
 

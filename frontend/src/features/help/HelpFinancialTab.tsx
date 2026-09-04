@@ -81,7 +81,7 @@ export function HelpFinancialTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="Default rates"
-                secondary="Job Application Settings, Financial defaults. Built-in values are 0.06 apply and 1.5 bonus. New pipeline rows copy those defaults. Changing defaults does not rewrite rates already saved on existing rows."
+                secondary="Settings (Job Application), Financial defaults. Built-in values are 0.06 apply and 1.5 bonus. New pipeline rows copy those defaults. Changing defaults does not rewrite rates already saved on existing rows."
               />
             </ListItem>
             <ListItem disableGutters>

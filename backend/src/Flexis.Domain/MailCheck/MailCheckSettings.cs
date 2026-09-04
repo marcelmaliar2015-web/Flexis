@@ -5,9 +5,9 @@ public sealed class MailCheckSettings
     public const string DefaultModel = "gpt-4.1-mini";
 
     public const string DefaultLabelActionsJson =
-        "{\"rejected\":\"trash\",\"applied\":\"keep\",\"schedule\":\"pin\",\"scheduled\":\"pin\",\"assessment\":\"pin\",\"availability\":\"pin\",\"success\":\"pin\",\"other\":\"keep\",\"less_important\":\"trash\"}";
+        "{\"rejected\":\"trash\",\"applied\":\"keep\",\"schedule\":\"pin\",\"scheduled\":\"pin\",\"assessment\":\"pin\",\"availability\":\"pin\",\"ai_interview\":\"pin\",\"code\":\"pin\",\"success\":\"pin\",\"other\":\"keep\",\"less_important\":\"trash\"}";
 
-    public const string DefaultNeedActionLabelsJson = "[\"schedule\",\"assessment\",\"availability\"]";
+    public const string DefaultNeedActionLabelsJson = "[\"schedule\",\"assessment\",\"availability\",\"ai_interview\",\"code\"]";
 
     private MailCheckSettings()
     {

@@ -92,7 +92,7 @@ export function HelpGoogleTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="Per-user Gmail"
-                secondary="Each Flexis account connects its own Google account on Job Application Settings. Tokens stay on the API, not in the browser."
+                secondary="Each Flexis account connects its own Google account on Settings (Job Application). Tokens stay on the API, not in the browser."
               />
             </ListItem>
           </List>
@@ -342,7 +342,7 @@ export function HelpGoogleTab() {
           </Typography>
           <List disablePadding>
             <ListItem disableGutters>
-              <ListItemText primary="Open Job Application, Settings tab. Connect Gmail opens Google. Copy URL copies the consent URL for another browser." />
+              <ListItemText primary="Open Settings, Job Application tab. Connect Gmail opens Google. Copy URL copies the consent URL for another browser." />
             </ListItem>
             <ListItem disableGutters>
               <ListItemText primary="Pick the test-user Gmail and Allow. Google returns to Flexis. The chip should read Connected and show that address." />

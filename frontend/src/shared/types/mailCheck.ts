@@ -7,6 +7,8 @@ export type MailCheckLabelSlug =
   | "scheduled"
   | "assessment"
   | "availability"
+  | "ai_interview"
+  | "code"
   | "success"
   | "other"
   | "less_important";
@@ -190,6 +192,32 @@ export type MailCheckActionLogQuery = {
   q?: string;
 };
 
+export type MailCheckUsageTotals = {
+  callCount: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+};
+
+export type MailCheckUsageHour = {
+  capturedOn: string;
+  capturedHour: string;
+  updatedAt: string;
+  callCount: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+  lastModel: string;
+};
+
+export type MailCheckUsage = {
+  lifetime: MailCheckUsageTotals;
+  today: MailCheckUsageTotals;
+  history: MailCheckUsageHour[];
+};
+
 export const mailCheckLabels: { slug: MailCheckLabelSlug; name: string }[] = [
   { slug: "rejected", name: "Rejected" },
   { slug: "applied", name: "Applied" },
@@ -197,6 +225,8 @@ export const mailCheckLabels: { slug: MailCheckLabelSlug; name: string }[] = [
   { slug: "scheduled", name: "Scheduled" },
   { slug: "assessment", name: "Assessment" },
   { slug: "availability", name: "Availability" },
+  { slug: "ai_interview", name: "AI Interview" },
+  { slug: "code", name: "Code" },
   { slug: "success", name: "Success" },
   { slug: "other", name: "Other" },
   { slug: "less_important", name: "Less Important" },
@@ -213,7 +243,15 @@ export function mailCheckPinLabelFilters(
 ): { slug: MailCheckLabelSlug; name: string }[] {
   if (!labelActions) {
     return mailCheckLabels.filter((item) =>
-      ["schedule", "scheduled", "assessment", "availability", "success"].includes(item.slug),
+      [
+        "schedule",
+        "scheduled",
+        "assessment",
+        "availability",
+        "ai_interview",
+        "code",
+        "success",
+      ].includes(item.slug),
     );
   }
 

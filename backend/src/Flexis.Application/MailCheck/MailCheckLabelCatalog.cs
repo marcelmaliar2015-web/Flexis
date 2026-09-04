@@ -12,6 +12,8 @@ public static class MailCheckLabelCatalog
         MailCheckLabel.Scheduled,
         MailCheckLabel.Assessment,
         MailCheckLabel.Availability,
+        MailCheckLabel.AiInterview,
+        MailCheckLabel.Code,
         MailCheckLabel.Success,
         MailCheckLabel.Other,
         MailCheckLabel.LessImportant
@@ -33,6 +35,8 @@ public static class MailCheckLabelCatalog
             "scheduled" => MailCheckLabel.Scheduled,
             "assessment" => MailCheckLabel.Assessment,
             "availability" => MailCheckLabel.Availability,
+            "ai_interview" or "aiinterview" => MailCheckLabel.AiInterview,
+            "code" => MailCheckLabel.Code,
             "success" => MailCheckLabel.Success,
             "other" => MailCheckLabel.Other,
             "less_important" or "lessimportant" => MailCheckLabel.LessImportant,
@@ -50,6 +54,8 @@ public static class MailCheckLabelCatalog
             MailCheckLabel.Scheduled => "Scheduled",
             MailCheckLabel.Assessment => "Assessment",
             MailCheckLabel.Availability => "Availability",
+            MailCheckLabel.AiInterview => "AI Interview",
+            MailCheckLabel.Code => "Code",
             MailCheckLabel.Success => "Success",
             MailCheckLabel.Other => "Other",
             MailCheckLabel.LessImportant => "Less Important",
@@ -61,6 +67,7 @@ public static class MailCheckLabelCatalog
     {
         return label switch
         {
+            MailCheckLabel.AiInterview => "ai_interview",
             MailCheckLabel.LessImportant => "less_important",
             _ => label.ToString().ToLowerInvariant()
         };

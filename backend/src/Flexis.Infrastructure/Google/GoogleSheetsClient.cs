@@ -1040,7 +1040,7 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         var meta = await SendJson<SpreadsheetList>(
             accessToken,
             HttpMethod.Get,
-            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets(properties(sheetId,title),tables(tableId,range))",
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets(properties(sheetId,title,gridProperties(rowCount,columnCount)),tables(tableId,range))",
             null,
             cancellationToken);
         var sheet = (meta.Sheets ?? [])
@@ -1056,7 +1056,17 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             .FirstOrDefault(table => string.Equals(table.TableId, ListingsTableId(sheetId), StringComparison.Ordinal))
             ?? (sheet.Tables ?? []).FirstOrDefault(table => table.Range?.SheetId == sheetId);
 
+        var currentRowCount = sheet.Properties.GridProperties?.RowCount ?? 0;
+        var currentColumnCount = sheet.Properties.GridProperties?.ColumnCount ?? 0;
+        var targetRowCount = GrowGridSize(currentRowCount, endRow);
+        var targetColumnCount = GrowGridSize(currentColumnCount, columnCount, chunk: 1);
+
         var resizeRequests = new List<object>();
+        if (targetRowCount > currentRowCount || targetColumnCount > currentColumnCount)
+        {
+            resizeRequests.Add(ExpandSheetGridRequest(sheetId, targetRowCount, targetColumnCount));
+        }
+
         if (existingTable?.TableId is { } tableId)
         {
             resizeRequests.Add(new
@@ -1450,6 +1460,16 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         }
 
         var endRow = Math.Max(values.Count, 2);
+        var sheets = await ListSheetsAsync(accessToken, spreadsheetId, cancellationToken);
+        var sheet = sheets.FirstOrDefault(item => string.Equals(item.Name, JobMasterProfileManagementSheet, StringComparison.Ordinal))
+            ?? throw new GoogleOAuthException("Profile Management sheet was not found.");
+        await EnsureSheetGridCapacityAsync(
+            accessToken,
+            spreadsheetId,
+            sheet.SheetId,
+            endRow,
+            JobMasterProfileManagementHeaders.Length,
+            cancellationToken);
         await SendJson<object>(
             accessToken,
             HttpMethod.Put,
@@ -1457,9 +1477,6 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
             new { values },
             cancellationToken);
 
-        var sheets = await ListSheetsAsync(accessToken, spreadsheetId, cancellationToken);
-        var sheet = sheets.FirstOrDefault(item => string.Equals(item.Name, JobMasterProfileManagementSheet, StringComparison.Ordinal))
-            ?? throw new GoogleOAuthException("Profile Management sheet was not found.");
         await SendJson<object>(
             accessToken,
             HttpMethod.Post,
@@ -2243,6 +2260,80 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         return letter;
     }
 
+    private static int GrowGridSize(int current, int needed, int chunk = 100)
+    {
+        if (needed <= current)
+        {
+            return current;
+        }
+
+        if (chunk < 1)
+        {
+            chunk = 1;
+        }
+
+        return ((needed + chunk - 1) / chunk) * chunk;
+    }
+
+    private static object ExpandSheetGridRequest(int sheetId, int rowCount, int columnCount)
+    {
+        return new
+        {
+            updateSheetProperties = new
+            {
+                properties = new
+                {
+                    sheetId,
+                    gridProperties = new
+                    {
+                        rowCount,
+                        columnCount
+                    }
+                },
+                fields = "gridProperties.rowCount,gridProperties.columnCount"
+            }
+        };
+    }
+
+    private async Task EnsureSheetGridCapacityAsync(
+        string accessToken,
+        string spreadsheetId,
+        int sheetId,
+        int neededRowCount,
+        int neededColumnCount,
+        CancellationToken cancellationToken)
+    {
+        var meta = await SendJson<SpreadsheetList>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties(sheetId,gridProperties(rowCount,columnCount))",
+            null,
+            cancellationToken);
+        var sheet = (meta.Sheets ?? [])
+            .Select(item => item.Properties)
+            .FirstOrDefault(properties => properties is not null && properties.SheetId == sheetId);
+        if (sheet is null)
+        {
+            throw new GoogleOAuthException("Sheet was not found.");
+        }
+
+        var currentRowCount = sheet.GridProperties?.RowCount ?? 0;
+        var currentColumnCount = sheet.GridProperties?.ColumnCount ?? 0;
+        var targetRowCount = GrowGridSize(currentRowCount, neededRowCount);
+        var targetColumnCount = GrowGridSize(currentColumnCount, neededColumnCount, chunk: 1);
+        if (targetRowCount <= currentRowCount && targetColumnCount <= currentColumnCount)
+        {
+            return;
+        }
+
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Post,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}:batchUpdate",
+            new { requests = new[] { ExpandSheetGridRequest(sheetId, targetRowCount, targetColumnCount) } },
+            cancellationToken);
+    }
+
     private async Task<T> SendJson<T>(
         string accessToken,
         HttpMethod method,
@@ -2470,6 +2561,8 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
     private sealed class GridProps
     {
         public int RowCount { get; set; }
+
+        public int ColumnCount { get; set; }
     }
 
     private sealed class SheetValues

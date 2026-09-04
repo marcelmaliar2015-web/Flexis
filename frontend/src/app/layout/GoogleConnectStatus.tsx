@@ -188,7 +188,7 @@ export function GoogleConnectStatus() {
             ) : null}
             {!connected && configured ? (
               <Typography variant="body2" color="text.secondary">
-                Connect on Job Application Settings. Sheets and Drive use the same consent.
+                Connect on Settings (Job Application). Sheets and Drive use the same consent.
               </Typography>
             ) : null}
             {!configured && !connectionQuery.isPending && !failed ? (

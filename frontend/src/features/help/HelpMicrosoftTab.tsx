@@ -90,7 +90,7 @@ export function HelpMicrosoftTab() {
                 screens; if it says you do not qualify, stay signed in and retry App registrations, or
                 use the last option below.
               </>,
-              "If another Flexis admin already saved the Microsoft client on Settings, skip steps 1 to 6. Open Mail Check Settings and Add Outlook only.",
+              "If another Flexis admin already saved the Microsoft client on Settings (Admin), skip steps 1 to 6. Open Settings (Mail Check) and Add Outlook only.",
             ]}
           />
           <Typography variant="subtitle2">Only if Microsoft still blocks New registration</Typography>
@@ -311,7 +311,7 @@ export function HelpMicrosoftTab() {
                 </Link>
                 .
               </>,
-              "Open the Settings tab.",
+              "Open Settings, Mail Check tab.",
               "Click Add Outlook. If the button is disabled, step 6 is not finished.",
               "Sign in with the Outlook or Microsoft 365 mailbox you want Flexis to triage.",
               "Click Accept.",

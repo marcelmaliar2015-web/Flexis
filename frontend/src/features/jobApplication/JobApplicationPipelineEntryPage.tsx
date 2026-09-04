@@ -340,7 +340,7 @@ export function JobApplicationPipelineEntryPage() {
                 Banned matches
               </Typography>
               {!connected ? (
-                <Alert severity="info">Connect Gmail on the Settings tab to scan sheets.</Alert>
+                <Alert severity="info">Connect Gmail on Settings to scan sheets.</Alert>
               ) : null}
               {connected && bans.length === 0 ? (
                 <Alert severity="info">Add banned companies to scan the profile main sheet.</Alert>

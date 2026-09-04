@@ -136,6 +136,14 @@ public sealed class MailCheckController : ControllerBase
             cancellationToken);
     }
 
+    [HttpGet("usage")]
+    public Task<MailCheckUsageDto> GetUsage(
+        [FromServices] MailCheckUsageService usage,
+        CancellationToken cancellationToken)
+    {
+        return usage.GetUsageAsync(CurrentUserId(), cancellationToken);
+    }
+
     private Guid CurrentUserId()
     {
         var subject = User.FindFirstValue(ClaimTypes.NameIdentifier)
