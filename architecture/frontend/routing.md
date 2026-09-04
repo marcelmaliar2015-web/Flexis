@@ -11,6 +11,7 @@ React Router `createBrowserRouter` in `frontend/src/app/router/appRouter.tsx`. L
 | `/dashboard` | `DashboardPage` | Authenticated |
 | `/job-application` | `JobApplicationPage` | Authenticated |
 | `/job-application/pipeline/:entryId` | `JobApplicationPipelineEntryPage` | Authenticated |
+| `/job-application/profiles/:entryId` | `JobApplicationProfilePage` | Authenticated |
 | `/mail-check` | `MailCheckPage` | Authenticated |
 | `/logs` | `LogsPage` | Authenticated (tabs: Job Application, Mail Check) |
 | `/settings` | `SettingsPage` | Authenticated (tabs: Account, Job Application, Mail Check; Admin tab for Admin) |
@@ -39,3 +40,4 @@ Signed-in visits to `/` or `/sign-in` go to `/dashboard`, or to `state.from` whe
 - [../decisions/018-guest-only-public-routes.md](../decisions/018-guest-only-public-routes.md)
 - [../decisions/030-consolidated-settings-tabs.md](../decisions/030-consolidated-settings-tabs.md)
 - [../decisions/031-consolidated-logs-page.md](../decisions/031-consolidated-logs-page.md)
+- [../decisions/032-job-application-profiles-tab.md](../decisions/032-job-application-profiles-tab.md)

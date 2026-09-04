@@ -51,3 +51,4 @@ One file per significant architecture choice. Record a decision when you introdu
 | [029](029-mail-check-openai-usage.md) | Mail Check OpenAI usage hours |
 | [030](030-consolidated-settings-tabs.md) | Consolidated Settings page tabs |
 | [031](031-consolidated-logs-page.md) | Consolidated Logs page |
+| [032](032-job-application-profiles-tab.md) | Job Application Profiles tab |

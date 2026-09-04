@@ -281,7 +281,9 @@ public sealed class JobFinancialService
 
         return new JobFinancialRowDto(
             entry.Id,
+            entry.ProfileId,
             profileTitle,
+            profile?.Url ?? string.Empty,
             sourceLabel,
             currentTotal,
             currentApplied,

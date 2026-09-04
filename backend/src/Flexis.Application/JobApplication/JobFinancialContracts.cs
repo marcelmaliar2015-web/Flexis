@@ -6,7 +6,9 @@ public sealed record JobFinancialRatesRequest(decimal ApplyRate, decimal BonusRa
 
 public sealed record JobFinancialRowDto(
     Guid EntryId,
+    Guid ProfileId,
     string ProfileTitle,
+    string ProfileUrl,
     string SourceLabel,
     int Total,
     int Applied,

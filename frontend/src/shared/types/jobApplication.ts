@@ -10,7 +10,9 @@ export type JobFinancialRatesRequest = {
 
 export type JobFinancialRow = {
   entryId: string;
+  profileId: string;
   profileTitle: string;
+  profileUrl: string;
   sourceLabel: string;
   total: number;
   applied: number;

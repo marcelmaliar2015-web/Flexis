@@ -6,7 +6,7 @@ Operations rows need a price based on how many listings on the profile main tab 
 
 ## Decision
 
-Job Application tabs are Operations, Financial, and Resume generation. Gmail, financial defaults, profiles, and sources live on Settings (Job Application tab); see [030-consolidated-settings-tabs.md](030-consolidated-settings-tabs.md). Activity lives on Logs; see [031-consolidated-logs-page.md](031-consolidated-logs-page.md).
+Job Application tabs are Operations, Profiles, Financial, and Resume generation. Gmail, financial defaults, profiles, and sources live on Settings (Job Application tab); see [030-consolidated-settings-tabs.md](030-consolidated-settings-tabs.md). Activity lives on Logs; see [031-consolidated-logs-page.md](031-consolidated-logs-page.md). Profiles is described in [032-job-application-profiles-tab.md](032-job-application-profiles-tab.md).
 
 Financial lists one row per pipeline entry. Today counts come from that profile's named main tab: total is non-empty listing rows, applied is Status `Applied`, interviews is Status `Interview`. Archived counts sum numbered tabs (`1`, `2`, `3`, …) created by Forward. Status dropdown maintenance skips archived tabs. Lifetime is today plus archived. Price is `applied * applyRate + interviews * bonusRate` for each period, rounded to 2 decimals. Each row has its own apply rate and bonus rate. New pipeline rows copy the user's defaults (0.06 and 1.5 until changed). Defaults are edited on Settings (Job Application), not Admin. Changing defaults does not rewrite existing row rates. Rows are selectable so a subset can be priced in the UI. Profile Status includes Interview.
 

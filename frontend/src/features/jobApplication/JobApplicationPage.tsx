@@ -8,6 +8,7 @@ import { styled } from "@mui/material/styles";
 import { useState } from "react";
 import { JobApplicationFinancialTab } from "@/features/jobApplication/JobApplicationFinancialTab";
 import { JobApplicationOperationsTab } from "@/features/jobApplication/JobApplicationOperationsTab";
+import { JobApplicationProfilesTab } from "@/features/jobApplication/JobApplicationProfilesTab";
 import { JobApplicationResumeTab } from "@/features/jobApplication/JobApplicationResumeTab";
 import { PipelineBulkProgress } from "@/features/jobApplication/PipelineBulkProgress";
 import { usePipelineBulkRun } from "@/features/jobApplication/usePipelineBulkRun";
@@ -20,11 +21,12 @@ const AccentRule = styled("span")(({ theme }) => ({
   backgroundColor: theme.palette.secondary.main,
 }));
 
-type JobApplicationTab = "operations" | "financial" | "resume";
+type JobApplicationTab = "operations" | "profiles" | "financial" | "resume";
 
 export function JobApplicationPage() {
   const [tab, setTab] = useState<JobApplicationTab>("operations");
   const [visited, setVisited] = useState({
+    profiles: false,
     financial: false,
     resume: false,
   });
@@ -50,18 +52,24 @@ export function JobApplicationPage() {
             value={tab}
             onChange={(_event, value: JobApplicationTab) => {
               setTab(value);
-              if (value === "financial" || value === "resume") {
+              if (value === "profiles" || value === "financial" || value === "resume") {
                 setVisited((current) => ({ ...current, [value]: true }));
               }
             }}
           >
             <Tab label="Operations" value="operations" />
+            <Tab label="Profiles" value="profiles" />
             <Tab label="Financial" value="financial" />
             <Tab label="Resume generation" value="resume" />
           </Tabs>
           <Box role="tabpanel" hidden={tab !== "operations"}>
             <JobApplicationOperationsTab bulkRun={bulkRun} />
           </Box>
+          {tab === "profiles" || visited.profiles ? (
+            <Box role="tabpanel" hidden={tab !== "profiles"}>
+              <JobApplicationProfilesTab />
+            </Box>
+          ) : null}
           {tab === "financial" || visited.financial ? (
             <Box role="tabpanel" hidden={tab !== "financial"}>
               <JobApplicationFinancialTab />
