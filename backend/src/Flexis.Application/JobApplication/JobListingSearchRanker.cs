@@ -166,7 +166,7 @@ internal static class JobListingSearchRanker
 
         var best = 0d;
         var step = Math.Max(8, window / 6);
-        for (var start = 0; start + window.Length <= value.Length; start += step)
+        for (var start = 0; start + window <= value.Length; start += step)
         {
             var end = Math.Min(value.Length, start + window);
             var slice = value[start..end];
