@@ -13,6 +13,8 @@ import {
   getIssueNotices,
   subscribeIssues,
 } from "@/shared/notifications/issueStore";
+import { formatDateTimeSeconds } from "@/shared/time/formatTime";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 import type { IssueNotice } from "@/shared/types/issue";
 
 const Trigger = styled(Button)(({ theme }) => ({
@@ -61,6 +63,7 @@ function requestLine(notice: IssueNotice): string {
 }
 
 export function NotificationCenter() {
+  const timeZone = useTimeZone();
   const [notices, setNotices] = useState(getIssueNotices);
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -149,7 +152,7 @@ export function NotificationCenter() {
                     <Stack spacing={0.75}>
                       <Typography variant="body2">{notice.message}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(notice.occurredAt).toLocaleString()} · {requestLine(notice)}
+                        {formatDateTimeSeconds(notice.occurredAt, timeZone)} · {requestLine(notice)}
                       </Typography>
                       {notice.detail ? <DetailBlock>{notice.detail}</DetailBlock> : null}
                     </Stack>

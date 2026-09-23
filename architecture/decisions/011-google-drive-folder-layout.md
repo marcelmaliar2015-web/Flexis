@@ -9,7 +9,7 @@ Job Application creates Google Sheets on the connected account. Those files must
 Opening Job Application ensures the folder tree exists in that user's Drive. Creating a profile or source, connecting Gmail, or a layout change also moves catalog spreadsheets into the matching folder:
 
 - `Flexis` — workspace root; also holds the `job-master` spreadsheet for resume generation (see [024-resume-generation-job-master.md](024-resume-generation-job-master.md))
-- `Job Application` — Job Application files
+- `Job Application` — Job Application files; also holds the `search-base` spreadsheet for listing search (see [035-job-application-listing-search.md](035-job-application-listing-search.md))
 - `Profiles` — one Sheet per profile
 - `Sources` — one Sheet per source; location tabs stay in the workbook
 

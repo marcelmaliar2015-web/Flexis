@@ -10,6 +10,8 @@ import { styled } from "@mui/material/styles";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { jobApplicationLogsQueryKey, listJobApplicationLogs } from "@/shared/api/jobApplicationLogs";
+import { formatClockTime, formatFullDate } from "@/shared/time/formatTime";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 import type { JobApplicationLog, JobApplicationLogQuery } from "@/shared/types/jobApplication";
 
 const FilterRow = styled(Stack)(({ theme }) => ({
@@ -95,27 +97,13 @@ function categoryColor(category: string): "primary" | "secondary" | "success" | 
   return "default";
 }
 
-function formatDay(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(new Date(value));
-}
-
-function groupByDay(items: JobApplicationLog[]): { day: string; items: JobApplicationLog[] }[] {
+function groupByDay(
+  items: JobApplicationLog[],
+  timeZone: string,
+): { day: string; items: JobApplicationLog[] }[] {
   const groups = new Map<string, JobApplicationLog[]>();
   for (const item of items) {
-    const day = formatDay(item.occurredAt);
+    const day = formatFullDate(item.occurredAt, timeZone);
     const current = groups.get(day);
     if (current) {
       current.push(item);
@@ -138,6 +126,7 @@ function useDebouncedValue(value: string, delayMs: number): string {
 }
 
 export function JobApplicationLogsTab() {
+  const timeZone = useTimeZone();
   const [category, setCategory] = useState<LogCategoryFilter>("all");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
@@ -166,7 +155,7 @@ export function JobApplicationLogsTab() {
 
   const items = logsQuery.data?.items ?? [];
   const totalCount = logsQuery.data?.totalCount ?? 0;
-  const groups = useMemo(() => groupByDay(items), [items]);
+  const groups = useMemo(() => groupByDay(items, timeZone), [items, timeZone]);
   const hasFilters = category !== "all" || debouncedSearch.trim().length > 0;
 
   return (
@@ -283,7 +272,7 @@ export function JobApplicationLogsTab() {
                     />
                   </Stack>
                   <Typography variant="caption" color="text.secondary">
-                    {formatTime(item.occurredAt)}
+                    {formatClockTime(item.occurredAt, timeZone)}
                   </Typography>
                 </Stack>
                 <Typography variant="subtitle1">{item.summary}</Typography>

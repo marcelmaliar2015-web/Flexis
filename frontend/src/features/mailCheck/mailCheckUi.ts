@@ -41,18 +41,22 @@ export function actionLabel(action: MailCheckAction | string): string {
   return mailCheckActionLabels[action] ?? action;
 }
 
-function formatScanTimestamp(value: string): string {
+function formatScanTimestamp(value: string, timeZone: string): string {
   return new Intl.DateTimeFormat(undefined, {
+    timeZone,
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 }
 
-export function formatMailboxScanStatus(mailbox: {
-  checkedNewestAt: string | null;
-  checkedUntilAt: string | null;
-  scanCaughtUp: boolean;
-}): string {
+export function formatMailboxScanStatus(
+  mailbox: {
+    checkedNewestAt: string | null;
+    checkedUntilAt: string | null;
+    scanCaughtUp: boolean;
+  },
+  timeZone: string,
+): string {
   const newest = mailbox.checkedNewestAt ?? null;
   const oldest = mailbox.checkedUntilAt ?? null;
 
@@ -62,11 +66,11 @@ export function formatMailboxScanStatus(mailbox: {
 
   const parts: string[] = [];
   if (newest) {
-    parts.push(`Latest classified ${formatScanTimestamp(newest)}`);
+    parts.push(`Latest classified ${formatScanTimestamp(newest, timeZone)}`);
   }
 
   if (oldest) {
-    parts.push(`Earliest in queue ${formatScanTimestamp(oldest)}`);
+    parts.push(`Earliest in queue ${formatScanTimestamp(oldest, timeZone)}`);
   }
 
   const status = parts.join(" · ");

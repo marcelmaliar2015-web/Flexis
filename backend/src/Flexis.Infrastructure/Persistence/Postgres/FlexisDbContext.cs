@@ -42,6 +42,10 @@ public sealed class FlexisDbContext : DbContext
 
     public DbSet<JobListingStatusEvent> JobListingStatusEvents => Set<JobListingStatusEvent>();
 
+    public DbSet<JobListingProjection> JobListingProjections => Set<JobListingProjection>();
+
+    public DbSet<JobSheetSyncState> JobSheetSyncStates => Set<JobSheetSyncState>();
+
     public DbSet<JobResumeSettings> JobResumeSettings => Set<JobResumeSettings>();
 
     public DbSet<JobProfileResumeSettings> JobProfileResumeSettings => Set<JobProfileResumeSettings>();

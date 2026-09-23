@@ -343,6 +343,93 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.ToTable("job_listing_copy_items", (string)null);
                 });
 
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingProjection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ArchiveTab")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Download")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Issue")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Jd")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Link")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ListingKey")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("ProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProfileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("RowNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("SyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "ProfileId", "Source");
+
+                    b.HasIndex("UserId", "Source", "ProfileId", "ArchiveTab", "ListingKey")
+                        .IsUnique();
+
+                    b.ToTable("job_listing_projections", (string)null);
+                });
+
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingStatusEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -412,6 +499,36 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .IsUnique();
 
                     b.ToTable("job_listing_status_states", (string)null);
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobSheetSyncState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DriveModifiedTime")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("LastSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SpreadsheetId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "SpreadsheetId")
+                        .IsUnique();
+
+                    b.ToTable("job_sheet_sync_states", (string)null);
                 });
 
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobProfileStatisticsSnapshot", b =>
@@ -979,6 +1096,11 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -1061,6 +1183,15 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                     b.Navigation("Items");
                 });
 
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingProjection", b =>
+                {
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Flexis.Domain.JobApplication.JobListingStatusEvent", b =>
                 {
                     b.HasOne("Flexis.Domain.JobApplication.JobCatalogItem", null)
@@ -1084,6 +1215,15 @@ namespace Flexis.Infrastructure.Persistence.Postgres.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Flexis.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Flexis.Domain.JobApplication.JobSheetSyncState", b =>
+                {
                     b.HasOne("Flexis.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")

@@ -8,4 +8,5 @@ public sealed record UserDto(
     string DisplayName,
     UserRole Role,
     bool IsActive,
+    string TimeZoneId,
     DateTimeOffset CreatedAt);

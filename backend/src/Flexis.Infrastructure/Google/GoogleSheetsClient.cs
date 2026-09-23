@@ -1435,6 +1435,131 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
         return new CreatedSpreadsheet(spreadsheet.SpreadsheetId, spreadsheet.SpreadsheetUrl);
     }
 
+    public async Task<CreatedSpreadsheet> EnsureSearchBaseWorkbookAsync(
+        string accessToken,
+        string workspaceFolderId,
+        string? existingSpreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(existingSpreadsheetId))
+        {
+            try
+            {
+                var active = await SendJson<SpreadsheetCreated>(
+                    accessToken,
+                    HttpMethod.Get,
+                    $"https://sheets.googleapis.com/v4/spreadsheets/{existingSpreadsheetId}?fields=spreadsheetId,spreadsheetUrl",
+                    null,
+                    cancellationToken);
+                if (!string.IsNullOrWhiteSpace(active.SpreadsheetId) && !string.IsNullOrWhiteSpace(active.SpreadsheetUrl))
+                {
+                    await EnsureSearchBaseMainSheetAsync(accessToken, active.SpreadsheetId, cancellationToken);
+                    return new CreatedSpreadsheet(active.SpreadsheetId, active.SpreadsheetUrl);
+                }
+            }
+            catch (GoogleOAuthException)
+            {
+            }
+        }
+
+        return await CreateWorkbookAsync(
+            accessToken,
+            FlexisDriveLayout.SearchBaseFileName,
+            FlexisDriveLayout.SearchBaseSheetName,
+            JobWorkbookKind.SearchBase,
+            workspaceFolderId,
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<SearchBaseListingRow>> ReadSearchBaseListingsAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        await EnsureSearchBaseMainSheetAsync(accessToken, spreadsheetId, cancellationToken);
+        var payload = await SendJson<SheetValues>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(FlexisDriveLayout.SearchBaseSheetName, "A2:H")}",
+            null,
+            cancellationToken);
+
+        return (payload.Values ?? [])
+            .Select(ToSearchBaseListing)
+            .ToArray();
+    }
+
+    private async Task EnsureSearchBaseMainSheetAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        var spreadsheet = await SendJson<SpreadsheetCreated>(
+            accessToken,
+            HttpMethod.Get,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=spreadsheetId,spreadsheetUrl,sheets.properties(sheetId,title)",
+            null,
+            cancellationToken);
+        var sheets = (spreadsheet.Sheets ?? [])
+            .Where(item => item.Properties is not null)
+            .Select(item => new SpreadsheetSheet(item.Properties!.SheetId, item.Properties.Title ?? string.Empty))
+            .ToList();
+        var main = sheets.FirstOrDefault(item =>
+            string.Equals(item.Name, FlexisDriveLayout.SearchBaseSheetName, StringComparison.Ordinal));
+        if (main is null)
+        {
+            if (sheets.Count == 1 && string.IsNullOrWhiteSpace(sheets[0].Name))
+            {
+                await RenameSheetAsync(
+                    accessToken,
+                    spreadsheetId,
+                    sheets[0].SheetId,
+                    FlexisDriveLayout.SearchBaseSheetName,
+                    cancellationToken);
+            }
+            else if (sheets.Count == 1)
+            {
+                await RenameSheetAsync(
+                    accessToken,
+                    spreadsheetId,
+                    sheets[0].SheetId,
+                    FlexisDriveLayout.SearchBaseSheetName,
+                    cancellationToken);
+            }
+            else
+            {
+                await AddFormattedSheetAsync(
+                    accessToken,
+                    spreadsheetId,
+                    FlexisDriveLayout.SearchBaseSheetName,
+                    JobWorkbookKind.SearchBase,
+                    0,
+                    cancellationToken);
+            }
+        }
+
+        var columns = ColumnsFor(JobWorkbookKind.SearchBase);
+        await SendJson<object>(
+            accessToken,
+            HttpMethod.Put,
+            $"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{ValuesRange(FlexisDriveLayout.SearchBaseSheetName, "A1:H1")}?valueInputOption=USER_ENTERED",
+            new { values = new[] { columns.Select(column => column.Name).ToArray() } },
+            cancellationToken);
+    }
+
+    private static SearchBaseListingRow ToSearchBaseListing(List<JsonElement> row)
+    {
+        return new SearchBaseListingRow(
+            Cell(row, 0),
+            Cell(row, 1),
+            Cell(row, 2),
+            Cell(row, 3),
+            Cell(row, 4),
+            Cell(row, 5),
+            Cell(row, 6),
+            Cell(row, 7));
+    }
+
     public async Task SyncJobMasterProfileManagementAsync(
         string accessToken,
         string spreadsheetId,
@@ -1697,8 +1822,9 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
 
     private static Column[] ColumnsFor(JobWorkbookKind kind)
     {
-        return kind == JobWorkbookKind.Profile
-            ?
+        return kind switch
+        {
+            JobWorkbookKind.Profile =>
             [
                 new Column("Company Name", 180),
                 new Column("Position", 180),
@@ -1707,14 +1833,26 @@ internal sealed class GoogleSheetsClient : IGoogleSheetsWorkspace
                 new Column("Download", 140),
                 new Column("Status", 130),
                 new Column("Issue", 200)
-            ]
-            :
+            ],
+            JobWorkbookKind.SearchBase =>
+            [
+                new Column("Company Name", 180),
+                new Column("Position", 180),
+                new Column("Link", 220),
+                new Column("JD", 280),
+                new Column("Download", 140),
+                new Column("Status", 130),
+                new Column("Issue", 200),
+                new Column("Profile", 160)
+            ],
+            _ =>
             [
                 new Column("Company Name", 200),
                 new Column("Position", 200),
                 new Column("Link", 240),
                 new Column("JD", 300)
-            ];
+            ]
+        };
     }
 
     private static int[] InvitedEditColumnIndexes(JobWorkbookKind kind, string? sheetTitle)

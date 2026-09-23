@@ -18,6 +18,7 @@ import {
 import { StatisticsPeriodTable, StatisticsTodayTable } from "@/features/jobApplication/statisticsTables";
 import { getJobStatisticsBoard, jobStatisticsQueryKey } from "@/shared/api/financial";
 import { isQueryLoading } from "@/shared/api/queryState";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -41,6 +42,7 @@ const FilterRow = styled(Stack)(({ theme }) => ({
 }));
 
 export function JobApplicationStatisticsTab() {
+  const timeZone = useTimeZone();
   const boardQuery = useQuery({
     queryKey: jobStatisticsQueryKey,
     queryFn: getJobStatisticsBoard,
@@ -58,8 +60,8 @@ export function JobApplicationStatisticsTab() {
       return [];
     }
 
-    return rollupStatisticsPoints(filterStatisticsHistory(history, profileId), range);
-  }, [history, profileId, range]);
+    return rollupStatisticsPoints(filterStatisticsHistory(history, profileId), range, timeZone);
+  }, [history, profileId, range, timeZone]);
 
   const selectedProfiles = useMemo(() => {
     if (profileId === "all") {

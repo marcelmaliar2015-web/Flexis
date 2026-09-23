@@ -20,6 +20,8 @@ import {
   startMailCheckOutlook,
 } from "@/shared/api/mailCheck";
 import { appPaths } from "@/shared/config/paths";
+import { formatDateTimeMedium } from "@/shared/time/formatTime";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 import type { MailCheckMailboxItem } from "@/shared/types/mailCheck";
 
 const ProviderCard = styled(Box)(({ theme }) => ({
@@ -58,14 +60,8 @@ function mailboxNotice(
   return null;
 }
 
-function formatConnectedAt(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
 export function MailCheckMailboxCard() {
+  const timeZone = useTimeZone();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -176,7 +172,8 @@ export function MailCheckMailboxCard() {
                     {providerLabel(mailbox.provider)} · {mailbox.email}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Connected {formatConnectedAt(mailbox.connectedAt)} · {formatMailboxScanStatus(mailbox)}
+                    Connected {formatDateTimeMedium(mailbox.connectedAt, timeZone)} ·{" "}
+                    {formatMailboxScanStatus(mailbox, timeZone)}
                   </Typography>
                 </Stack>
                 <Button

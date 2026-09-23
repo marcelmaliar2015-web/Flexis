@@ -35,6 +35,8 @@ import {
 import { jobPipelineQueryKey } from "@/shared/api/pipeline";
 import { isQueryLoading } from "@/shared/api/queryState";
 import { getJobResumeBoard, jobResumeQueryKey } from "@/shared/api/resume";
+import { formatDateMedium } from "@/shared/time/formatTime";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 import { emptyProfileInfo, type JobCatalogItem, type JobCatalogKind } from "@/shared/types/jobCatalog";
 
 const Panel = styled(Box)(({ theme }) => ({
@@ -66,10 +68,6 @@ type CatalogItemsPanelProps = {
   actionsEnabled: boolean;
 };
 
-function formatCreatedAt(value: string): string {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value));
-}
-
 function errorMessage(error: unknown): string | null {
   return userFacingError(error);
 }
@@ -80,6 +78,7 @@ export function CatalogItemsPanel({
   itemLabel,
   actionsEnabled,
 }: CatalogItemsPanelProps) {
+  const timeZone = useTimeZone();
   const queryClient = useQueryClient();
   const queryKey = jobCatalogQueryKey(kind);
   const itemsQuery = useQuery({
@@ -186,7 +185,7 @@ export function CatalogItemsPanel({
                 items.map((item) => (
                 <TableRow key={item.id} hover>
                   <TableCell>{item.title}</TableCell>
-                  <TableCell>{formatCreatedAt(item.createdAt)}</TableCell>
+                  <TableCell>{formatDateMedium(item.createdAt, timeZone)}</TableCell>
                   <TableCell>
                     {item.url ? <SheetUrl url={item.url} /> : "—"}
                   </TableCell>
@@ -407,7 +406,7 @@ function CatalogEditorDialog({
             {isEdit && editor.item.url ? <SheetUrl url={editor.item.url} /> : null}
             {isEdit ? (
               <Typography variant="body2" color="text.secondary">
-                {`Created ${formatCreatedAt(editor.item.createdAt)}`}
+                {`Created ${formatDateMedium(editor.item.createdAt, timeZone)}`}
               </Typography>
             ) : null}
           </Stack>

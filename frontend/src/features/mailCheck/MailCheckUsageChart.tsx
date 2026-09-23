@@ -5,6 +5,8 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
 import { styled, useTheme } from "@mui/material/styles";
 import { useMemo, useState } from "react";
+import { formatDayLabel as formatSharedDayLabel, formatHourLabel as formatSharedHourLabel } from "@/shared/time/formatTime";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 import type { MailCheckUsageHour } from "@/shared/types/mailCheck";
 
 const ChartPanel = styled(Box)(({ theme }) => ({
@@ -81,33 +83,15 @@ function formatTokens(value: number): string {
   return new Intl.NumberFormat(undefined).format(Math.round(value));
 }
 
-function formatHourLabel(value: string): string {
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-  }).format(parsed);
-}
-
-function formatDayLabel(value: string): string {
-  const parsed = Date.parse(`${value}T00:00:00Z`);
-  if (Number.isNaN(parsed)) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(parsed);
-}
-
-function toChartPoints(history: MailCheckUsageHour[], mode: RangeMode): ChartPoint[] {
+function toChartPoints(
+  history: MailCheckUsageHour[],
+  mode: RangeMode,
+  timeZone: string,
+): ChartPoint[] {
   if (mode === "hourly") {
     return history.map((item) => ({
       key: item.capturedHour,
-      label: formatHourLabel(item.capturedHour),
+      label: formatSharedHourLabel(item.capturedHour, timeZone),
       estimatedCostUsd: item.estimatedCostUsd,
       totalTokens: item.totalTokens,
       callCount: item.callCount,
@@ -124,7 +108,7 @@ function toChartPoints(history: MailCheckUsageHour[], mode: RangeMode): ChartPoi
     if (!existing) {
       byDay.set(key, {
         key,
-        label: formatDayLabel(key),
+        label: formatSharedDayLabel(`${key}T12:00:00Z`, timeZone),
         estimatedCostUsd: item.estimatedCostUsd,
         totalTokens: item.totalTokens,
         callCount: item.callCount,
@@ -202,6 +186,7 @@ type MailCheckUsageChartProps = {
 
 export function MailCheckUsageChart({ history, loading }: MailCheckUsageChartProps) {
   const theme = useTheme();
+  const timeZone = useTimeZone();
   const [mode, setMode] = useState<RangeMode>("hourly");
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const width = 760;
@@ -211,7 +196,7 @@ export function MailCheckUsageChart({ history, loading }: MailCheckUsageChartPro
   const padTop = 20;
   const padBottom = 36;
 
-  const points = useMemo(() => toChartPoints(history, mode), [history, mode]);
+  const points = useMemo(() => toChartPoints(history, mode, timeZone), [history, mode, timeZone]);
   const maxCost = Math.max(0.01, ...points.map((point) => point.estimatedCostUsd));
   const maxTokens = Math.max(1, ...points.map((point) => point.totalTokens));
   const maxCalls = Math.max(1, ...points.map((point) => point.callCount));

@@ -3,7 +3,8 @@ namespace Flexis.Application.Google;
 public enum JobWorkbookKind
 {
     Profile,
-    Source
+    Source,
+    SearchBase
 }
 
 public sealed record CreatedSpreadsheet(string SpreadsheetId, string SpreadsheetUrl);
@@ -23,6 +24,24 @@ public sealed record JobListingRow(
         && string.IsNullOrWhiteSpace(Position)
         && string.IsNullOrWhiteSpace(Link)
         && string.IsNullOrWhiteSpace(Jd);
+}
+
+public sealed record SearchBaseListingRow(
+    string CompanyName,
+    string Position,
+    string Link,
+    string Jd,
+    string Download,
+    string Status,
+    string Issue,
+    string Profile)
+{
+    public bool IsEmpty =>
+        string.IsNullOrWhiteSpace(CompanyName)
+        && string.IsNullOrWhiteSpace(Position)
+        && string.IsNullOrWhiteSpace(Link)
+        && string.IsNullOrWhiteSpace(Jd)
+        && string.IsNullOrWhiteSpace(Profile);
 }
 
 public sealed record ProfileListingStatusUpdate(int RowNumber, string Status);
@@ -185,6 +204,17 @@ public interface IGoogleSheetsWorkspace
         string accessToken,
         string spreadsheetId,
         IReadOnlyList<JobMasterProfileRow> rows,
+        CancellationToken cancellationToken);
+
+    Task<CreatedSpreadsheet> EnsureSearchBaseWorkbookAsync(
+        string accessToken,
+        string workspaceFolderId,
+        string? existingSpreadsheetId,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<SearchBaseListingRow>> ReadSearchBaseListingsAsync(
+        string accessToken,
+        string spreadsheetId,
         CancellationToken cancellationToken);
 }
 

@@ -23,6 +23,7 @@ public static class MailCheckLabelActionRules
             [MailCheckLabel.AiInterview] = MailCheckMailboxAction.Pin,
             [MailCheckLabel.Code] = MailCheckMailboxAction.Pin,
             [MailCheckLabel.Success] = MailCheckMailboxAction.Pin,
+            [MailCheckLabel.NeedAction] = MailCheckMailboxAction.Keep,
             [MailCheckLabel.Other] = MailCheckMailboxAction.Keep,
             [MailCheckLabel.LessImportant] = MailCheckMailboxAction.Trash
         };

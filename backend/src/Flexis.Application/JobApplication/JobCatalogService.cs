@@ -14,6 +14,7 @@ public sealed class JobCatalogService
     private readonly GoogleDriveLayoutService _driveLayout;
     private readonly JobApplicationActivity _activity;
     private readonly JobResumeService _resume;
+    private readonly JobListingProjectionService _projections;
 
     public JobCatalogService(
         IJobCatalogRepository items,
@@ -23,7 +24,8 @@ public sealed class JobCatalogService
         IGoogleSheetsWorkspace sheets,
         GoogleDriveLayoutService driveLayout,
         JobApplicationActivity activity,
-        JobResumeService resume)
+        JobResumeService resume,
+        JobListingProjectionService projections)
     {
         _items = items;
         _pipeline = pipeline;
@@ -33,6 +35,7 @@ public sealed class JobCatalogService
         _driveLayout = driveLayout;
         _activity = activity;
         _resume = resume;
+        _projections = projections;
     }
 
     public async Task<IReadOnlyList<JobCatalogItemDto>> ListAsync(
@@ -232,6 +235,7 @@ public sealed class JobCatalogService
         await _items.SaveChangesAsync(cancellationToken);
         if (kind == JobCatalogKind.Profile)
         {
+            await _projections.DeleteProfileAsync(userId, id, cancellationToken);
             await _resume.SyncJobMasterAsync(userId, cancellationToken);
         }
         await _activity.WriteAsync(
@@ -562,39 +566,37 @@ public sealed class JobCatalogService
         }
 
         var access = await _tokens.GetSheetAccessAsync(userId, cancellationToken);
-        var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
-        var main = RequireMainProfileSheet(profileSheets, profile.Title);
-        var profileRows = await _sheets.ReadProfileListingsAsync(
-            access.AccessToken,
-            profile.SpreadsheetId,
-            main.Name,
-            cancellationToken);
+        var profileRows = await _projections.ListProfileMainAsync(userId, profileId, cancellationToken);
+        if (profileRows.Count == 0 && !string.IsNullOrWhiteSpace(profile.SpreadsheetId))
+        {
+            await _projections.SyncDirtyAsync(userId, cancellationToken);
+            profileRows = await _projections.ListProfileMainAsync(userId, profileId, cancellationToken);
+        }
 
         var matches = new List<ProfileBannedMatchDto>();
         var statusUpdates = new List<ProfileListingStatusUpdate>();
-        for (var index = 0; index < profileRows.Count; index++)
+        var statusByKey = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var row in profileRows)
         {
-            var row = profileRows[index];
-            if (row.IsEmpty)
-            {
-                continue;
-            }
-
-            var ban = MatchingBan(row.CompanyName, bans);
+            var listing = JobListingProjectionService.ToListingRow(row);
+            var ban = MatchingBan(listing.CompanyName, bans);
             if (ban is null)
             {
                 continue;
             }
 
-            matches.Add(new ProfileBannedMatchDto(row.CompanyName, row.Position, row.Link, ban));
-            if (!string.Equals(row.Status.Trim(), "Banned", StringComparison.OrdinalIgnoreCase))
+            matches.Add(new ProfileBannedMatchDto(listing.CompanyName, listing.Position, listing.Link, ban));
+            if (!string.Equals(listing.Status.Trim(), "Banned", StringComparison.OrdinalIgnoreCase))
             {
-                statusUpdates.Add(new ProfileListingStatusUpdate(index + 2, "Banned"));
+                statusUpdates.Add(new ProfileListingStatusUpdate(row.RowNumber, "Banned"));
+                statusByKey[row.ListingKey] = "Banned";
             }
         }
 
-        if (statusUpdates.Count > 0)
+        if (statusUpdates.Count > 0 && !string.IsNullOrWhiteSpace(profile.SpreadsheetId))
         {
+            var profileSheets = await _sheets.ListSheetsAsync(access.AccessToken, profile.SpreadsheetId, cancellationToken);
+            var main = RequireMainProfileSheet(profileSheets, profile.Title);
             await _sheets.EnsureProfileMainStatusColumnAsync(
                 access.AccessToken,
                 profile.SpreadsheetId,
@@ -605,6 +607,12 @@ public sealed class JobCatalogService
                 profile.SpreadsheetId,
                 main.Name,
                 statusUpdates,
+                cancellationToken);
+            await _projections.UpdateProfileMainStatusesAsync(userId, profileId, statusByKey, cancellationToken);
+            await _projections.MarkSpreadsheetSyncedAsync(
+                userId,
+                access.AccessToken,
+                profile.SpreadsheetId,
                 cancellationToken);
         }
 

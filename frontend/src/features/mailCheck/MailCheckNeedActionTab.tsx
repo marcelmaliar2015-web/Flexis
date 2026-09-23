@@ -65,8 +65,9 @@ export function MailCheckNeedActionTab() {
               Need action
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Pinned mail in your mailboxes that matches the labels you chose on Settings. This list
-              reflects what is in Gmail or Outlook right now, not a time range.
+              Mail in your mailboxes that matches the Need action labels on Settings. Includes Keep
+              labels such as Need Action as well as pinned labels. This list reflects what is in
+              Gmail or Outlook right now, not a time range.
             </Typography>
           </Stack>
           {configured.length > 0 ? (
@@ -102,8 +103,8 @@ export function MailCheckNeedActionTab() {
       {hasMailbox && !needActionQuery.isPending && items.length === 0 ? (
         <EmptyState>
           <Typography variant="body2" color="text.secondary">
-            No pinned mail needs action for the selected labels. Run Check to classify new messages,
-            or adjust Need action labels on Settings.
+            No mail needs action for the selected labels. Run Check to classify new messages, or
+            adjust Need action labels on Settings.
           </Typography>
         </EmptyState>
       ) : null}

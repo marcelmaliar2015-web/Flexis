@@ -40,7 +40,7 @@ export function HelpLogsTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="Day groups"
-                secondary="Events on the current page are grouped by calendar day in your local timezone. Each card has the time, an action chip, a category chip, a short summary, and a detailed line."
+                secondary="Events on the current page are grouped by calendar day in your workspace time zone (AppBar clock or Settings → Account). Each card has the time, an action chip, a category chip, a short summary, and a detailed line."
               />
             </ListItem>
             <ListItem disableGutters>

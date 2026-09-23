@@ -6,6 +6,8 @@ import Typography from "@mui/material/Typography";
 import { styled, useTheme } from "@mui/material/styles";
 import { useMemo, useState } from "react";
 import { formatCount, formatPrice, asFiniteNumber } from "@/features/jobApplication/financialUi";
+import { formatDayLabel as formatSharedDayLabel, formatHourLabel as formatSharedHourLabel } from "@/shared/time/formatTime";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 import type { JobFinancialSnapshot } from "@/shared/types/jobApplication";
 
 const ChartPanel = styled(Box)(({ theme }) => ({
@@ -69,13 +71,17 @@ function dayKey(iso: string): string {
   return iso.slice(0, 10);
 }
 
-function toChartPoints(history: JobFinancialSnapshot[], mode: RangeMode): ChartPoint[] {
+function toChartPoints(
+  history: JobFinancialSnapshot[],
+  mode: RangeMode,
+  timeZone: string,
+): ChartPoint[] {
   if (mode === "hourly") {
     return history.map((item) => {
       const at = Date.parse(item.capturedHour || item.capturedAt);
       return {
         key: item.capturedHour || item.capturedAt,
-        label: formatHourLabel(item.capturedHour || item.capturedAt),
+        label: formatSharedHourLabel(item.capturedHour || item.capturedAt, timeZone),
         at: Number.isNaN(at) ? 0 : at,
         todayPrice: asFiniteNumber(item.todayPrice),
         mainPrice: asFiniteNumber(item.mainPrice),
@@ -102,7 +108,7 @@ function toChartPoints(history: JobFinancialSnapshot[], mode: RangeMode): ChartP
       const at = Date.parse(`${day}T00:00:00Z`);
       return {
         key: day,
-        label: formatDayLabel(day),
+        label: formatSharedDayLabel(`${day}T12:00:00Z`, timeZone),
         at: Number.isNaN(at) ? 0 : at,
         todayPrice: asFiniteNumber(item.todayPrice),
         mainPrice: asFiniteNumber(item.mainPrice),
@@ -116,28 +122,6 @@ function toChartPoints(history: JobFinancialSnapshot[], mode: RangeMode): ChartP
         lifetimeInterviews: asFiniteNumber(item.lifetimeInterviews),
       };
     });
-}
-
-function formatHourLabel(value: string): string {
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-  }).format(parsed);
-}
-
-function formatDayLabel(value: string): string {
-  const parsed = Date.parse(`${value}T00:00:00Z`);
-  if (Number.isNaN(parsed)) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(parsed);
 }
 
 function valueFor(point: ChartPoint, key: SeriesKey): number {
@@ -197,6 +181,7 @@ type FinancialPerformanceChartProps = {
 
 export function FinancialPerformanceChart({ history, loading }: FinancialPerformanceChartProps) {
   const theme = useTheme();
+  const timeZone = useTimeZone();
   const [mode, setMode] = useState<RangeMode>("hourly");
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const width = 760;
@@ -212,7 +197,7 @@ export function FinancialPerformanceChart({ history, loading }: FinancialPerform
     { key: "archivedPrice", label: "Archived", color: "#5C6672" },
   ];
 
-  const points = useMemo(() => toChartPoints(history, mode), [history, mode]);
+  const points = useMemo(() => toChartPoints(history, mode, timeZone), [history, mode, timeZone]);
   const maxValue = Math.max(
     1,
     ...points.flatMap((point) => [

@@ -48,4 +48,33 @@ internal static class UserRules
             throw new ValidationFailedException("Password must include a letter and a digit.");
         }
     }
+
+    public static string NormalizeTimeZoneId(string? timeZoneId)
+    {
+        var trimmed = timeZoneId?.Trim() ?? string.Empty;
+        if (trimmed.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        if (trimmed.Length > 64)
+        {
+            throw new ValidationFailedException("Time zone must be at most 64 characters.");
+        }
+
+        try
+        {
+            _ = TimeZoneInfo.FindSystemTimeZoneById(trimmed);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            throw new ValidationFailedException("Time zone is not valid.");
+        }
+        catch (InvalidTimeZoneException)
+        {
+            throw new ValidationFailedException("Time zone is not valid.");
+        }
+
+        return trimmed;
+    }
 }

@@ -13,12 +13,8 @@ import {
   googleConnectionQueryKey,
 } from "@/shared/api/google";
 import { jobApplicationLogsQueryKey, listJobApplicationLogs } from "@/shared/api/jobApplicationLogs";
-import {
-  getProfileBannedMatches,
-  jobCatalogQueryKey,
-  listJobCatalogItems,
-  profileBannedMatchesQueryKey,
-} from "@/shared/api/jobCatalog";
+import { jobCatalogQueryKey, listJobCatalogItems } from "@/shared/api/jobCatalog";
+import { syncJobListingProjections } from "@/shared/api/jobListingProjection";
 import { getJobPipelineBoard, jobPipelineQueryKey } from "@/shared/api/pipeline";
 import {
   requestSheetRefresh,
@@ -33,8 +29,6 @@ export const googleSyncFreshMs = 180_000;
 
 export const googleSyncAgingMs = 600_000;
 
-const bannedMatchGapMs = 2_500;
-
 const syncLogsQuery: JobApplicationLogQuery = {
   page: 1,
   pageSize: 100,
@@ -42,58 +36,12 @@ const syncLogsQuery: JobApplicationLogQuery = {
 
 export type GoogleSyncProgressReporter = SheetRefreshProgress;
 
-type ProfileScanProgressReporter = (completed: number, total: number) => void;
-
 function reportProgress(onProgress: GoogleSyncProgressReporter | undefined, percent: number): void {
   if (!onProgress) {
     return;
   }
 
   onProgress(Math.min(100, Math.max(0, Math.round(percent))));
-}
-
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, ms);
-  });
-}
-
-async function syncAllProfileBannedMatches(
-  queryClient: QueryClient,
-  connected: boolean,
-  onProfileProgress?: ProfileScanProgressReporter,
-): Promise<void> {
-  if (!connected) {
-    onProfileProgress?.(1, 1);
-    return;
-  }
-
-  const profiles = await queryClient.fetchQuery({
-    queryKey: jobCatalogQueryKey("profiles"),
-    queryFn: () => listJobCatalogItems("profiles"),
-  });
-
-  const total = profiles.length > 0 ? profiles.length : 1;
-  if (profiles.length === 0) {
-    onProfileProgress?.(1, 1);
-    return;
-  }
-
-  for (let index = 0; index < profiles.length; index += 1) {
-    try {
-      await queryClient.fetchQuery({
-        queryKey: profileBannedMatchesQueryKey(profiles[index].id),
-        queryFn: () => getProfileBannedMatches(profiles[index].id),
-      });
-    } catch {
-      continue;
-    } finally {
-      onProfileProgress?.(index + 1, total);
-      if (index < profiles.length - 1) {
-        await wait(bannedMatchGapMs);
-      }
-    }
-  }
 }
 
 export async function syncListingStatusBoards(
@@ -115,6 +63,17 @@ export async function syncListingStatusBoards(
   reportProgress(onProgress, toPercent);
 }
 
+async function syncDirtyListingProjections(connected: boolean): Promise<void> {
+  if (!connected) {
+    return;
+  }
+
+  try {
+    await syncJobListingProjections();
+  } catch {
+  }
+}
+
 async function syncGoogleWorkspaceBody(
   queryClient: QueryClient,
   mode: Exclude<SheetRefreshKind, "workspace">,
@@ -131,7 +90,9 @@ async function syncGoogleWorkspaceBody(
       return;
     }
 
-    await syncListingStatusBoards(queryClient, onProgress, 10, 100);
+    await syncDirtyListingProjections(true);
+    reportProgress(onProgress, 40);
+    await syncListingStatusBoards(queryClient, onProgress, 40, 100);
     return;
   }
 
@@ -172,12 +133,10 @@ async function syncGoogleWorkspaceBody(
       return root === "job-pipeline" && query.queryKey.length > 1;
     },
   });
-  reportProgress(onProgress, 58);
-  await syncAllProfileBannedMatches(queryClient, connection.connected, (completed, total) => {
-    reportProgress(onProgress, 58 + (22 * completed) / total);
-  });
-  reportProgress(onProgress, 82);
-  await syncListingStatusBoards(queryClient, onProgress, 82, 96);
+  reportProgress(onProgress, 62);
+  await syncDirtyListingProjections(connection.connected);
+  reportProgress(onProgress, 78);
+  await syncListingStatusBoards(queryClient, onProgress, 78, 96);
   await queryClient.fetchQuery({
     queryKey: jobApplicationLogsQueryKey(syncLogsQuery),
     queryFn: () => listJobApplicationLogs(syncLogsQuery),

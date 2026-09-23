@@ -14,6 +14,7 @@ public sealed class JobPipelineService
     private readonly GoogleDriveLayoutService _driveLayout;
     private readonly JobFinancialService _financial;
     private readonly IJobListingCopyRepository _copies;
+    private readonly JobListingProjectionService _projections;
     private readonly JobApplicationActivity _activity;
 
     public JobPipelineService(
@@ -25,6 +26,7 @@ public sealed class JobPipelineService
         GoogleDriveLayoutService driveLayout,
         JobFinancialService financial,
         IJobListingCopyRepository copies,
+        JobListingProjectionService projections,
         JobApplicationActivity activity)
     {
         _entries = entries;
@@ -35,6 +37,7 @@ public sealed class JobPipelineService
         _driveLayout = driveLayout;
         _financial = financial;
         _copies = copies;
+        _projections = projections;
         _activity = activity;
     }
 
@@ -322,6 +325,23 @@ public sealed class JobPipelineService
             todayKeys,
             cancellationToken);
 
+        var projectedRows = existingRows
+            .Concat(
+                fresh.Select((listing, offset) =>
+                    new JobListingSheetRow(lastDataRow + offset + 1, listing)))
+            .ToList();
+        await _projections.ReplaceProfileMainFromRowsAsync(
+            userId,
+            profile.Id,
+            profile.Title,
+            projectedRows,
+            cancellationToken);
+        await _projections.MarkSpreadsheetSyncedAsync(
+            userId,
+            access.AccessToken,
+            profile.SpreadsheetId,
+            cancellationToken);
+
         await _sheets.ProtectProfileMainAfterUpdateAsync(
             access.AccessToken,
             profile.SpreadsheetId,
@@ -431,6 +451,12 @@ public sealed class JobPipelineService
             main.SheetId,
             archiveName,
             main.Name,
+            cancellationToken);
+        await _projections.ArchiveProfileMainAsync(userId, profile.Id, archiveName, cancellationToken);
+        await _projections.MarkSpreadsheetSyncedAsync(
+            userId,
+            access.AccessToken,
+            profile.SpreadsheetId,
             cancellationToken);
         await _sheets.ProtectWorkbookAsync(
             access.AccessToken,

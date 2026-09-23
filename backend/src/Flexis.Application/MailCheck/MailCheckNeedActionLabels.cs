@@ -17,10 +17,15 @@ public static class MailCheckNeedActionLabels
         MailCheckLabel.Assessment,
         MailCheckLabel.Availability,
         MailCheckLabel.AiInterview,
-        MailCheckLabel.Code
+        MailCheckLabel.Code,
+        MailCheckLabel.NeedAction
     ];
 
-    public const string DefaultJson = "[\"schedule\",\"assessment\",\"availability\",\"ai_interview\",\"code\"]";
+    public const string DefaultJson =
+        "[\"schedule\",\"assessment\",\"availability\",\"ai_interview\",\"code\",\"need_action\"]";
+
+    private const string LegacyDefaultJson =
+        "[\"schedule\",\"assessment\",\"availability\",\"ai_interview\",\"code\"]";
 
     public static IReadOnlyList<MailCheckLabel> Resolve(MailCheckSettings settings)
     {
@@ -29,7 +34,8 @@ public static class MailCheckNeedActionLabels
 
     public static IReadOnlyList<MailCheckLabel> Parse(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json))
+        if (string.IsNullOrWhiteSpace(json)
+            || string.Equals(json.Trim(), LegacyDefaultJson, StringComparison.Ordinal))
         {
             return Default.ToList();
         }

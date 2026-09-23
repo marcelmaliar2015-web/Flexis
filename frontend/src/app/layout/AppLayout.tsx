@@ -12,6 +12,7 @@ import { GoogleConnectStatus } from "@/app/layout/GoogleConnectStatus";
 import { GoogleSyncStatus } from "@/app/layout/GoogleSyncStatus";
 import { MailCheckAutoStatus } from "@/app/layout/MailCheckAutoStatus";
 import { NotificationCenter } from "@/app/layout/NotificationCenter";
+import { TimeZoneClock } from "@/app/layout/TimeZoneClock";
 import { UserMenu } from "@/app/layout/UserMenu";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { appPaths } from "@/shared/config/paths";
@@ -82,6 +83,8 @@ export function AppLayout() {
             </Box>
             {auth.user ? (
               <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexShrink: 0 }}>
+                <TimeZoneClock />
+                <HeaderRail />
                 <NotificationCenter />
                 <MailCheckAutoStatus />
                 <ClientIntegrationsStatus />

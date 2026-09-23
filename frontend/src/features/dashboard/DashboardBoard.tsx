@@ -39,13 +39,13 @@ import {
   PriceTrack,
   ProgressBar,
 } from "@/features/dashboard/dashboardUi";
-import { appPaths } from "@/shared/config/paths";
+import { queryCount } from "@/shared/api/queryState";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 import type { JobApplicationLog, JobFinancialBoard } from "@/shared/types/jobApplication";
 import type { GoogleConnectionStatus } from "@/shared/types/google";
 import type { HealthStatusDto } from "@/shared/types/health";
 import type { JobPipelineBoard } from "@/shared/types/pipeline";
 import type { UserDto } from "@/shared/types/user";
-import { queryCount } from "@/shared/api/queryState";
 
 const categoryLabels: Record<string, string> = {
   pipeline: "Pipeline",
@@ -75,9 +75,10 @@ type DashboardBoardProps = {
 };
 
 export function DashboardBoard(props: DashboardBoardProps) {
+  const timeZone = useTimeZone();
   const mix = statusMix(props.financial);
   const prices = priceBars(props.financial?.rows);
-  const days = activityByDay(props.logs);
+  const days = activityByDay(props.logs, timeZone);
   const attention = attentionItems({
     health: props.health,
     google: props.google,
@@ -166,7 +167,7 @@ export function DashboardBoard(props: DashboardBoardProps) {
                 ? queryErrorMessage(props.googleError) ?? "See Issues in the header."
                 : props.google?.connected
                   ? props.google.connectedAt
-                    ? `Connected ${formatWhen(props.google.connectedAt)}. Sheet counts refresh with header Google sync.`
+                    ? `Connected ${formatWhen(props.google.connectedAt, timeZone)}. Sheet counts refresh with header Google sync.`
                     : "Sheet counts refresh with header Google sync."
                   : props.google
                     ? "Catalog and Operations stay disabled until this account connects Gmail."
@@ -427,7 +428,7 @@ export function DashboardBoard(props: DashboardBoardProps) {
                       <Stack spacing={0.25} sx={{ minWidth: 0 }}>
                         <Typography variant="body2">{item.summary}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {formatWhen(item.occurredAt)}
+                          {formatWhen(item.occurredAt, timeZone)}
                           {item.detail ? ` · ${item.detail}` : ""}
                         </Typography>
                       </Stack>

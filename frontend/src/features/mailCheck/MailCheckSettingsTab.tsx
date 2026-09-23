@@ -53,7 +53,7 @@ function buildLabelActions(
 
 function buildNeedActionLabels(source: MailCheckLabelSlug[] | undefined): MailCheckLabelSlug[] {
   if (!source || source.length === 0) {
-    return ["schedule", "assessment", "availability", "ai_interview", "code"];
+    return ["schedule", "assessment", "availability", "ai_interview", "code", "need_action"];
   }
 
   return source;
@@ -380,9 +380,10 @@ export function MailCheckSettingsTab() {
               Need action labels
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Choose which classifier labels appear on the Need action tab. Only pinned mail in your
-              mailbox is shown. The tab badge counts matching messages across all connected
-              mailboxes.
+              Choose which classifier labels appear on the Need action tab. Matching labeled mail is
+              listed whether the label action is Pin or Keep. Need Action defaults to Keep and is
+              included here so ambiguous or important-decision mail stays visible. The tab badge
+              counts matching messages across all connected mailboxes.
             </Typography>
           </Stack>
           <FormGroup>

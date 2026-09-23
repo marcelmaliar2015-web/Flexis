@@ -9,7 +9,7 @@ public sealed class JobFinancialService
 {
     public const int HistoryHours = 24 * 14;
     public const int StatisticsHistoryHours = 24 * 93;
-    private static readonly TimeSpan BoardCacheTtl = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan BoardCacheTtl = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan DropdownCheckTtl = TimeSpan.FromHours(12);
     private static readonly ConcurrentDictionary<Guid, (DateTimeOffset At, JobFinancialBoardDto Board)> BoardCache = new();
     private static readonly ConcurrentDictionary<string, DateTimeOffset> DropdownCheckedAt = new(StringComparer.Ordinal);
@@ -23,6 +23,7 @@ public sealed class JobFinancialService
     private readonly IJobCatalogRepository _items;
     private readonly GoogleAccessTokenService _tokens;
     private readonly IGoogleSheetsWorkspace _sheets;
+    private readonly JobListingProjectionService _projections;
     private readonly JobApplicationActivity _activity;
 
     public JobFinancialService(
@@ -35,6 +36,7 @@ public sealed class JobFinancialService
         IJobCatalogRepository items,
         GoogleAccessTokenService tokens,
         IGoogleSheetsWorkspace sheets,
+        JobListingProjectionService projections,
         JobApplicationActivity activity)
     {
         _settings = settings;
@@ -46,6 +48,7 @@ public sealed class JobFinancialService
         _items = items;
         _tokens = tokens;
         _sheets = sheets;
+        _projections = projections;
         _activity = activity;
     }
 
@@ -195,6 +198,15 @@ public sealed class JobFinancialService
         {
         }
 
+        if (access is not null)
+        {
+            var projected = await _projections.ListByUserAsync(userId, cancellationToken);
+            if (projected.Count == 0)
+            {
+                await _projections.SyncDirtyAsync(userId, cancellationToken);
+            }
+        }
+
         var dropdownDone = new HashSet<string>(StringComparer.Ordinal);
         var listingCache = new Dictionary<Guid, ProfileFinancialCounts>();
         var rows = new List<JobFinancialRowDto>(stored.Count);
@@ -304,13 +316,13 @@ public sealed class JobFinancialService
         var archivedApplied = 0;
         var archivedInterviews = 0;
         var archivedUnapplied = 0;
-        if (access is not null
-            && profile is not null
-            && !string.IsNullOrWhiteSpace(profile.SpreadsheetId))
+        if (profile is not null)
         {
             try
             {
-                if (dropdownDone.Add(profile.SpreadsheetId)
+                if (access is not null
+                    && !string.IsNullOrWhiteSpace(profile.SpreadsheetId)
+                    && dropdownDone.Add(profile.SpreadsheetId)
                     && ShouldEnsureStatusDropdown(profile.SpreadsheetId))
                 {
                     await _sheets.EnsureProfileStatusDropdownAsync(
@@ -322,27 +334,20 @@ public sealed class JobFinancialService
 
                 if (!listingCache.TryGetValue(entry.ProfileId, out var counts))
                 {
-                    var sheets = await _sheets.ListSheetsAsync(
-                        access.AccessToken,
-                        profile.SpreadsheetId,
+                    var mainProjected = await _projections.ListProfileMainAsync(
+                        userId,
+                        entry.ProfileId,
                         cancellationToken);
-                    var main = sheets.FirstOrDefault(sheet => sheet.Name == JobCatalogRules.SheetTabName(profile.Title));
-                    IReadOnlyList<JobListingRow> mainListings = [];
-                    if (main is not null)
-                    {
-                        mainListings = await _sheets.ReadProfileListingsAsync(
-                            access.AccessToken,
-                            profile.SpreadsheetId,
-                            main.Name,
-                            cancellationToken);
-                        (currentTotal, currentReady, currentNotReady, currentApplied, currentInterviews, currentUnapplied) =
-                            JobFinancialRules.CountStatuses(mainListings);
-                        await SyncStatusEventsAsync(
-                            userId,
-                            entry.ProfileId,
-                            mainListings,
-                            cancellationToken);
-                    }
+                    var mainListings = mainProjected
+                        .Select(JobListingProjectionService.ToListingRow)
+                        .ToList();
+                    (currentTotal, currentReady, currentNotReady, currentApplied, currentInterviews, currentUnapplied) =
+                        JobFinancialRules.CountStatuses(mainListings);
+                    await SyncStatusEventsAsync(
+                        userId,
+                        entry.ProfileId,
+                        mainListings,
+                        cancellationToken);
 
                     var latestBatch = await _copies.GetLatestByProfileAsync(
                         userId,
@@ -357,31 +362,20 @@ public sealed class JobFinancialService
                             JobFinancialRules.CountStatuses(mainListings, todayKeys);
                     }
 
-                    foreach (var sheet in sheets.Where(item => JobSheetNames.IsArchiveTab(item.Name)))
-                    {
-                        try
-                        {
-                            var listings = await _sheets.ReadProfileListingsAsync(
-                                access.AccessToken,
-                                profile.SpreadsheetId,
-                                sheet.Name,
-                                cancellationToken);
-                            var archived = JobFinancialRules.CountStatuses(listings);
-                            archivedTotal += archived.Total;
-                            archivedReady += archived.Ready;
-                            archivedNotReady += archived.NotReady;
-                            archivedApplied += archived.Applied;
-                            archivedInterviews += archived.Interviews;
-                            archivedUnapplied += archived.Unapplied;
-                        }
-                        catch (GoogleOAuthException exception) when (IsSheetsQuotaExceeded(exception.Message))
-                        {
-                            throw;
-                        }
-                        catch (GoogleOAuthException)
-                        {
-                        }
-                    }
+                    var archiveProjected = await _projections.ListProfileArchivesAsync(
+                        userId,
+                        entry.ProfileId,
+                        cancellationToken);
+                    var archivedListings = archiveProjected
+                        .Select(JobListingProjectionService.ToListingRow)
+                        .ToList();
+                    var archived = JobFinancialRules.CountStatuses(archivedListings);
+                    archivedTotal = archived.Total;
+                    archivedReady = archived.Ready;
+                    archivedNotReady = archived.NotReady;
+                    archivedApplied = archived.Applied;
+                    archivedInterviews = archived.Interviews;
+                    archivedUnapplied = archived.Unapplied;
 
                     counts = new ProfileFinancialCounts(
                         currentTotal,

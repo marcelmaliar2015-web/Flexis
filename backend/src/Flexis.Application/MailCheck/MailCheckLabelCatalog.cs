@@ -15,13 +15,14 @@ public static class MailCheckLabelCatalog
         MailCheckLabel.AiInterview,
         MailCheckLabel.Code,
         MailCheckLabel.Success,
+        MailCheckLabel.NeedAction,
         MailCheckLabel.Other,
         MailCheckLabel.LessImportant
     ];
 
     public static MailCheckLabel Parse(string? raw)
     {
-        return ParseSlug(raw) ?? MailCheckLabel.Other;
+        return ParseSlug(raw) ?? MailCheckLabel.NeedAction;
     }
 
     public static MailCheckLabel? ParseSlug(string? raw)
@@ -38,6 +39,7 @@ public static class MailCheckLabelCatalog
             "ai_interview" or "aiinterview" => MailCheckLabel.AiInterview,
             "code" => MailCheckLabel.Code,
             "success" => MailCheckLabel.Success,
+            "need_action" or "needaction" => MailCheckLabel.NeedAction,
             "other" => MailCheckLabel.Other,
             "less_important" or "lessimportant" => MailCheckLabel.LessImportant,
             _ => null
@@ -57,9 +59,10 @@ public static class MailCheckLabelCatalog
             MailCheckLabel.AiInterview => "AI Interview",
             MailCheckLabel.Code => "Code",
             MailCheckLabel.Success => "Success",
+            MailCheckLabel.NeedAction => "Need Action",
             MailCheckLabel.Other => "Other",
             MailCheckLabel.LessImportant => "Less Important",
-            _ => "Other"
+            _ => "Need Action"
         };
     }
 
@@ -68,6 +71,7 @@ public static class MailCheckLabelCatalog
         return label switch
         {
             MailCheckLabel.AiInterview => "ai_interview",
+            MailCheckLabel.NeedAction => "need_action",
             MailCheckLabel.LessImportant => "less_important",
             _ => label.ToString().ToLowerInvariant()
         };

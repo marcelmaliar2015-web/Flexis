@@ -12,6 +12,7 @@ internal static class UserMapper
             user.DisplayName,
             user.Role,
             user.IsActive,
+            user.TimeZoneId,
             user.CreatedAt);
     }
 }

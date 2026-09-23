@@ -20,6 +20,7 @@ frontend/src/
     auth/
     config/
     types/
+    time/
     notifications/
 ```
 
@@ -29,13 +30,13 @@ Path alias `@/` maps to `frontend/src/`.
 
 | Module | Responsibility |
 | --- | --- |
-| `app` | Bootstrap, theme, query client, routes, layout, guards, account menu, session lifecycle, header Issues, header Mail Check auto-check, header client integrations, header Gmail status, Google workspace sync, Mail Check auto-check provider |
+| `app` | Bootstrap, theme, query client, routes, layout, guards, account menu, session lifecycle, header Issues, header workspace clock, header Mail Check auto-check, header client integrations, header Gmail status, Google workspace sync, Mail Check auto-check provider |
 | `features/home` | Home screen |
 | `features/health` | Health screen and query hook |
 | `features/help` | Tabbed product guides. Overview is the product map; Google setup, Operations, Financial, Logs, Mail Check, and Problems are topic guides. |
 | `features/auth` | Sign-in screen |
 | `features/dashboard` | Workspace status board (health, Google, pipeline, financial, logs, Admin users) |
-| `features/jobApplication` | Job Application tabs: Operations, Profiles, Financial, Statistics, Resume generation. Pipeline table, Profiles table and profile detail page, Statistics (`JobApplicationStatisticsTab`, `statisticsPeriod`, `StatisticsChart`, `statisticsTables`) for today (last Update) and period event views, `refreshWorkspace` after pipeline actions, pipeline bulk progress, Financial summary cards (Today / Main / Archived / Lifetime), financial performance chart, pipeline entry detail. Catalog and Gmail connect UI live on Settings (Job Application tab). Activity log UI is hosted on Logs |
+| `features/jobApplication` | Job Application tabs: Operations, Profiles, Search, Financial, Statistics, Resume generation. Pipeline table, Profiles table and profile detail page, Search (`JobApplicationSearchTab`) ranked listing search against the Postgres projection (profile main, archives, and `search-base`) with Reindex from Sheets, Statistics (`JobApplicationStatisticsTab`, `statisticsPeriod`, `StatisticsChart`, `statisticsTables`) for today (last Update) and period event views, `refreshWorkspace` after pipeline actions, pipeline bulk progress, Financial summary cards (Today / Main / Archived / Lifetime), financial performance chart, pipeline entry detail. Catalog and Gmail connect UI live on Settings (Job Application tab). Activity log UI is hosted on Logs |
 | `features/mailCheck` | Mail Check tabs: Need action, Inbox, Check, Usage (OpenAI cost chart). Mailbox, OpenAI, label, and prompt settings live on Settings (Mail Check tab). Action log UI is hosted on Logs |
 | `features/logs` | Logs screen with tabs: Job Application and Mail Check activity (reuses feature log components) |
 | `features/settings` | Settings screen with tabs: Account, Job Application, Mail Check, Admin (Google Cloud client, Microsoft client, users) |
@@ -43,6 +44,7 @@ Path alias `@/` maps to `frontend/src/`.
 | `shared/auth` | Session provider and token storage |
 | `shared/config` | Env access and `appPaths` |
 | `shared/types` | Shared TypeScript contracts |
+| `shared/time` | Workspace IANA zone resolution, live clock hooks, and timestamp formatters |
 | `shared/notifications` | Issue notice store used by the API client and the header Issues list |
 
 ## Import rules

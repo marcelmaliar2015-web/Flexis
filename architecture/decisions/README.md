@@ -53,3 +53,6 @@ One file per significant architecture choice. Record a decision when you introdu
 | [031](031-consolidated-logs-page.md) | Consolidated Logs page |
 | [032](032-job-application-profiles-tab.md) | Job Application Profiles tab |
 | [033](033-job-application-statistics.md) | Job Application Statistics tab |
+| [034](034-workspace-time-zone.md) | Workspace time zone |
+| [035](035-job-application-listing-search.md) | Job Application listing search |
+| [036](036-job-listing-projection.md) | Job listing projection |

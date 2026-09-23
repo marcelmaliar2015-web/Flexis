@@ -7,6 +7,7 @@ public sealed class User
         Email = string.Empty;
         DisplayName = string.Empty;
         PasswordHash = string.Empty;
+        TimeZoneId = string.Empty;
     }
 
     public Guid Id { get; private set; }
@@ -18,6 +19,8 @@ public sealed class User
     public UserRole Role { get; private set; }
 
     public string PasswordHash { get; private set; }
+
+    public string TimeZoneId { get; private set; }
 
     public bool IsActive { get; private set; }
 
@@ -36,6 +39,7 @@ public sealed class User
             DisplayName = displayName,
             Role = role,
             PasswordHash = passwordHash,
+            TimeZoneId = string.Empty,
             IsActive = true,
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -44,6 +48,11 @@ public sealed class User
     public void SetDisplayName(string displayName)
     {
         DisplayName = displayName;
+    }
+
+    public void SetTimeZoneId(string timeZoneId)
+    {
+        TimeZoneId = timeZoneId;
     }
 
     public void ChangeRole(UserRole role)

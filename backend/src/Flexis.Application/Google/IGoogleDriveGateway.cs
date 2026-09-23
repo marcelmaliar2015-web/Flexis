@@ -21,6 +21,13 @@ public static class FlexisDriveLayout
     public const string JobMasterFileName = "job-master";
 
     public const string JobMasterDescription = "Flexis job master workbook for resume generation profile management.";
+
+    public const string SearchBaseFileName = "search-base";
+
+    public const string SearchBaseSheetName = "Main";
+
+    public const string SearchBaseDescription =
+        "Shared listing search base. Same columns as a profile main sheet plus Profile.";
 }
 
 public sealed record FlexisDriveFolders(
@@ -53,6 +60,11 @@ public interface IGoogleDriveGateway
         CancellationToken cancellationToken);
 
     Task<bool> SpreadsheetIsActiveAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken);
+
+    Task<string?> GetSpreadsheetModifiedTimeAsync(
         string accessToken,
         string spreadsheetId,
         CancellationToken cancellationToken);

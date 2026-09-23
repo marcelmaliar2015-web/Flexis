@@ -116,7 +116,7 @@ export function HelpProblemsTab() {
             <ListItem disableGutters>
               <ListItemText
                 primary="I am not in the users table"
-                secondary="Your profile is Your account at the top of product Settings. The table lists other people only. Edit display name and password there. Email and role stay as assigned."
+                secondary="Your profile is Your account at the top of product Settings. The table lists other people only. Edit display name, workspace time zone, and password there. Email and role stay as assigned. The app bar clock also edits time zone."
               />
             </ListItem>
             <ListItem disableGutters>

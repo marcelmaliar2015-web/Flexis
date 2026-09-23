@@ -13,6 +13,7 @@ export function getCurrentUser(): Promise<UserDto> {
 export type UpdateCurrentUserRequest = {
   displayName: string;
   password: string | null;
+  timeZoneId: string;
 };
 
 export function updateCurrentUser(request: UpdateCurrentUserRequest): Promise<UserDto> {

@@ -1,4 +1,5 @@
 import Alert from "@mui/material/Alert";
+import Autocomplete from "@mui/material/Autocomplete";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -8,12 +9,19 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { updateCurrentUser } from "@/shared/api/auth";
 import { userFacingError } from "@/shared/api/errors";
 import { usersQueryKey } from "@/shared/api/users";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { userInitials } from "@/shared/auth/userInitials";
+import {
+  browserTimeZoneId,
+  formatTimeZoneLabel,
+  listTimeZoneOptions,
+  resolveTimeZoneId,
+  type TimeZoneOption,
+} from "@/shared/time/timeZones";
 
 const Panel = styled(Box)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
@@ -39,7 +47,9 @@ export function AccountProfile() {
   const auth = useAuth();
   const user = auth.user;
   const queryClient = useQueryClient();
+  const options = useMemo(() => listTimeZoneOptions(), []);
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
+  const [timeZoneId, setTimeZoneId] = useState(resolveTimeZoneId(user?.timeZoneId));
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -47,6 +57,7 @@ export function AccountProfile() {
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName);
+      setTimeZoneId(resolveTimeZoneId(user.timeZoneId));
     }
   }, [user]);
 
@@ -55,6 +66,7 @@ export function AccountProfile() {
       updateCurrentUser({
         displayName,
         password: password.length > 0 ? password : null,
+        timeZoneId,
       }),
     onSuccess: async (nextUser) => {
       auth.replaceUser(nextUser);
@@ -72,6 +84,14 @@ export function AccountProfile() {
   if (!user) {
     return null;
   }
+
+  const selectedOption =
+    options.find((option) => option.id === timeZoneId) ??
+    ({
+      id: timeZoneId,
+      label: formatTimeZoneLabel(timeZoneId),
+      group: "All",
+    } satisfies TimeZoneOption);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -106,6 +126,27 @@ export function AccountProfile() {
             onChange={(event) => setDisplayName(event.target.value)}
             required
             fullWidth
+          />
+          <Autocomplete
+            options={options}
+            groupBy={(option) => option.group}
+            value={selectedOption}
+            onChange={(_event, value) => {
+              if (value) {
+                setTimeZoneId(value.id);
+              }
+            }}
+            getOptionLabel={(option) => option.label}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            disableClearable
+            fullWidth
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Time zone"
+                helperText={`Used for the app bar clock and every timestamp in Flexis. This device is ${formatTimeZoneLabel(browserTimeZoneId())}.`}
+              />
+            )}
           />
           <TextField
             label="New password"

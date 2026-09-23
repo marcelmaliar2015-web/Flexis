@@ -16,4 +16,5 @@ public sealed record UpdateUserRequest(
 
 public sealed record UpdateCurrentUserRequest(
     string DisplayName,
-    string? Password);
+    string? Password,
+    string TimeZoneId);

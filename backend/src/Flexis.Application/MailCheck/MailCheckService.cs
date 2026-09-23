@@ -314,11 +314,7 @@ public sealed class MailCheckService
         CancellationToken cancellationToken)
     {
         var settings = await GetOrCreateSettingsAsync(userId, cancellationToken);
-        var labelRules = MailCheckLabelActionRules.Resolve(settings);
-        var pinLabels = MailCheckLabelActionRules.PinLabels(labelRules);
-        var wanted = MailCheckNeedActionLabels.Resolve(settings)
-            .Where(pinLabels.Contains)
-            .ToList();
+        var wanted = MailCheckNeedActionLabels.Resolve(settings).ToList();
         if (wanted.Count == 0)
         {
             return new MailCheckInboxDto([]);
@@ -332,7 +328,7 @@ public sealed class MailCheckService
             {
                 var access = await _mailTokens.GetAccessAsync(userId, connection.Id, cancellationToken);
                 var mailbox = _mailboxes.Resolve(access.Provider);
-                var labels = await mailbox.EnsureLabelsAsync(access.AccessToken, pinLabels, cancellationToken);
+                var labels = await mailbox.EnsureLabelsAsync(access.AccessToken, wanted, cancellationToken);
                 var providerName = MailConnectionService.ToProviderName(connection.Provider);
                 foreach (var label in wanted)
                 {
@@ -590,9 +586,9 @@ public sealed class MailCheckService
                                 connection.Email,
                                 message.Id);
                             classification = new MailCheckClassification(
-                                MailCheckLabel.Other,
+                                MailCheckLabel.NeedAction,
                                 OpenAiTokenUsage.Empty);
-                            classifyDetail = $"Classifier fallback to Other: {classifyException.Message}";
+                            classifyDetail = $"Classifier fallback to Need Action: {classifyException.Message}";
                         }
 
                         try

@@ -6,7 +6,7 @@ Sheet Status, listings, and Drive layout change in Google. Polling every tab ind
 
 ## Decision
 
-Call this process **Sheet refresh** (not pipeline Update). One signed-in `GoogleSyncProvider` plus a module-level `sheetRefreshCoordinator` own the workflow.
+Call this process **Sheet refresh** (not pipeline Update). One signed-in `GoogleSyncProvider` plus a module-level `sheetRefreshCoordinator` own the workflow. Listing reads for Financial, Statistics, Search, and banned matches use the Postgres listing projection; see [036-job-listing-projection.md](036-job-listing-projection.md).
 
 ### Coordinator
 
@@ -14,7 +14,7 @@ Call this process **Sheet refresh** (not pipeline Update). One signed-in `Google
 
 1. `workspace` — after pipeline Update / Forward / related Job Application mutations (`refreshJobApplicationWorkspace`)
 2. `manual` — AppBar Sheet refresh click (full refresh)
-3. `auto` — timer / visibility (listing-status only)
+3. `auto` — timer / visibility (projection sync + listing-status boards)
 
 Rules:
 
@@ -25,17 +25,17 @@ Rules:
 
 ### What each kind loads
 
-- **Auto:** Financial then Statistics in sequence. Server board cache (60s) makes the Statistics call a cache hit, so Sheets is read once. No pipeline ListSheets fan-out. No banned-match scans.
-- **Manual:** Google client (403 ignored), pipeline, catalogs, banned-match scans spaced 2.5s apart, Financial then Statistics (cache), logs.
-- **Workspace:** Financial then Statistics (cache) and log invalidation only — enough to refresh Ready / Applied / price after Update without repeating the full manual path.
+- **Auto:** `POST /api/job-application/listings/sync` (Drive `modifiedTime` gate; pull only dirty spreadsheets into the projection), then Financial then Statistics. Server board cache (10 minutes) makes the Statistics call a cache hit when the projection did not change. No pipeline ListSheets fan-out. No banned-match scans.
+- **Manual:** Google client (403 ignored), pipeline, catalogs, SyncDirty, Financial then Statistics (cache), logs. No banned-match fan-out; banned scans run on ban CRUD / pipeline entry page / Search Reindex.
+- **Workspace:** Financial then Statistics (cache) and log invalidation only — enough to refresh Ready / Applied / price after Update without repeating the full manual path. Update / Forward already projected listing rows in the same request.
 
 ### Server
 
-`JobFinancialService` caches the built board for 60 seconds per user and checks Status dropdown maintenance at most once per spreadsheet per 12 hours. Quota errors fail the board request instead of zeroing remaining profiles. Pipeline Update / Forward invalidate the board cache.
+`JobFinancialService` caches the built board for 10 minutes per user and checks Status dropdown maintenance at most once per spreadsheet per 12 hours. Quota errors fail the board request instead of zeroing remaining profiles. Pipeline Update / Forward and projection sync invalidate the board cache.
 
 ## Consequences
 
-Dashboard and Statistics Today metrics stay current on the 5-minute auto tick without stacking concurrent refreshes. Manual and Update never race auto. Do not add a second timer on Financial or Statistics tabs.
+Dashboard and Statistics Today metrics stay current on the 5-minute auto tick without stacking concurrent refreshes. Manual and Update never race auto. Do not add a second timer on Financial or Statistics tabs. Reindex from Sheets on the Search tab covers out-of-band edits.
 
 ## Related
 
@@ -43,3 +43,4 @@ Dashboard and Statistics Today metrics stay current on the 5-minute auto tick wi
 - [010-job-application-pipeline.md](010-job-application-pipeline.md)
 - [013-job-application-financial-logs.md](013-job-application-financial-logs.md)
 - [033-job-application-statistics.md](033-job-application-statistics.md)
+- [036-job-listing-projection.md](036-job-listing-projection.md)

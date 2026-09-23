@@ -6,5 +6,6 @@ export type UserDto = {
   displayName: string;
   role: UserRole;
   isActive: boolean;
+  timeZoneId: string;
   createdAt: string;
 };

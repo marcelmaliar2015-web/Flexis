@@ -10,6 +10,7 @@ import { JobApplicationFinancialTab } from "@/features/jobApplication/JobApplica
 import { JobApplicationOperationsTab } from "@/features/jobApplication/JobApplicationOperationsTab";
 import { JobApplicationProfilesTab } from "@/features/jobApplication/JobApplicationProfilesTab";
 import { JobApplicationResumeTab } from "@/features/jobApplication/JobApplicationResumeTab";
+import { JobApplicationSearchTab } from "@/features/jobApplication/JobApplicationSearchTab";
 import { JobApplicationStatisticsTab } from "@/features/jobApplication/JobApplicationStatisticsTab";
 import { PipelineBulkProgress } from "@/features/jobApplication/PipelineBulkProgress";
 import { usePipelineBulkRun } from "@/features/jobApplication/usePipelineBulkRun";
@@ -22,12 +23,19 @@ const AccentRule = styled("span")(({ theme }) => ({
   backgroundColor: theme.palette.secondary.main,
 }));
 
-type JobApplicationTab = "operations" | "profiles" | "financial" | "statistics" | "resume";
+type JobApplicationTab =
+  | "operations"
+  | "profiles"
+  | "search"
+  | "financial"
+  | "statistics"
+  | "resume";
 
 export function JobApplicationPage() {
   const [tab, setTab] = useState<JobApplicationTab>("operations");
   const [visited, setVisited] = useState({
     profiles: false,
+    search: false,
     financial: false,
     statistics: false,
     resume: false,
@@ -56,6 +64,7 @@ export function JobApplicationPage() {
               setTab(value);
               if (
                 value === "profiles"
+                || value === "search"
                 || value === "financial"
                 || value === "statistics"
                 || value === "resume"
@@ -66,6 +75,7 @@ export function JobApplicationPage() {
           >
             <Tab label="Operations" value="operations" />
             <Tab label="Profiles" value="profiles" />
+            <Tab label="Search" value="search" />
             <Tab label="Financial" value="financial" />
             <Tab label="Statistics" value="statistics" />
             <Tab label="Resume generation" value="resume" />
@@ -76,6 +86,11 @@ export function JobApplicationPage() {
           {tab === "profiles" || visited.profiles ? (
             <Box role="tabpanel" hidden={tab !== "profiles"}>
               <JobApplicationProfilesTab />
+            </Box>
+          ) : null}
+          {tab === "search" || visited.search ? (
+            <Box role="tabpanel" hidden={tab !== "search"}>
+              <JobApplicationSearchTab />
             </Box>
           ) : null}
           {tab === "financial" || visited.financial ? (

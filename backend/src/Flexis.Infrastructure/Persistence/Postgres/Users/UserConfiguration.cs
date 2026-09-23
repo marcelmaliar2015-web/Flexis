@@ -13,6 +13,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.Email).HasMaxLength(256).IsRequired();
         builder.Property(user => user.DisplayName).HasMaxLength(100).IsRequired();
         builder.Property(user => user.PasswordHash).HasMaxLength(500).IsRequired();
+        builder.Property(user => user.TimeZoneId).HasMaxLength(64).IsRequired();
         builder.Property(user => user.Role).HasConversion<string>().HasMaxLength(32);
         builder.HasIndex(user => user.Email).IsUnique();
     }

@@ -28,6 +28,8 @@ import {
   mailCheckLogsQueryKey,
   mailCheckSettingsQueryKey,
 } from "@/shared/api/mailCheck";
+import { formatDateTimeSeconds } from "@/shared/time/formatTime";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 import type {
   MailCheckActionLog,
   MailCheckActionLogQuery,
@@ -82,16 +84,6 @@ const actionFilters: { value: string; label: string }[] = [
 ];
 
 const pageSizeOptions = [25, 50, 100];
-
-function formatWhen(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(new Date(value));
-}
 
 function formatDuration(ms: number): string {
   if (ms <= 0) {
@@ -165,6 +157,7 @@ function useDebouncedValue(value: string, delayMs: number): string {
 }
 
 export function MailCheckLogTab() {
+  const timeZone = useTimeZone();
   const settingsQuery = useQuery({
     queryKey: mailCheckSettingsQueryKey,
     queryFn: getMailCheckSettings,
@@ -372,7 +365,9 @@ export function MailCheckLogTab() {
                       }}
                     >
                       <TableCell align="left" sx={{ whiteSpace: "nowrap" }}>
-                        <Typography variant="body2">{formatWhen(item.occurredAt)}</Typography>
+                        <Typography variant="body2">
+                          {formatDateTimeSeconds(item.occurredAt, timeZone)}
+                        </Typography>
                         <Tooltip title={`Run ${item.runId}`}>
                           <MonoCaption>#{item.runId.slice(0, 8)}</MonoCaption>
                         </Tooltip>

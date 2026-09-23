@@ -79,6 +79,7 @@ public sealed class UserManagementService
         CancellationToken cancellationToken)
     {
         var displayName = UserRules.NormalizeDisplayName(request.DisplayName);
+        var timeZoneId = UserRules.NormalizeTimeZoneId(request.TimeZoneId);
         var user = await _users.GetByIdAsync(id, cancellationToken);
         if (user is null || !user.IsActive)
         {
@@ -86,6 +87,7 @@ public sealed class UserManagementService
         }
 
         user.SetDisplayName(displayName);
+        user.SetTimeZoneId(timeZoneId);
         if (!string.IsNullOrWhiteSpace(request.Password))
         {
             UserRules.EnsurePassword(request.Password);

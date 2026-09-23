@@ -111,6 +111,26 @@ internal sealed class GoogleDriveClient : IGoogleDriveGateway
             && string.Equals(file.MimeType, "application/vnd.google-apps.spreadsheet", StringComparison.Ordinal);
     }
 
+    public async Task<string?> GetSpreadsheetModifiedTimeAsync(
+        string accessToken,
+        string spreadsheetId,
+        CancellationToken cancellationToken)
+    {
+        var file = await GetFileAsync(
+            accessToken,
+            spreadsheetId,
+            "id,mimeType,trashed,modifiedTime",
+            cancellationToken);
+        if (file is null
+            || file.Trashed == true
+            || !string.Equals(file.MimeType, "application/vnd.google-apps.spreadsheet", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return file.ModifiedTime;
+    }
+
     public async Task MoveFileToFolderAsync(
         string accessToken,
         string fileId,
@@ -236,6 +256,8 @@ internal sealed class GoogleDriveClient : IGoogleDriveGateway
         public string? Id { get; set; }
 
         public string? MimeType { get; set; }
+
+        public string? ModifiedTime { get; set; }
 
         public bool? Trashed { get; set; }
 

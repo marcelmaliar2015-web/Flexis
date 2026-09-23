@@ -27,42 +27,45 @@ function dayKey(point: JobStatisticsPoint): string {
   return (point.capturedOn || point.capturedHour).slice(0, 10);
 }
 
-function formatHourLabel(value: string): string {
+function formatHourLabel(value: string, timeZone: string): string {
   const parsed = Date.parse(value);
   if (Number.isNaN(parsed)) {
     return value;
   }
 
   return new Intl.DateTimeFormat(undefined, {
+    timeZone,
     month: "short",
     day: "numeric",
     hour: "numeric",
   }).format(new Date(parsed));
 }
 
-function formatDayLabel(day: string): string {
+function formatDayLabel(day: string, timeZone: string): string {
   const parsed = Date.parse(`${day}T12:00:00Z`);
   if (Number.isNaN(parsed)) {
     return day;
   }
 
   return new Intl.DateTimeFormat(undefined, {
+    timeZone,
     month: "short",
     day: "numeric",
   }).format(new Date(parsed));
 }
 
-function formatWeekLabel(weekStart: string): string {
-  return `Week of ${formatDayLabel(weekStart)}`;
+function formatWeekLabel(weekStart: string, timeZone: string): string {
+  return `Week of ${formatDayLabel(weekStart, timeZone)}`;
 }
 
-function formatMonthLabel(month: string): string {
+function formatMonthLabel(month: string, timeZone: string): string {
   const parsed = Date.parse(`${month}-01T12:00:00Z`);
   if (Number.isNaN(parsed)) {
     return month;
   }
 
   return new Intl.DateTimeFormat(undefined, {
+    timeZone,
     month: "long",
     year: "numeric",
   }).format(new Date(parsed));
@@ -82,6 +85,7 @@ export function filterStatisticsHistory(
 export function rollupStatisticsPoints(
   points: JobStatisticsPoint[],
   mode: Exclude<StatisticsRangeMode, "today">,
+  timeZone: string,
 ): StatisticsPeriodRow[] {
   const byPeriod = new Map<string, StatisticsPeriodRow>();
   const latestUnappliedByPeriodProfile = new Map<string, { hour: string; unapplied: number }>();
@@ -117,13 +121,13 @@ export function rollupStatisticsPoints(
 
     let label = period;
     if (mode === "hourly") {
-      label = formatHourLabel(period);
+      label = formatHourLabel(period, timeZone);
     } else if (mode === "daily") {
-      label = formatDayLabel(period);
+      label = formatDayLabel(period, timeZone);
     } else if (mode === "weekly") {
-      label = formatWeekLabel(period);
+      label = formatWeekLabel(period, timeZone);
     } else {
-      label = formatMonthLabel(period);
+      label = formatMonthLabel(period, timeZone);
     }
 
     byPeriod.set(period, {

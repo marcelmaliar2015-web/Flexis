@@ -92,8 +92,9 @@ export function formatRate(value: number): string {
   return String(Number(amount.toFixed(4)));
 }
 
-export function formatWhen(value: string): string {
+export function formatWhen(value: string, timeZone: string): string {
   return new Intl.DateTimeFormat(undefined, {
+    timeZone,
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -150,22 +151,29 @@ export function priceBars(rows: JobFinancialRow[] | undefined, limit = 8): Price
   }));
 }
 
-export function activityByDay(logs: JobApplicationLog[] | undefined, dayCount = 7): DayActivity[] {
+export function activityByDay(
+  logs: JobApplicationLog[] | undefined,
+  timeZone: string,
+  dayCount = 7,
+): DayActivity[] {
   const items = logs ?? [];
   const counts = new Map<string, number>();
   for (const item of items) {
-    const key = toDayKey(new Date(item.occurredAt));
+    const key = toDayKeyInZone(new Date(item.occurredAt), timeZone);
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
 
   const now = new Date();
   const days: DayActivity[] = [];
   for (let offset = dayCount - 1; offset >= 0; offset -= 1) {
-    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
-    const key = toDayKey(day);
+    const day = new Date(now.getTime() - offset * 24 * 60 * 60 * 1000);
+    const key = toDayKeyInZone(day, timeZone);
     days.push({
       key,
-      label: new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(day),
+      label: new Intl.DateTimeFormat(undefined, {
+        timeZone,
+        weekday: "short",
+      }).format(day),
       count: counts.get(key) ?? 0,
       share: 0,
     });
@@ -318,6 +326,11 @@ export function attentionItems(input: {
   return items;
 }
 
-function toDayKey(value: Date): string {
-  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+function toDayKeyInZone(value: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(value);
 }

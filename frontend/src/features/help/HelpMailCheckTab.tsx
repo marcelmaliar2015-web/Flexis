@@ -174,13 +174,25 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                 <TableRow>
 
+                  <TableCell align="left">Need action</TableCell>
+
+                  <TableCell align="left">
+                    Mail whose classifier label is on your Need action list in Settings. Default list
+                    includes Schedule, Assessment, Availability, AI Interview, Code, and Need Action.
+                    Need Action is for ambiguous mail or important decisions that do not fit a
+                    specific label; default mailbox action is Keep.
+                  </TableCell>
+
+                </TableRow>
+
+                <TableRow>
+
                   <TableCell align="left">Inbox</TableCell>
 
                   <TableCell align="left">
-                    Mail Flexis labeled or categorized and pinned. Filter by Rejected, Applied,
-                    Schedule, Scheduled, Assessment, Availability, AI Interview, Code, Success,
-                    Other, or Less Important
-                    (pin-configured labels only).
+                    Mail Flexis labeled or categorized and pinned. Filter by pin-configured labels
+                    (Rejected, Applied, Schedule, Scheduled, Assessment, Availability, AI Interview,
+                    Code, Success, Need Action, Other, or Less Important when set to Pin).
                   </TableCell>
 
                 </TableRow>
@@ -287,7 +299,7 @@ export function HelpMailCheckTab({ onOpenTab }: HelpMailCheckTabProps) {
 
                 primary="Classifies then acts"
 
-                secondary="OpenAI returns one label per message. Settings choose pin, trash, or keep for each label."
+                secondary="OpenAI returns one label per message. Prefer a specific label when confident. Use Need Action when the mail is ambiguous or needs important human attention that does not fit Schedule, Assessment, Code, and the other specific labels. Settings choose pin, trash, or keep for each label (Need Action defaults to Keep)."
 
               />
 

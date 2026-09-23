@@ -10,6 +10,7 @@ export type MailCheckLabelSlug =
   | "ai_interview"
   | "code"
   | "success"
+  | "need_action"
   | "other"
   | "less_important";
 
@@ -228,6 +229,7 @@ export const mailCheckLabels: { slug: MailCheckLabelSlug; name: string }[] = [
   { slug: "ai_interview", name: "AI Interview" },
   { slug: "code", name: "Code" },
   { slug: "success", name: "Success" },
+  { slug: "need_action", name: "Need Action" },
   { slug: "other", name: "Other" },
   { slug: "less_important", name: "Less Important" },
 ];

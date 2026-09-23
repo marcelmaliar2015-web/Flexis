@@ -11,6 +11,8 @@ import { useNavigate } from "react-router-dom";
 import { getGoogleConnection, googleConnectionQueryKey } from "@/shared/api/google";
 import { useAuth } from "@/shared/auth/AuthProvider";
 import { appPaths } from "@/shared/config/paths";
+import { formatDateTimeMedium } from "@/shared/time/formatTime";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 
 const StatusTrigger = styled(Button)(({ theme }) => ({
   minHeight: 38,
@@ -81,15 +83,9 @@ const StatusIdentity = styled("div")(({ theme }) => ({
   padding: theme.spacing(1.5, 2, 1.25),
 }));
 
-function formatConnectedAt(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
 export function GoogleConnectStatus() {
   const auth = useAuth();
+  const timeZone = useTimeZone();
   const navigate = useNavigate();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const connectionQuery = useQuery({
@@ -183,7 +179,7 @@ export function GoogleConnectStatus() {
             ) : null}
             {connected && status.connectedAt ? (
               <Typography variant="caption" color="text.secondary">
-                Since {formatConnectedAt(status.connectedAt)}
+                Since {formatDateTimeMedium(status.connectedAt, timeZone)}
               </Typography>
             ) : null}
             {!connected && configured ? (

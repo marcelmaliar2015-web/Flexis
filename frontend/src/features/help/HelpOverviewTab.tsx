@@ -161,13 +161,13 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 <TableRow>
                   <TableCell align="left">Settings</TableCell>
                   <TableCell align="left">
-                    Tabs for Account, Job Application, Mail Check, and Admin. Account is name and
-                    password. Job Application is Gmail, rates, profiles, and sources. Mail Check is
+                    Tabs for Account, Job Application, Mail Check, and Admin. Account is name, workspace
+                    time zone, and password. Job Application is Gmail, rates, profiles, and sources. Mail Check is
                     mailboxes and OpenAI. Admin is Google Cloud client, Microsoft client, and other
                     users. You are not a row in that users table.
                   </TableCell>
                   <TableCell align="left">
-                    Change your name or password. Connect Gmail or mailboxes. Admins save OAuth
+                    Change your name, time zone, or password. Connect Gmail or mailboxes. Admins save OAuth
                     clients and manage other accounts.
                   </TableCell>
                   <TableCell align="left">
@@ -201,8 +201,14 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             </ListItem>
             <ListItem disableGutters>
               <ListItemText
+                primary="Workspace clock"
+                secondary="Leftmost when signed in. Live time and zone abbreviation. Click to open a popover with a large clock, searchable IANA zones, and quick chips (This device, UTC, common cities). Choosing a zone saves immediately and applies to every timestamp in Flexis. The same field is on Settings → Account."
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
                 primary="Issues"
-                secondary="Left of client integrations when signed in, and next to Sign in for visitors. Badge is the count. A snackbar appears on each new error or warning. Open Issues for time, source, HTTP method, path, status, and full message. Copy all produces a pasteable log. The API also appends the same facts to .flexis/issue-log.jsonl."
+                secondary="After the workspace clock when signed in, and next to Sign in for visitors. Badge is the count. A snackbar appears on each new error or warning. Open Issues for time, source, HTTP method, path, status, and full message. Copy all produces a pasteable log. The API also appends the same facts to .flexis/issue-log.jsonl."
               />
             </ListItem>
             <ListItem disableGutters>
@@ -211,6 +217,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                 secondary="Left of Google sync. Google and Microsoft orbs show whether the admin OAuth apps are ready. Green means Ready. Open it for a short status and a link to Settings (admin) or Help. Saving clients stays on Settings."
               />
             </ListItem>
+           
             <ListItem disableGutters>
               <ListItemText
                 primary="Google sync"
@@ -226,7 +233,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             <ListItem disableGutters>
               <ListItemText
                 primary="Account menu"
-                secondary="Initials avatar. Compact header with avatar, name, email, and a role chip, then Settings, Help, and Sign out. Edit name and password on Settings, not in this menu."
+                secondary="Initials avatar. Compact header with avatar, name, email, and a role chip, then Settings, Help, and Sign out. Edit name, workspace time zone, and password on Settings → Account. The app bar clock also edits time zone."
               />
             </ListItem>
           </List>
@@ -277,6 +284,19 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
                     <Button variant="text" onClick={() => onOpenTab("financial")}>
                       Financial
                     </Button>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell align="left">Search</TableCell>
+                  <TableCell align="left">
+                    Ranked search across every profile main sheet and the Drive search-base workbook.
+                    Profile and Status are dropdowns. Company Name, Position, Link, and JD use
+                    similarity ranking with an ordered score.
+                  </TableCell>
+                  <TableCell align="left">
+                    <Link component={RouterLink} to={appPaths.jobApplication}>
+                      Open
+                    </Link>
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -339,7 +359,7 @@ export function HelpOverviewTab({ onOpenTab }: HelpOverviewTabProps) {
             <ListItem disableGutters>
               <ListItemText
                 primary="User and Viewer"
-                secondary="Same product screens today. Connect their own Gmail on Settings (Job Application). Edit display name and password on Settings (Account). Cannot edit the Flexis Google Cloud client or the users table."
+                secondary="Same product screens today. Connect their own Gmail on Settings (Job Application). Edit display name, workspace time zone, and password on Settings (Account). Cannot edit the Flexis Google Cloud client or the users table."
               />
             </ListItem>
           </List>

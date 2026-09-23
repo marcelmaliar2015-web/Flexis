@@ -19,6 +19,8 @@ import { EmptyState, Panel } from "@/features/mailCheck/mailCheckLayout";
 import type { MailboxCheckStats } from "@/features/mailCheck/mailCheckRunSession";
 import { actionLabel, formatMailboxScanStatus, providerLabel } from "@/features/mailCheck/mailCheckUi";
 import type { useMailCheckRun } from "@/features/mailCheck/useMailCheckRun";
+import { formatDateTimeSeconds } from "@/shared/time/formatTime";
+import { useTimeZone } from "@/shared/time/useTimeZone";
 import type { MailCheckMailboxItem, MailCheckSettings } from "@/shared/types/mailCheck";
 
 const MailboxCard = styled(Box, {
@@ -46,6 +48,7 @@ type MailCheckCheckTabProps = {
 };
 
 export function MailCheckCheckTab({ settings, mailCheckRun }: MailCheckCheckTabProps) {
+  const timeZone = useTimeZone();
   const autoCheck = useMailCheckAuto();
   const {
     session,
@@ -140,7 +143,7 @@ export function MailCheckCheckTab({ settings, mailCheckRun }: MailCheckCheckTabP
               <Typography variant="body2" color="text.secondary">
                 Up to three messages per auto-check API call (every{" "}
                 {settings.autoCheckIntervalSeconds ?? 20} seconds). Ran at{" "}
-                {new Date(settings.lastRunAt).toLocaleString()}. Trashed mail is in Gmail Trash or
+                {formatDateTimeSeconds(settings.lastRunAt, timeZone)}. Trashed mail is in Gmail Trash or
                 Outlook Deleted Items. Left in inbox mail stays in the inbox with a Flexis category
                 or label.
               </Typography>
@@ -207,6 +210,7 @@ export function MailCheckCheckTab({ settings, mailCheckRun }: MailCheckCheckTabP
               <MailboxRunCard
                 key={mailbox.id}
                 mailbox={mailbox}
+                timeZone={timeZone}
                 stats={session?.mailboxStats[mailbox.id]}
                 active={checking && activeMailboxKey === mailbox.id}
                 checking={checking}
@@ -272,6 +276,7 @@ export function MailCheckCheckTab({ settings, mailCheckRun }: MailCheckCheckTabP
 
 type MailboxRunCardProps = {
   mailbox: MailCheckMailboxItem;
+  timeZone: string;
   stats: MailboxCheckStats | undefined;
   active: boolean;
   checking: boolean;
@@ -285,6 +290,7 @@ type MailboxRunCardProps = {
 
 function MailboxRunCard({
   mailbox,
+  timeZone,
   stats,
   active,
   checking,
@@ -319,7 +325,7 @@ function MailboxRunCard({
                 {providerLabel(mailbox.provider)} · {mailbox.email}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {formatMailboxScanStatus(mailbox)}
+                {formatMailboxScanStatus(mailbox, timeZone)}
               </Typography>
               {active ? (
                 <Typography variant="caption" color="primary">

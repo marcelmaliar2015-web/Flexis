@@ -11,6 +11,7 @@ public enum MailCheckLabel
     AiInterview,
     Code,
     Success,
+    NeedAction,
     Other,
     LessImportant
 }

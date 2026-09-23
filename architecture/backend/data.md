@@ -6,14 +6,14 @@ Two stores, registered in `Flexis.Infrastructure.DependencyInjection`.
 
 | Store | Use | Access |
 | --- | --- | --- |
-| PostgreSQL | Relational data, users, Google connections, Google Cloud client, Microsoft client, job catalog items, pipeline entries, banned companies, financial settings, financial snapshots, listing copy batches, listing status events, activity logs, Mail Check settings, processed messages, and action logs | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
+| PostgreSQL | Relational data, users, Google connections, Google Cloud client, Microsoft client, job catalog items, pipeline entries, banned companies, financial settings, financial snapshots, listing copy batches, listing status events, listing projections, sheet sync states, activity logs, Mail Check settings, processed messages, and action logs | EF Core `FlexisDbContext`, connection `ConnectionStrings:Postgres` |
 | MongoDB | Document data | `IMongoClient` singleton, `IMongoDatabase` named `Mongo:Database` |
 
 Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, database `flexis`).
 
 ## Entities
 
-`User` in `Flexis.Domain.Users`. Table `users`, unique email. EF configuration: `Persistence/Postgres/Users/UserConfiguration.cs`.
+`User` in `Flexis.Domain.Users`. Table `users`, unique email. `TimeZoneId` is an IANA zone string (max 64, empty until the user sets one). EF configuration: `Persistence/Postgres/Users/UserConfiguration.cs`.
 
 `GoogleConnection` in `Flexis.Domain.Google`. Table `google_connections`, unique `UserId`, cascade from `users`. EF configuration: `Persistence/Postgres/Google/GoogleConnectionConfiguration.cs`. Refresh and access tokens are stored protected, not as plaintext. Drive folder IDs for `Flexis`, `Job Application`, `Profiles`, and `Sources` are stored on the same row.
 
@@ -36,6 +36,10 @@ Local containers: `docker-compose.yml` (user `flexis`, password `flexis`, databa
 `JobListingCopyBatch` / `JobListingCopyItem` in `Flexis.Domain.JobApplication`. Tables `job_listing_copy_batches` and `job_listing_copy_items`. Each Update replaces the profile batch with keys for every non-banned source listing from that Update (appended and skipped duplicates). Cascade from `users` and profile catalog items. EF configuration: `Persistence/Postgres/JobApplication/JobListingTrackingConfiguration.cs`.
 
 `JobListingStatusState` / `JobListingStatusEvent` in `Flexis.Domain.JobApplication`. Tables `job_listing_status_states` and `job_listing_status_events`. State is last known Status per listing key; events record transitions to Applied or Interview with `OccurredAt`. Cascade from `users` and profile catalog items. Same EF configuration file as copy batches.
+
+`JobListingProjection` in `Flexis.Domain.JobApplication`. Table `job_listing_projections`. Per-user mirrored listing rows with `Source` `profile_main` | `profile_archive` | `search_base`, optional `ProfileId`, `ArchiveTab`, listing fields, `ListingKey`, `RowNumber`, `ContentHash`, `SyncedAt`. Unique (`UserId`, `Source`, `ProfileId`, `ArchiveTab`, `ListingKey`). Cascade from `users`. EF configuration: `Persistence/Postgres/JobApplication/JobListingProjectionConfiguration.cs`. See [036-job-listing-projection.md](../decisions/036-job-listing-projection.md).
+
+`JobSheetSyncState` in `Flexis.Domain.JobApplication`. Table `job_sheet_sync_states`. Unique (`UserId`, `SpreadsheetId`). Stores Drive `modifiedTime` and `LastSyncedAt` for dirty-pull gating. Cascade from `users`. Same EF configuration file as listing projections.
 
 `JobResumeSettings` in `Flexis.Domain.JobApplication`. Table `job_resume_settings`. Unique `UserId`, cascade from `users`. Stores owner option list JSON and job-master spreadsheet id and url. EF configuration: `Persistence/Postgres/JobApplication/JobResumeSettingsConfiguration.cs`.
 
