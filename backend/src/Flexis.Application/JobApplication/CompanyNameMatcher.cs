@@ -81,7 +81,11 @@ internal static class CompanyNameMatcher
             .Where(IsUsableKey)
             .OrderByDescending(key => key.Contains(' ', StringComparison.Ordinal) ? 1 : 0)
             .ThenByDescending(key => key.Length)
-            .First();
+            .FirstOrDefault();
+        if (string.IsNullOrEmpty(canonical))
+        {
+            return string.Empty;
+        }
 
         return canonical.Length <= 200 ? canonical : canonical[..200];
     }
@@ -217,10 +221,20 @@ internal static class CompanyNameMatcher
     private static List<string> ExtractDomainTokens(string value)
     {
         var text = (value ?? string.Empty).Trim().ToLowerInvariant();
+        if (text.Length == 0)
+        {
+            return [];
+        }
+
         text = Regex.Replace(text, @"^https?://", string.Empty);
         text = Regex.Replace(text, @"^www\.", string.Empty);
-        text = text.Split(['/', '?', '#'], StringSplitOptions.RemoveEmptyEntries)[0];
+        var hostParts = text.Split(['/', '?', '#'], StringSplitOptions.RemoveEmptyEntries);
+        if (hostParts.Length == 0)
+        {
+            return [];
+        }
 
+        text = hostParts[0];
         if (!text.Contains('.', StringComparison.Ordinal))
         {
             return [];
